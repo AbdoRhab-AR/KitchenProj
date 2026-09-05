@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - لوحة التحكم | مصنع المطابخ</title>
+
+    <!-- Bootstrap 5 RTL CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.rtl.min.css" />
+    <!-- Font Awesome 6 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" />
+    <!-- Google Fonts - Cairo & Tajawal -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800&family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+
+    <!-- Custom Dashboard Styles -->
+    <style>
+        :root {
+            --sidebar-width: 270px;
+            --topbar-height: 70px;
+            --primary-gradient: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            --accent-blue: #2563eb;
+            --accent-emerald: #10b981;
+            --accent-amber: #f59e0b;
+            --accent-rose: #f43f5e;
+            --bg-canvas: #f1f5f9;
+            --card-border-radius: 14px;
+        }
+
+        body {
+            font-family: 'Cairo', sans-serif;
+            background-color: var(--bg-canvas);
+            color: #1e293b;
+            overflow-x: hidden;
+            margin: 0;
+            padding: 0;
+        }
+
+        /* Sidebar Styling */
+        #sidebar {
+            width: var(--sidebar-width);
+            background: var(--primary-gradient);
+            position: fixed;
+            top: 0;
+            bottom: 0;
+            right: 0;
+            z-index: 1040;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: -4px 0 25px rgba(0, 0, 0, 0.15);
+            display: flex;
+            flex-direction: column;
+        }
+
+        #sidebar.collapsed {
+            right: calc(-1 * var(--sidebar-width));
+        }
+
+        .sidebar-brand {
+            height: var(--topbar-height);
+            display: flex;
+            align-items: center;
+            padding: 0 1.5rem;
+            color: #ffffff;
+            font-weight: 800;
+            font-size: 1.25rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            text-decoration: none;
+        }
+
+        .sidebar-brand i {
+            color: var(--accent-blue);
+            margin-left: 0.75rem;
+            font-size: 1.5rem;
+        }
+
+        .sidebar-menu {
+            padding: 1.25rem 0.75rem;
+            overflow-y: auto;
+            flex: 1;
+        }
+
+        .sidebar-heading {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #64748b;
+            font-weight: 700;
+            padding: 0.75rem 1rem 0.35rem;
+        }
+
+        .nav-sidebar .nav-link {
+            color: #94a3b8;
+            padding: 0.75rem 1rem;
+            font-weight: 600;
+            font-size: 0.95rem;
+            border-radius: 10px;
+            margin-bottom: 0.25rem;
+            display: flex;
+            align-items: center;
+            transition: all 0.2s ease;
+        }
+
+        .nav-sidebar .nav-link i {
+            width: 24px;
+            font-size: 1.1rem;
+            margin-left: 0.75rem;
+            transition: transform 0.2s ease;
+        }
+
+        .nav-sidebar .nav-link:hover {
+            color: #ffffff;
+            background-color: rgba(255, 255, 255, 0.08);
+            transform: translateX(-3px);
+        }
+
+        .nav-sidebar .nav-link.active {
+            color: #ffffff;
+            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+            box-shadow: 0 4px 15px rgba(37, 99, 235, 0.35);
+        }
+
+        .nav-sidebar .nav-link .badge {
+            margin-right: auto;
+            margin-left: 0;
+            font-weight: 700;
+        }
+
+        .sidebar-footer {
+            padding: 1rem 1.25rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+            color: #94a3b8;
+            font-size: 0.85rem;
+        }
+
+        /* Topbar Styling */
+        #topbar {
+            height: var(--topbar-height);
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: var(--sidebar-width);
+            background-color: #ffffff;
+            z-index: 1030;
+            transition: right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 2px 15px rgba(0, 0, 0, 0.03);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 1.5rem;
+        }
+
+        #topbar.expanded {
+            right: 0;
+        }
+
+        .btn-toggle-sidebar {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            color: #334155;
+            width: 42px;
+            height: 42px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-toggle-sidebar:hover {
+            background: #f1f5f9;
+            color: var(--accent-blue);
+        }
+
+        /* Main Content Wrapper */
+        #content-wrapper {
+            margin-right: var(--sidebar-width);
+            margin-top: var(--topbar-height);
+            padding: 2rem 1.75rem 3rem;
+            transition: margin-right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            min-height: calc(100vh - var(--topbar-height));
+        }
+
+        #content-wrapper.expanded {
+            margin-right: 0;
+        }
+
+        /* Backdrop overlay for mobile */
+        #sidebar-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background-color: rgba(15, 23, 42, 0.5);
+            backdrop-filter: blur(4px);
+            z-index: 1035;
+        }
+
+        /* Responsive Breakpoints */
+        @@media (max-width: 991.98px) {
+            #sidebar {
+                right: calc(-1 * var(--sidebar-width));
+            }
+
+            #sidebar.show-mobile {
+                right: 0;
+            }
+
+            #topbar {
+                right: 0 !important;
+            }
+
+            #content-wrapper {
+                margin-right: 0 !important;
+                padding: 1.25rem 1rem;
+            }
+
+            #sidebar-overlay.active {
+                display: block;
+            }
+        }
+
+        /* Shared Card Component */
+        .custom-card {
+            background-color: #ffffff;
+            border-radius: var(--card-border-radius);
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+            transition: all 0.25s ease;
+        }
+
+        .custom-card:hover {
+            box-shadow: 0 6px 25px rgba(0, 0, 0, 0.06);
+        }
+
+        .card-header-custom {
+            background: transparent;
+            border-bottom: 1px solid #f1f5f9;
+            padding: 1.25rem 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .page-header-title {
+            font-weight: 800;
+            font-size: 1.5rem;
+            color: #0f172a;
+        }
+
+        .btn-primary-custom {
+            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+            border: none;
+            color: white;
+            font-weight: 700;
+            padding: 0.6rem 1.3rem;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+            transition: all 0.25s ease;
+        }
+
+        .btn-primary-custom:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 18px rgba(37, 99, 235, 0.35);
+            color: white;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Sidebar Overlay for Mobile -->
+    <div id="sidebar-overlay"></div>
+
+    <!-- Main Sidebar -->
+    <aside id="sidebar">
+        <a href="@Url.Action("Index", "Customers")" class="sidebar-brand">
+            <i class="fa-solid fa-kitchen-set"></i>
+            <span>نظام مصنع المطابخ</span>
+        </a>
+
+        <div class="sidebar-menu">
+            <div class="sidebar-heading">الأساسية</div>
+            <ul class="nav nav-sidebar flex-column">
+                <li class="nav-item">
+                    <a class="nav-link @(ViewBag.ActivePage == "Dashboard" ? "active" : "")" href="@Url.Action("Index", "Customers")">
+                        <i class="fa-solid fa-chart-pie"></i>
+                        <span>لوحة التحليلات</span>
+                    </a>
+                </li>
+            </ul>
+
+            <div class="sidebar-heading">دورة العمل والتنفيذ</div>
+            <ul class="nav nav-sidebar flex-column">
+                <li class="nav-item">
+                    <a class="nav-link @(ViewBag.ActivePage == "Customers" ? "active" : "")" href="@Url.Action("Index", "Customers")">
+                        <i class="fa-solid fa-users"></i>
+                        <span>إدارة العملاء</span>
+                        <span class="badge bg-primary rounded-pill">الرئيسي</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link @(ViewBag.ActivePage == "Projects" ? "active" : "")" href="#">
+                        <i class="fa-solid fa-diagram-project"></i>
+                        <span>المشاريع والأوامر</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link @(ViewBag.ActivePage == "SiteVisits" ? "active" : "")" href="#">
+                        <i class="fa-solid fa-ruler-combined"></i>
+                        <span>المعاينة والمقاسات</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link @(ViewBag.ActivePage == "Quotes" ? "active" : "")" href="#">
+                        <i class="fa-solid fa-file-invoice-dollar"></i>
+                        <span>التصاميم والأسعار</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link @(ViewBag.ActivePage == "Contracts" ? "active" : "")" href="#">
+                        <i class="fa-solid fa-file-contract"></i>
+                        <span>إدارة العقود</span>
+                    </a>
+                </li>
+            </ul>
+
+            <div class="sidebar-heading">المخازن والمشتريات</div>
+            <ul class="nav nav-sidebar flex-column">
+                <li class="nav-item">
+                    <a class="nav-link @(ViewBag.ActivePage == "Warehouses" ? "active" : "")" href="#">
+                        <i class="fa-solid fa-boxes-stacked"></i>
+                        <span>المخازن والخامات</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link @(ViewBag.ActivePage == "Purchases" ? "active" : "")" href="#">
+                        <i class="fa-solid fa-cart-shopping"></i>
+                        <span>المشتريات والموردين</span>
+                    </a>
+                </li>
+            </ul>
+
+            <div class="sidebar-heading">المالية والحسابات</div>
+            <ul class="nav nav-sidebar flex-column">
+                <li class="nav-item">
+                    <a class="nav-link @(ViewBag.ActivePage == "Payments" ? "active" : "")" href="#">
+                        <i class="fa-solid fa-wallet"></i>
+                        <span>تحصيلات العملاء</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link @(ViewBag.ActivePage == "Expenses" ? "active" : "")" href="#">
+                        <i class="fa-solid fa-receipt"></i>
+                        <span>المصروفات العامة</span>
+                    </a>
+                </li>
+            </ul>
+        </div>
+
+        <div class="sidebar-footer">
+            <div class="d-flex align-items-center justify-content-between">
+                <div class="d-flex align-items-center">
+                    <div class="bg-primary text-white rounded-circle p-2 me-2 text-center" style="width:36px; height:36px; line-height:20px;">
+                        <i class="fa-solid fa-user-gear"></i>
+                    </div>
+                    <div>
+                        <div class="fw-bold text-white fs-6">النظام الإداري</div>
+                        <small class="text-muted" style="font-size:0.75rem;">الإصدار 1.0</small>
+                    </div>
+                </div>
+                <a asp-controller="Home" asp-action="Index" class="text-muted text-hover-white" title="الذهاب للرئيسية">
+                    <i class="fa-solid fa-arrow-right-from-bracket"></i>
+                </a>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Top Navigation Bar -->
+    <header id="topbar">
+        <div class="d-flex align-items-center gap-3">
+            <button type="button" class="btn-toggle-sidebar" id="btnToggleSidebar" title="قائمة التحكم">
+                <i class="fa-solid fa-bars-staggered"></i>
+            </button>
+
+            <div class="d-none d-md-flex align-items-center position-relative" style="width: 280px;">
+                <input type="text" class="form-control rounded-pill bg-light border-0 ps-5 pe-3" placeholder="بحث سريع في النظام..." style="height: 42px; font-size: 0.9rem;">
+                <i class="fa-solid fa-magnifying-glass text-muted position-absolute start-0 ms-3"></i>
+            </div>
+        </div>
+
+        <div class="d-flex align-items-center gap-3">
+            <!-- Quick Add Menu -->
+            <div class="dropdown">
+                <button class="btn btn-primary-custom dropdown-toggle btn-sm py-2 px-3 d-flex align-items-center gap-2" type="button" data-bs-toggle="dropdown">
+                    <i class="fa-solid fa-circle-plus"></i>
+                    <span>إضافة جديدة</span>
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0 rounded-4 p-2 mt-2">
+                    <li><a class="dropdown-item rounded-3 py-2" href="@Url.Action("Create", "Customers")"><i class="fa-solid fa-user-plus text-primary me-2"></i> عميل جديد</a></li>
+                    <li><a class="dropdown-item rounded-3 py-2" href="#"><i class="fa-solid fa-folder-plus text-success me-2"></i> مشروع جديد</a></li>
+                    <li><a class="dropdown-item rounded-3 py-2" href="#"><i class="fa-solid fa-ruler-vertical text-warning me-2"></i> موعد معاينة</a></li>
+                </ul>
+            </div>
+
+            <!-- Notifications Button -->
+            <div class="dropdown">
+                <button class="btn btn-light position-relative rounded-circle p-2" style="width:42px; height:42px;" data-bs-toggle="dropdown">
+                    <i class="fa-solid fa-bell text-secondary"></i>
+                    <span class="position-absolute top-0 start-0 translate-middle p-1 bg-danger border border-light rounded-circle">
+                        <span class="visually-hidden">تنبيهات</span>
+                    </span>
+                </button>
+                <div class="dropdown-menu dropdown-menu-end shadow-lg border-0 rounded-4 p-3 mt-2" style="width:300px;">
+                    <h6 class="fw-bold border-bottom pb-2 mb-2">التنبيهات الإدارية</h6>
+                    <p class="text-muted fs-7 mb-0 text-center py-3">لا توجد إشعارات جديدة حالياً</p>
+                </div>
+            </div>
+
+            <!-- User Menu -->
+            <div class="dropdown">
+                <a href="#" class="d-flex align-items-center text-decoration-none dropdown-toggle text-dark" data-bs-toggle="dropdown">
+                    <div class="bg-primary text-white fw-bold rounded-circle d-flex align-items-center justify-content-center me-2" style="width:42px; height:42px;">
+                        م
+                    </div>
+                    <div class="d-none d-sm-block">
+                        <span class="fw-bold d-block lh-1 fs-6">مدير النظام</span>
+                        <small class="text-muted" style="font-size:0.75rem;">الإدارة العامة</small>
+                    </div>
+                </a>
+                <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0 rounded-4 p-2 mt-2">
+                    <li><a class="dropdown-item rounded-3 py-2" href="#"><i class="fa-solid fa-user me-2 text-primary"></i> الملف الشخصي</a></li>
+                    <li><a class="dropdown-item rounded-3 py-2" href="#"><i class="fa-solid fa-sliders me-2 text-secondary"></i> إعدادات النظام</a></li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li><a class="dropdown-item rounded-3 py-2 text-danger" href="#"><i class="fa-solid fa-arrow-right-from-bracket me-2"></i> تسجيل الخروج</a></li>
+                </ul>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Workspace Content Area -->
+    <main id="content-wrapper">
+        <!-- Toast / Alerts Section -->
+        @if (TempData["Success"] != null)
+        {
+            <div class="alert alert-success alert-dismissible fade show border-0 shadow-sm rounded-3 mb-4 d-flex align-items-center" role="alert">
+                <i class="fa-solid fa-circle-check fs-4 me-3 text-success"></i>
+                <div>
+                    <strong>تمت العملية بنجاح!</strong> @TempData["Success"]
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        }
+        @if (TempData["Error"] != null)
+        {
+            <div class="alert alert-danger alert-dismissible fade show border-0 shadow-sm rounded-3 mb-4 d-flex align-items-center" role="alert">
+                <i class="fa-solid fa-circle-exclamation fs-4 me-3 text-danger"></i>
+                <div>
+                    <strong>خطأ:</strong> @TempData["Error"]
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        }
+
+        @RenderBody()
+    </main>
+
+    <!-- Scripts -->
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+
+    <!-- Sidebar Toggle Script -->
+    <script>
+        $(document).ready(function () {
+            const $sidebar = $('#sidebar');
+            const $topbar = $('#topbar');
+            const $wrapper = $('#content-wrapper');
+            const $overlay = $('#sidebar-overlay');
+
+            $('#btnToggleSidebar').on('click', function () {
+                if ($(window).width() < 992) {
+                    $sidebar.toggleClass('show-mobile');
+                    $overlay.toggleClass('active');
+                } else {
+                    $sidebar.toggleClass('collapsed');
+                    $topbar.toggleClass('expanded');
+                    $wrapper.toggleClass('expanded');
+                }
+            });
+
+            $overlay.on('click', function () {
+                $sidebar.removeClass('show-mobile');
+                $overlay.removeClass('active');
+            });
+        });
+    </script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

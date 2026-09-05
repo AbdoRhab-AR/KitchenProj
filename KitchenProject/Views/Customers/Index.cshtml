@@ -1,0 +1,227 @@
+@model IEnumerable<KitchenProject.Models.Entities.Customer>
+@{
+    ViewData["Title"] = "إدارة العملاء";
+    Layout = "_DashboardLayout";
+}
+
+<!-- Page Header & Title Bar -->
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+    <div>
+        <h2 class="page-header-title mb-1">
+            <i class="fa-solid fa-users text-primary me-2"></i> إدارة العملاء
+        </h2>
+        <p class="text-muted mb-0">تسجيل ومتابعة بيانات العملاء والطلبات الميدانية في النظام</p>
+    </div>
+    <div>
+        <a asp-action="Create" class="btn btn-primary-custom d-inline-flex align-items-center gap-2">
+            <i class="fa-solid fa-user-plus"></i>
+            <span>إضافة عميل جديد</span>
+        </a>
+    </div>
+</div>
+
+<!-- KPI Stats Cards -->
+<div class="row g-3 mb-4">
+    <div class="col-12 col-sm-6 col-xl-4">
+        <div class="custom-card p-3 d-flex align-items-center justify-content-between">
+            <div>
+                <span class="text-muted fw-bold d-block mb-1" style="font-size:0.85rem;">إجمالي العملاء المسجلين</span>
+                <h3 class="fw-extrabold mb-0 text-dark">@ViewBag.TotalCustomersCount</h3>
+            </div>
+            <div class="bg-primary-subtle text-primary rounded-3 p-3">
+                <i class="fa-solid fa-users fs-3"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-12 col-sm-6 col-xl-4">
+        <div class="custom-card p-3 d-flex align-items-center justify-content-between">
+            <div>
+                <span class="text-muted fw-bold d-block mb-1" style="font-size:0.85rem;">عملاء هذا الشهر</span>
+                <h3 class="fw-extrabold mb-0 text-success">@ViewBag.NewCustomersThisMonth</h3>
+            </div>
+            <div class="bg-success-subtle text-success rounded-3 p-3">
+                <i class="fa-solid fa-user-check fs-3"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-12 col-sm-6 col-xl-4">
+        <div class="custom-card p-3 d-flex align-items-center justify-content-between">
+            <div>
+                <span class="text-muted fw-bold d-block mb-1" style="font-size:0.85rem;">النتائج الحالية</span>
+                <h3 class="fw-extrabold mb-0 text-info">@ViewBag.TotalCount</h3>
+            </div>
+            <div class="bg-info-subtle text-info rounded-3 p-3">
+                <i class="fa-solid fa-list-check fs-3"></i>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Search & Filter Card -->
+<div class="custom-card mb-4 p-3">
+    <form method="get" asp-action="Index" class="row g-3 align-items-center">
+        <div class="col-12 col-md-8 col-lg-6">
+            <div class="input-group">
+                <span class="input-group-text bg-white border-end-0"><i class="fa-solid fa-magnifying-glass text-muted"></i></span>
+                <input type="text" name="searchString" class="form-control border-start-0 ps-0" placeholder="بحث باسم العميل، الهاتف، أو كود العميل..." value="@ViewBag.SearchString">
+            </div>
+        </div>
+        <div class="col-12 col-md-4 col-lg-3 d-flex gap-2">
+            <button type="submit" class="btn btn-primary fw-bold px-4 rounded-3 flex-grow-1">
+                <i class="fa-solid fa-search me-1"></i> بحث
+            </button>
+            @if (!string.IsNullOrEmpty(ViewBag.SearchString))
+            {
+                <a asp-action="Index" class="btn btn-light border fw-bold text-muted" title="إلغاء البحث">
+                    <i class="fa-solid fa-xmark"></i>
+                </a>
+            }
+        </div>
+    </form>
+</div>
+
+<!-- Customers Data Table Card -->
+<div class="custom-card">
+    <div class="card-header-custom">
+        <h5 class="fw-bold mb-0 text-dark">
+            <i class="fa-solid fa-address-book text-secondary me-2"></i> قائمة العملاء
+        </h5>
+        <span class="badge bg-light text-dark border">عدد النتائج: @ViewBag.TotalCount</span>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="bg-light text-muted" style="font-size:0.85rem; text-transform:uppercase;">
+                <tr>
+                    <th class="ps-4">كود العميل</th>
+                    <th>اسم العميل</th>
+                    <th>رقم الهاتف</th>
+                    <th>المدينة / العنوان</th>
+                    <th>المشاريع</th>
+                    <th>تاريخ التسجيل</th>
+                    <th class="text-center pe-4">الإجراءات</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model != null && Model.Any())
+                {
+                    foreach (var item in Model)
+                    {
+                        <tr>
+                            <td class="ps-4 fw-bold text-primary">
+                                <span class="badge bg-primary-subtle text-primary px-2 py-1 fs-7 rounded-2">
+                                    <i class="fa-solid fa-hashtag me-1"></i>@item.CustomerNo
+                                </span>
+                            </td>
+                            <td>
+                                <a asp-action="Details" asp-route-id="@item.Id" class="fw-bold text-dark text-decoration-none">
+                                    @item.Name
+                                </a>
+                                @if (!string.IsNullOrEmpty(item.Email))
+                                {
+                                    <small class="d-block text-muted" style="font-size:0.78rem;">@item.Email</small>
+                                }
+                            </td>
+                            <td>
+                                <span class="fw-semibold text-dark"><i class="fa-solid fa-phone me-1 text-muted"></i>@item.Phone</span>
+                                @if (!string.IsNullOrEmpty(item.Phone2))
+                                {
+                                    <small class="d-block text-muted" style="font-size:0.78rem;">إضافي: @item.Phone2</small>
+                                }
+                            </td>
+                            <td>
+                                @if (!string.IsNullOrEmpty(item.City))
+                                {
+                                    <span class="badge bg-secondary-subtle text-dark me-1">@item.City</span>
+                                }
+                                <span class="text-muted small">@(string.IsNullOrEmpty(item.Address) ? "-" : item.Address)</span>
+                            </td>
+                            <td>
+                                <span class="badge bg-info-subtle text-info rounded-pill px-3 py-1 fw-bold">
+                                    <i class="fa-solid fa-kitchen-set me-1"></i> @(item.Projects?.Count ?? 0) مشاريع
+                                </span>
+                            </td>
+                            <td class="text-muted small">
+                                @item.Created.ToString("yyyy/MM/dd")
+                            </td>
+                            <td class="text-center pe-4">
+                                <div class="btn-group btn-group-sm" role="group">
+                                    <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-light border text-info" title="عرض التفاصيل">
+                                        <i class="fa-solid fa-eye"></i>
+                                    </a>
+                                    <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-light border text-primary" title="تعديل">
+                                        <i class="fa-solid fa-pen-to-square"></i>
+                                    </a>
+                                    <button type="button" class="btn btn-light border text-danger" data-bs-toggle="modal" data-bs-target="#deleteModal-@item.Id" title="حذف">
+                                        <i class="fa-solid fa-trash-can"></i>
+                                    </button>
+                                </div>
+
+                                <!-- Delete Confirmation Modal -->
+                                <div class="modal fade" id="deleteModal-@item.Id" tabindex="-1" aria-hidden="true">
+                                    <div class="modal-dialog modal-dialog-centered">
+                                        <div class="modal-content border-0 shadow-lg rounded-4 text-start">
+                                            <div class="modal-header border-0 pb-0">
+                                                <h5 class="modal-title fw-bold text-danger">
+                                                    <i class="fa-solid fa-triangle-exclamation me-2"></i> تأكيد حذف العميل
+                                                </h5>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                            </div>
+                                            <div class="modal-body py-3">
+                                                هل أنت تأكد من رغبتك في حذف العميل <strong>"(@item.CustomerNo) @item.Name"</strong>؟
+                                                <p class="text-muted small mb-0 mt-2">ملاحظة: هذا الإجراء لا يمكن التراجع عنه.</p>
+                                            </div>
+                                            <div class="modal-footer border-0 pt-0">
+                                                <button type="button" class="btn btn-light fw-bold" data-bs-dismiss="modal">إلغاء</button>
+                                                <form asp-action="Delete" asp-route-id="@item.Id" method="post" class="d-inline">
+                                                    @Html.AntiForgeryToken()
+                                                    <button type="submit" class="btn btn-danger fw-bold">حذف النهائي</button>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="7" class="text-center py-5 text-muted">
+                            <i class="fa-solid fa-users-slash display-4 mb-3 d-block text-secondary opacity-50"></i>
+                            <h5 class="fw-bold mb-1">لا يوجد عملاء مسجلين حالياً</h5>
+                            <p class="text-muted small mb-3">قم بإضافة أول عميل للبدء في تسجبل الزيارات والمشاريع</p>
+                            <a asp-action="Create" class="btn btn-primary btn-sm fw-bold px-3 py-2 rounded-3">
+                                <i class="fa-solid fa-plus me-1"></i> إضافة عميل جديد
+                            </a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Pagination Footer -->
+    @if (ViewBag.TotalPages > 1)
+    {
+        <div class="card-footer bg-white border-top-0 d-flex align-items-center justify-content-between py-3 px-4">
+            <small class="text-muted">الصفحة @ViewBag.CurrentPage من @ViewBag.TotalPages</small>
+            <nav>
+                <ul class="pagination pagination-sm mb-0">
+                    <li class="page-item @(ViewBag.CurrentPage == 1 ? "disabled" : "")">
+                        <a class="page-item-link page-link" asp-action="Index" asp-route-page="@(ViewBag.CurrentPage - 1)" asp-route-searchString="@ViewBag.SearchString">السابق</a>
+                    </li>
+                    @for (int i = 1; i <= ViewBag.TotalPages; i++)
+                    {
+                        <li class="page-item @(i == ViewBag.CurrentPage ? "active" : "")">
+                            <a class="page-link" asp-action="Index" asp-route-page="@i" asp-route-searchString="@ViewBag.SearchString">@i</a>
+                        </li>
+                    }
+                    <li class="page-item @(ViewBag.CurrentPage == ViewBag.TotalPages ? "disabled" : "")">
+                        <a class="page-link" asp-action="Index" asp-route-page="@(ViewBag.CurrentPage + 1)" asp-route-searchString="@ViewBag.SearchString">التالي</a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+    }
+</div>

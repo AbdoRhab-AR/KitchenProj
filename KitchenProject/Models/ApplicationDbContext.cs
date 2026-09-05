@@ -1,0 +1,133 @@
+﻿using KitchenProject.Models.Entities;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
+
+namespace KitchenProject.Models
+{
+	public class ApplicationDbContext : IdentityDbContext<IdentityUser>
+	{
+		private readonly IServiceProvider _serviceProvider;
+
+		public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
+									, IServiceProvider serviceProvider) : base(options)
+		{
+			_serviceProvider = serviceProvider;
+		}
+
+		public DbSet<Contact> Contact { get; set; }
+		public DbSet<Customer> Customers { get; set; }
+		public DbSet<Project> Projects { get; set; }
+		public DbSet<SiteVisit> SiteVisits { get; set; }
+		public DbSet<SiteInfo> SiteInfo { get; set; }
+		public DbSet<SiteState> SiteState { get; set; }
+		public DbSet<Quote> Quotes { get; set; }
+		public DbSet<Contract> Contracts { get; set; }
+		public DbSet<CustomerPayment> CustomerPayments { get; set; }
+		public DbSet<Expense> Expenses { get; set; }
+		public DbSet<Supplier> Suppliers { get; set; }
+		public DbSet<Item> Items { get; set; }
+		public DbSet<Warehouse> Warehouses { get; set; }
+		public DbSet<StockTransaction> StockTransactions { get; set; }
+		public DbSet<Purchase> Purchases { get; set; }
+		public DbSet<PurchaseItem> PurchaseItems { get; set; }
+		public DbSet<SupplierPayment> SupplierPayments { get; set; }
+		public DbSet<UserProfile> UserProfiles { get; set; }
+
+		protected override void OnModelCreating(ModelBuilder modelBuilder)
+		{
+			base.OnModelCreating(modelBuilder);
+
+			modelBuilder.Entity<Contact>().Property(x => x.Id).HasDefaultValueSql("NEWID()");
+			modelBuilder.Entity<Customer>().Property(x => x.Id).HasDefaultValueSql("NEWID()");
+			modelBuilder.Entity<Project>().Property(x => x.Id).HasDefaultValueSql("NEWID()");
+			modelBuilder.Entity<SiteVisit>().Property(x => x.Id).HasDefaultValueSql("NEWID()");
+			modelBuilder.Entity<SiteInfo>().Property(x => x.Id).HasDefaultValueSql("NEWID()");
+			modelBuilder.Entity<SiteState>().Property(x => x.Id).HasDefaultValueSql("NEWID()");
+			modelBuilder.Entity<Quote>().Property(x => x.Id).HasDefaultValueSql("NEWID()");
+			modelBuilder.Entity<Contact>().Property(x => x.Id).HasDefaultValueSql("NEWID()");
+			modelBuilder.Entity<CustomerPayment>().Property(x => x.Id).HasDefaultValueSql("NEWID()");
+			modelBuilder.Entity<Expense>().Property(x => x.Id).HasDefaultValueSql("NEWID()");
+			modelBuilder.Entity<Supplier>().Property(x => x.Id).HasDefaultValueSql("NEWID()");
+			modelBuilder.Entity<Item>().Property(x => x.Id).HasDefaultValueSql("NEWID()");
+			modelBuilder.Entity<Warehouse>().Property(x => x.Id).HasDefaultValueSql("NEWID()");
+			modelBuilder.Entity<StockTransaction>().Property(x => x.Id).HasDefaultValueSql("NEWID()");
+			modelBuilder.Entity<Purchase>().Property(x => x.Id).HasDefaultValueSql("NEWID()");
+			modelBuilder.Entity<PurchaseItem>().Property(x => x.Id).HasDefaultValueSql("NEWID()");
+			modelBuilder.Entity<SupplierPayment>().Property(x => x.Id).HasDefaultValueSql("NEWID()");
+			modelBuilder.Entity<UserProfile>().Property(x => x.Id).HasDefaultValueSql("NEWID()");
+			modelBuilder.Seed(_serviceProvider);
+
+
+			modelBuilder.Entity<ApplicationUser>()
+			 .HasOne(a => a.UserProfile)
+			 .WithOne(b => b.ApplicationUser)
+			 .HasForeignKey<UserProfile>(b => b.UserId)
+			 .OnDelete(DeleteBehavior.Cascade);
+
+			modelBuilder.Entity<Project>()
+		   .HasOne(x => x.Customer)
+		   .WithMany(x => x.Projects)
+		   .HasForeignKey(x => x.CustomerId)
+		   .OnDelete(DeleteBehavior.Restrict);
+
+			modelBuilder.Entity<Project>()
+				.HasOne(x => x.SalesUser)
+				.WithMany(x => x.SalesProjects)
+				.HasForeignKey(x => x.SalesUserId)
+				.OnDelete(DeleteBehavior.Restrict);
+
+			modelBuilder.Entity<Project>()
+				.HasOne(x => x.EngineerUser)
+				.WithMany(x => x.EngineerProjects)
+				.HasForeignKey(x => x.EngineerUserId)
+				.OnDelete(DeleteBehavior.Restrict);
+
+			modelBuilder.Entity<Project>()
+				.HasOne(x => x.DesignerUser)
+				.WithMany(x => x.DesignerProjects)
+				.HasForeignKey(x => x.DesignerUserId)
+				.OnDelete(DeleteBehavior.Restrict);
+
+			modelBuilder.Entity<SiteVisit>()
+				.HasOne(x => x.Project).WithMany(x => x.SiteVisits)
+				.HasForeignKey(x => x.ProjectId).OnDelete(DeleteBehavior.Cascade);
+
+			modelBuilder.Entity<SiteVisit>()
+				.HasOne(x => x.Engineer).WithMany()
+				.HasForeignKey(x => x.EngineerId).OnDelete(DeleteBehavior.Restrict);
+		
+			modelBuilder.Entity<Contract>()
+				.HasOne(x => x.Projects).WithMany(x => x.Contracts)
+				.HasForeignKey(x => x.ProjectId).OnDelete(DeleteBehavior.Restrict);
+
+			modelBuilder.Entity<CustomerPayment>()
+				.HasOne(x => x.Project).WithMany(x => x.CustomerPayments)
+				.HasForeignKey(x => x.ProjectId).OnDelete(DeleteBehavior.Restrict);
+
+			modelBuilder.Entity<CustomerPayment>()
+				.HasOne(x => x.Contract).WithMany(x => x.CustomerPayments)
+				.HasForeignKey(x => x.ContractId).OnDelete(DeleteBehavior.Restrict);
+
+			modelBuilder.Entity<PurchaseItem>()
+				.HasOne(x => x.Purchases).WithMany(x => x.Items)
+				.HasForeignKey(x => x.PurchaseId).OnDelete(DeleteBehavior.Cascade);
+
+			modelBuilder.Entity<PurchaseItem>()
+				.HasOne(x => x.Items).WithMany(x => x.PurchaseItems)
+				.HasForeignKey(x => x.ItemId).OnDelete(DeleteBehavior.Restrict);
+
+			modelBuilder.Entity<StockTransaction>()
+				.HasOne(x => x.Items).WithMany(x => x.StockTransactions)
+				.HasForeignKey(x => x.ItemId).OnDelete(DeleteBehavior.Restrict);
+
+			modelBuilder.Entity<StockTransaction>()
+				.HasOne(x => x.Warehouses).WithMany(x => x.StockTransactions)
+				.HasForeignKey(x => x.WarehouseId).OnDelete(DeleteBehavior.Restrict);
+
+			modelBuilder.Entity<StockTransaction>()
+				.HasOne(x => x.Projects).WithMany(x => x.StockTransactions)
+				.HasForeignKey(x => x.ProjectId).OnDelete(DeleteBehavior.Restrict);
+		}
+	}
+}

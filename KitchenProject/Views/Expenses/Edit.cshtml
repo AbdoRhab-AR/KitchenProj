@@ -1,0 +1,102 @@
+@model KitchenProject.Models.Entities.Expense
+@{
+    ViewData["Title"] = "تعديل المصروف";
+    Layout = "_DashboardLayout";
+}
+
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+    <div>
+        <h2 class="page-header-title mb-1">
+            <i class="fa-solid fa-pen-to-square text-danger me-2"></i> تعديل المصروف
+        </h2>
+        <p class="text-muted mb-0">تحديث تفاصيل المصروف المسجل</p>
+    </div>
+    <a asp-action="Index" class="btn btn-outline-secondary d-inline-flex align-items-center gap-2">
+        <i class="fa-solid fa-arrow-right"></i><span>العودة للمصروفات</span>
+    </a>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-12 col-lg-8">
+        <div class="custom-card p-4 border-top border-4 border-danger">
+            <form asp-action="Edit" method="post" enctype="multipart/form-data">
+                @Html.AntiForgeryToken()
+                <input type="hidden" asp-for="Id" />
+                <input type="hidden" asp-for="Created" />
+                <input type="hidden" asp-for="AttachmentPath" />
+
+                <div asp-validation-summary="ModelOnly" class="alert alert-danger mb-4 rounded-3"></div>
+
+                <div class="row g-4 mb-4">
+                    <div class="col-12 col-md-6">
+                        <label asp-for="ExpenseType" class="form-label fw-bold">نوع المصروف (تصنيف) <span class="text-danger">*</span></label>
+                        <input asp-for="ExpenseType" class="form-control" list="expenseTypesList" />
+                        <datalist id="expenseTypesList">
+                            @foreach(var item in ViewBag.ExpenseTypes as SelectList)
+                            {
+                                <option value="@item.Value"></option>
+                            }
+                        </datalist>
+                        <span asp-validation-for="ExpenseType" class="text-danger small"></span>
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <label asp-for="ProjectId" class="form-label fw-bold">الارتباط بمشروع (اختياري)</label>
+                        <select asp-for="ProjectId" class="form-select" asp-items="ViewBag.ProjectId">
+                            <option value="">-- مصروف عام (غير مرتبط بمشروع) --</option>
+                        </select>
+                        <span asp-validation-for="ProjectId" class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-12 col-md-6">
+                        <label asp-for="Amount" class="form-label fw-bold">القيمة (د.ل) <span class="text-danger">*</span></label>
+                        <div class="input-group">
+                            <input asp-for="Amount" type="number" step="0.01" class="form-control fs-5 fw-bold text-danger" />
+                            <span class="input-group-text bg-light text-muted">د.ل</span>
+                        </div>
+                        <span asp-validation-for="Amount" class="text-danger small"></span>
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <label asp-for="Payment" class="form-label fw-bold">طريقة الدفع</label>
+                        <select asp-for="Payment" class="form-select" asp-items="ViewBag.Payment"></select>
+                        <span asp-validation-for="Payment" class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-12">
+                        <label asp-for="Description" class="form-label fw-bold">وصف المصروف</label>
+                        <textarea asp-for="Description" class="form-control" rows="2"></textarea>
+                    </div>
+
+                    <div class="col-12">
+                        <label for="AttachmentFile" class="form-label fw-bold">المرفق الجديد (اختياري)</label>
+                        <input type="file" name="AttachmentFile" id="AttachmentFile" class="form-control" accept="image/*,.pdf" />
+                        <div class="form-text text-muted">رفع ملف جديد سيقوم باستبدال المرفق القديم إن وجد.</div>
+                        @if (!string.IsNullOrEmpty(Model.AttachmentPath))
+                        {
+                            <div class="mt-2">
+                                <a href="@Model.AttachmentPath" target="_blank" class="btn btn-sm btn-outline-info">
+                                    <i class="fa-solid fa-paperclip me-1"></i> استعراض المرفق الحالي
+                                </a>
+                            </div>
+                        }
+                    </div>
+
+                    <div class="col-12">
+                        <label asp-for="Notes" class="form-label fw-bold">ملاحظات إضافية</label>
+                        <textarea asp-for="Notes" class="form-control" rows="2"></textarea>
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-end gap-2 pt-3 border-top">
+                    <a asp-action="Index" class="btn btn-light border fw-bold px-4">إلغاء</a>
+                    <button type="submit" class="btn btn-danger px-5">
+                        <i class="fa-solid fa-save me-2"></i> حفظ التعديلات
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

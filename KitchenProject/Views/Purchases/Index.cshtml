@@ -1,0 +1,168 @@
+@model IEnumerable<KitchenProject.Models.Entities.Purchase>
+@{
+    ViewData["Title"] = "أوامر الشراء";
+    Layout = "_DashboardLayout";
+}
+
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+    <div>
+        <h2 class="page-header-title mb-1">
+            <i class="fa-solid fa-cart-shopping text-primary me-2"></i> أوامر الشراء
+        </h2>
+        <p class="text-muted mb-0">إدارة طلبات الشراء من الموردين ومتابعة الاستلام</p>
+    </div>
+    <a asp-action="Create" class="btn btn-primary-custom d-inline-flex align-items-center gap-2 shadow-sm">
+        <i class="fa-solid fa-plus"></i><span>أمر شراء جديد</span>
+    </a>
+</div>
+
+<!-- KPI Cards -->
+<div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+        <div class="custom-card p-3 border-start border-4 border-primary">
+            <p class="text-muted mb-1 small">إجمالي المشتريات</p>
+            <h5 class="mb-0 fw-bold">@ViewBag.TotalPurchasesAmount.ToString("N2") <span class="fs-sm text-muted">د.ل</span></h5>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="custom-card p-3 border-start border-4 border-warning">
+            <p class="text-muted mb-1 small">قيد التنفيذ</p>
+            <h5 class="mb-0 fw-bold">@ViewBag.PendingCount</h5>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="custom-card p-3 border-start border-4 border-info">
+            <p class="text-muted mb-1 small">إجمالي الأوامر</p>
+            <h5 class="mb-0 fw-bold">@ViewBag.TotalCount</h5>
+        </div>
+    </div>
+</div>
+
+<div class="custom-card p-4">
+    <!-- Filters -->
+    <form asp-action="Index" method="get" class="row g-3 mb-4 align-items-end">
+        <div class="col-12 col-md-3">
+            <label class="form-label text-muted small">بحث برقم الأمر أو المورد</label>
+            <input type="text" name="searchString" value="@ViewBag.SearchString" class="form-control" placeholder="ابحث..." />
+        </div>
+        <div class="col-12 col-md-3">
+            <label class="form-label text-muted small">تصفية بالمورد</label>
+            <select name="supplierFilter" class="form-select" asp-items="ViewBag.SuppliersList">
+                <option value="">-- كل الموردين --</option>
+            </select>
+        </div>
+        <div class="col-12 col-md-2">
+            <label class="form-label text-muted small">الحالة</label>
+            <select name="statusFilter" class="form-select" asp-items="ViewBag.StatusList">
+                <option value="">-- كل الحالات --</option>
+            </select>
+        </div>
+        <div class="col-12 col-md-2">
+            <label class="form-label text-muted small">المشروع</label>
+            <select name="projectFilter" class="form-select" asp-items="ViewBag.ProjectsList">
+                <option value="">-- الكل --</option>
+            </select>
+        </div>
+        <div class="col-12 col-md-2">
+            <button type="submit" class="btn btn-secondary w-100"><i class="fa-solid fa-filter me-1"></i> تصفية</button>
+        </div>
+    </form>
+
+    <!-- Table -->
+    <div class="table-responsive">
+        <table class="table table-hover align-middle custom-table">
+            <thead class="table-light">
+                <tr>
+                    <th>رقم الأمر</th>
+                    <th>المورد</th>
+                    <th>المشروع</th>
+                    <th>الأصناف</th>
+                    <th>الإجمالي</th>
+                    <th>المدفوع</th>
+                    <th>الحالة</th>
+                    <th class="text-center">الإجراءات</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.Any())
+                {
+                    foreach (var item in Model)
+                    {
+                        string statusClass = item.Status switch {
+                            "Received"  => "bg-success",
+                            "Ordered"   => "bg-info text-dark",
+                            "Cancelled" => "bg-danger",
+                            _           => "bg-secondary"
+                        };
+                        string statusAr = item.Status switch {
+                            "Draft"     => "مسودة",
+                            "Ordered"   => "مُصدَر",
+                            "Received"  => "مُستلَم",
+                            "Cancelled" => "ملغي",
+                            _           => item.Status
+                        };
+                        <tr>
+                            <td><span class="badge bg-dark">@item.InvoiceNo</span></td>
+                            <td class="fw-bold">@item.Suppliers?.Name</td>
+                            <td>
+                                @if (item.Projects != null)
+                                {
+                                    <span class="badge bg-primary bg-opacity-75">@item.Projects.ProjectNo</span>
+                                }
+                                else
+                                {
+                                    <span class="text-muted small">—</span>
+                                }
+                            </td>
+                            <td><span class="badge bg-light text-dark border">@item.Items.Count صنف</span></td>
+                            <td class="fw-bold">@item.Total.ToString("N2") <span class="text-muted small">د.ل</span></td>
+                            <td class="text-success">@item.PaidAmount.ToString("N2")</td>
+                            <td><span class="badge @statusClass">@statusAr</span></td>
+                            <td>
+                                <div class="d-flex justify-content-center gap-2">
+                                    <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-sm btn-outline-info" title="التفاصيل"><i class="fa-solid fa-eye"></i></a>
+                                    @if (item.Status != "Received" && item.Status != "Cancelled")
+                                    {
+                                        <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-outline-primary" title="تعديل"><i class="fa-solid fa-pen"></i></a>
+                                    }
+                                    <form asp-action="Delete" asp-route-id="@item.Id" method="post" class="d-inline" onsubmit="return confirm('هل أنت متأكد من حذف أمر الشراء هذا؟');">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="حذف"><i class="fa-solid fa-trash"></i></button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="8" class="text-center py-5 text-muted">
+                            <i class="fa-solid fa-cart-shopping fs-1 mb-3 text-light d-block"></i>
+                            لا توجد أوامر شراء مطابقة
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    @if (ViewBag.TotalPages > 1)
+    {
+        <nav class="mt-4">
+            <ul class="pagination justify-content-center mb-0">
+                <li class="page-item @(ViewBag.CurrentPage == 1 ? "disabled" : "")">
+                    <a class="page-link" href="@Url.Action("Index", new { page = ViewBag.CurrentPage - 1, searchString = ViewBag.SearchString, statusFilter = ViewBag.StatusFilter })">السابق</a>
+                </li>
+                @for (int i = 1; i <= ViewBag.TotalPages; i++)
+                {
+                    <li class="page-item @(i == ViewBag.CurrentPage ? "active" : "")">
+                        <a class="page-link" href="@Url.Action("Index", new { page = i, searchString = ViewBag.SearchString, statusFilter = ViewBag.StatusFilter })">@i</a>
+                    </li>
+                }
+                <li class="page-item @(ViewBag.CurrentPage == ViewBag.TotalPages ? "disabled" : "")">
+                    <a class="page-link" href="@Url.Action("Index", new { page = ViewBag.CurrentPage + 1, searchString = ViewBag.SearchString, statusFilter = ViewBag.StatusFilter })">التالي</a>
+                </li>
+            </ul>
+        </nav>
+    }
+</div>

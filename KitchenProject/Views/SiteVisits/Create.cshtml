@@ -1,0 +1,236 @@
+@model KitchenProject.Models.Entities.SiteVisit
+@using KitchenProject.Models.Enums
+@{
+    ViewData["Title"] = "إضافة معاينة جديدة";
+    Layout = "_DashboardLayout";
+}
+
+<!-- Page Header -->
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+    <div>
+        <h2 class="page-header-title mb-1">
+            <i class="fa-solid fa-plus-circle text-primary me-2"></i> إضافة معاينة جديدة
+        </h2>
+        <p class="text-muted mb-0">تسجيل بيانات المعاينة الميدانية وإضافة مقاسات منطقة أو أكثر في نفس الوقت</p>
+    </div>
+    <div>
+        <a asp-action="Index" class="btn btn-outline-secondary d-inline-flex align-items-center gap-2">
+            <i class="fa-solid fa-arrow-right"></i>
+            <span>العودة للمعاينات</span>
+        </a>
+    </div>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-12 col-lg-10">
+        <div class="custom-card p-4">
+            <form asp-action="Create" method="post">
+                @Html.AntiForgeryToken()
+                <div asp-validation-summary="ModelOnly" class="alert alert-danger mb-4 rounded-3" role="alert"></div>
+
+                <!-- Section 1: Project & Engineer -->
+                <div class="border-bottom pb-3 mb-4">
+                    <h5 class="fw-bold text-primary mb-3">
+                        <i class="fa-solid fa-link me-2"></i> ربط المعاينة بالمشروع والمهندس
+                    </h5>
+                    <div class="row g-3">
+                        <div class="col-12 col-md-7">
+                            <label asp-for="ProjectId" class="form-label fw-bold">المشروع <span class="text-danger">*</span></label>
+                            <select asp-for="ProjectId" class="form-select" asp-items="ViewBag.ProjectId">
+                                <option value="">-- اختر المشروع --</option>
+                            </select>
+                            <span asp-validation-for="ProjectId" class="text-danger small"></span>
+                        </div>
+                        <div class="col-12 col-md-5">
+                            <label asp-for="EngineerId" class="form-label fw-bold">المهندس المعاين <span class="text-danger">*</span></label>
+                            <select asp-for="EngineerId" class="form-select" asp-items="ViewBag.EngineerId">
+                                <option value="">-- اختر المهندس --</option>
+                            </select>
+                            <span asp-validation-for="EngineerId" class="text-danger small"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section 2: Date, Time & Status -->
+                <div class="border-bottom pb-3 mb-4">
+                    <h5 class="fw-bold text-primary mb-3">
+                        <i class="fa-solid fa-calendar-check me-2"></i> التاريخ والحالة
+                    </h5>
+                    <div class="row g-3">
+                        <div class="col-12 col-md-6">
+                            <label asp-for="VisitDate" class="form-label fw-bold">تاريخ ووقت المعاينة <span class="text-danger">*</span></label>
+                            <input asp-for="VisitDate" type="datetime-local" class="form-control"
+                                   value="@DateTime.Now.ToString("yyyy-MM-ddTHH:mm")" />
+                            <span asp-validation-for="VisitDate" class="text-danger small"></span>
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <label asp-for="Status" class="form-label fw-bold">حالة المعاينة</label>
+                            <select asp-for="Status" class="form-select" asp-items="Html.GetEnumSelectList<SiteVisitStatus>()"></select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section 3: Measurement Items (Dynamic) -->
+                <div class="border-bottom pb-3 mb-4">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="fw-bold text-primary mb-0">
+                            <i class="fa-solid fa-ruler me-2"></i> المقاسات التفصيلية
+                            <span class="badge bg-primary-subtle text-primary border border-primary-subtle ms-2 rounded-pill" id="rowCountBadge">0 منطقة</span>
+                        </h5>
+                        <button type="button" class="btn btn-success btn-sm d-inline-flex align-items-center gap-2"
+                                onclick="addMeasurementRow()">
+                            <i class="fa-solid fa-plus"></i> إضافة منطقة / مطبخ
+                        </button>
+                    </div>
+
+                    <!-- Empty state -->
+                    <div id="emptyMeasurements" class="text-center py-4 text-muted bg-light rounded-3 border border-dashed">
+                        <i class="fa-solid fa-ruler-combined fs-2 d-block mb-2 opacity-40"></i>
+                        <p class="mb-1">لم تُضف أي مقاسات بعد</p>
+                        <small>اضغط <strong>"إضافة منطقة / مطبخ"</strong> لإدخال مقاسات مطبخ أو أي منطقة في الموقع</small>
+                    </div>
+
+                    <!-- Measurements Table -->
+                    <div class="table-responsive" id="measurementsTableWrapper" style="display:none;">
+                        <table class="table table-bordered align-middle mb-0" id="measurementsTable">
+                            <thead class="bg-light text-muted" style="font-size:0.82rem;">
+                                <tr>
+                                    <th style="min-width:160px;">اسم المنطقة / المطبخ <span class="text-danger">*</span></th>
+                                    <th style="min-width:110px;">الطول (م)</th>
+                                    <th style="min-width:110px;">العرض (م)</th>
+                                    <th style="min-width:110px;">الارتفاع (م)</th>
+                                    <th style="min-width:100px;">المساحة</th>
+                                    <th style="min-width:160px;">ملاحظات</th>
+                                    <th style="width:50px;"></th>
+                                </tr>
+                            </thead>
+                            <tbody id="measurementsBody">
+                                <!-- Rows added dynamically -->
+                            </tbody>
+                            <tfoot class="bg-light fw-bold" id="totalRow" style="display:none;">
+                                <tr>
+                                    <td colspan="4" class="text-end py-2">الإجمالي:</td>
+                                    <td class="text-success py-2" id="totalAreaCell">0.00 م²</td>
+                                    <td colspan="2"></td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Section 4: Notes -->
+                <div class="mb-4">
+                    <label asp-for="Notes" class="form-label fw-bold">ملاحظات عامة للمعاينة</label>
+                    <textarea asp-for="Notes" class="form-control" rows="3"
+                              placeholder="ملاحظات خاصة بالموقع أو التصميم أو أي معلومات إضافية..."></textarea>
+                    <span asp-validation-for="Notes" class="text-danger small"></span>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="d-flex justify-content-end gap-2">
+                    <a asp-action="Index" class="btn btn-light border fw-bold px-4">إلغاء</a>
+                    <button type="submit" class="btn btn-primary-custom px-5">
+                        <i class="fa-solid fa-save me-2"></i> حفظ المعاينة والمقاسات
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    var rowIndex = 0;
+
+    function addMeasurementRow() {
+        rowIndex++;
+        var tbody = document.getElementById('measurementsBody');
+        var row = document.createElement('tr');
+        row.id = 'mRow_' + rowIndex;
+        row.innerHTML = `
+            <td>
+                <input type="text" name="AreaNames" class="form-control form-control-sm"
+                       placeholder="مثال: مطبخ رئيسي" required />
+            </td>
+            <td>
+                <input type="number" name="Lengths" step="0.01" class="form-control form-control-sm area-input"
+                       placeholder="0.00" data-row="${rowIndex}" oninput="calcRowArea(${rowIndex})" />
+            </td>
+            <td>
+                <input type="number" name="Widths" step="0.01" class="form-control form-control-sm area-input"
+                       placeholder="0.00" data-row="${rowIndex}" oninput="calcRowArea(${rowIndex})" />
+            </td>
+            <td>
+                <input type="number" name="Heights" step="0.01" class="form-control form-control-sm"
+                       placeholder="0.00" />
+            </td>
+            <td>
+                <span class="badge bg-success-subtle text-success border rounded-pill px-2 py-1 area-display" id="area_${rowIndex}">
+                    - م²
+                </span>
+            </td>
+            <td>
+                <input type="text" name="MNotes" class="form-control form-control-sm"
+                       placeholder="ملاحظة اختيارية..." />
+            </td>
+            <td class="text-center">
+                <button type="button" class="btn btn-outline-danger btn-sm"
+                        onclick="removeRow(${rowIndex})" title="حذف هذا الصف">
+                    <i class="fa-solid fa-trash"></i>
+                </button>
+            </td>
+        `;
+        tbody.appendChild(row);
+        updateUI();
+    }
+
+    function removeRow(idx) {
+        var row = document.getElementById('mRow_' + idx);
+        if (row) row.remove();
+        updateUI();
+        calcTotalArea();
+    }
+
+    function calcRowArea(idx) {
+        var row = document.getElementById('mRow_' + idx);
+        if (!row) return;
+        var inputs = row.querySelectorAll('.area-input');
+        var l = parseFloat(inputs[0]?.value) || 0;
+        var w = parseFloat(inputs[1]?.value) || 0;
+        var display = document.getElementById('area_' + idx);
+        if (display) {
+            if (l > 0 && w > 0) {
+                display.textContent = (l * w).toFixed(2) + ' م²';
+            } else {
+                display.textContent = '- م²';
+            }
+        }
+        calcTotalArea();
+    }
+
+    function calcTotalArea() {
+        var total = 0;
+        document.querySelectorAll('.area-display').forEach(function(el) {
+            var txt = el.textContent.replace(' م²', '').trim();
+            var val = parseFloat(txt);
+            if (!isNaN(val)) total += val;
+        });
+        var cell = document.getElementById('totalAreaCell');
+        if (cell) cell.textContent = total.toFixed(2) + ' م²';
+        var totalRow = document.getElementById('totalRow');
+        if (totalRow) totalRow.style.display = total > 0 ? '' : 'none';
+    }
+
+    function updateUI() {
+        var tbody = document.getElementById('measurementsBody');
+        var count = tbody.querySelectorAll('tr').length;
+        var badge = document.getElementById('rowCountBadge');
+        var empty = document.getElementById('emptyMeasurements');
+        var wrapper = document.getElementById('measurementsTableWrapper');
+
+        badge.textContent = count + (count === 1 ? ' منطقة' : ' منطقة');
+        empty.style.display = count === 0 ? '' : 'none';
+        wrapper.style.display = count === 0 ? 'none' : '';
+    }
+</script>
+}

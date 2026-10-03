@@ -62,8 +62,8 @@ namespace KitchenProject.Migrations
                     b.HasData(
                         new
                         {
-                            Id = new Guid("4a749a24-16a2-4e83-9b41-eafbb66aacec"),
-                            Created = new DateTime(2026, 9, 5, 15, 1, 21, 489, DateTimeKind.Local).AddTicks(4887),
+                            Id = new Guid("352107b3-2ac4-439f-ba2f-4fde4391055e"),
+                            Created = new DateTime(2026, 10, 3, 18, 39, 29, 154, DateTimeKind.Local).AddTicks(5730),
                             Email = "W.Wide@Gmail.com",
                             Facebook = "Worldwide Facebook",
                             Instagram = "Worldwide Instagram",
@@ -90,6 +90,9 @@ namespace KitchenProject.Migrations
                     b.Property<DateTime>("Created")
                         .HasColumnType("datetime2");
 
+                    b.Property<decimal>("DownPaymentPercentage")
+                        .HasColumnType("decimal(18,2)");
+
                     b.Property<DateTime?>("ExpectedEndDate")
                         .HasColumnType("datetime2");
 
@@ -105,6 +108,9 @@ namespace KitchenProject.Migrations
                     b.Property<Guid>("ProjectId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<Guid?>("QuoteId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<DateTime?>("StartDate")
                         .HasColumnType("datetime2");
 
@@ -116,9 +122,14 @@ namespace KitchenProject.Migrations
                     b.Property<decimal>("TotalAmount")
                         .HasColumnType("decimal(18,2)");
 
+                    b.Property<int>("Type")
+                        .HasColumnType("int");
+
                     b.HasKey("Id");
 
                     b.HasIndex("ProjectId");
+
+                    b.HasIndex("QuoteId");
 
                     b.ToTable("Contracts");
                 });
@@ -166,8 +177,8 @@ namespace KitchenProject.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Phone2")
-                        .HasMaxLength(14)
-                        .HasColumnType("nvarchar(14)");
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)");
 
                     b.HasKey("Id");
 
@@ -308,6 +319,47 @@ namespace KitchenProject.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Items");
+                });
+
+            modelBuilder.Entity("KitchenProject.Models.Entities.MeasurementItem", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier")
+                        .HasDefaultValueSql("NEWID()");
+
+                    b.Property<string>("AreaName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateTime>("Created")
+                        .HasColumnType("datetime2");
+
+                    b.Property<decimal?>("Height")
+                        .HasColumnType("decimal(10,2)");
+
+                    b.Property<decimal?>("Length")
+                        .HasColumnType("decimal(10,2)");
+
+                    b.Property<DateTime?>("Modified")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<Guid>("SiteVisitId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal?>("Width")
+                        .HasColumnType("decimal(10,2)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SiteVisitId");
+
+                    b.ToTable("MeasurementItems");
                 });
 
             modelBuilder.Entity("KitchenProject.Models.Entities.Project", b =>
@@ -512,8 +564,10 @@ namespace KitchenProject.Migrations
                         .HasMaxLength(30)
                         .HasColumnType("nvarchar(30)");
 
+                    b.Property<Guid?>("SourceQuoteId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<int>("Status")
-                        .HasMaxLength(30)
                         .HasColumnType("int");
 
                     b.Property<decimal>("Subtotal")
@@ -522,8 +576,14 @@ namespace KitchenProject.Migrations
                     b.Property<decimal>("Tax")
                         .HasColumnType("decimal(18,2)");
 
+                    b.Property<string>("Terms")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<decimal>("Total")
                         .HasColumnType("decimal(18,2)");
+
+                    b.Property<int>("Type")
+                        .HasColumnType("int");
 
                     b.Property<DateTime?>("ValidUntil")
                         .HasColumnType("datetime2");
@@ -533,6 +593,51 @@ namespace KitchenProject.Migrations
                     b.HasIndex("ProjectId");
 
                     b.ToTable("Quotes");
+                });
+
+            modelBuilder.Entity("KitchenProject.Models.Entities.QuoteItem", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier")
+                        .HasDefaultValueSql("NEWID()");
+
+                    b.Property<DateTime>("Created")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(250)
+                        .HasColumnType("nvarchar(250)");
+
+                    b.Property<Guid?>("ItemId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal?>("Meters")
+                        .HasColumnType("decimal(10,2)");
+
+                    b.Property<DateTime?>("Modified")
+                        .HasColumnType("datetime2");
+
+                    b.Property<decimal?>("Quantity")
+                        .HasColumnType("decimal(10,2)");
+
+                    b.Property<Guid>("QuoteId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("UnitPrice")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ItemId");
+
+                    b.HasIndex("QuoteId");
+
+                    b.ToTable("QuoteItems");
                 });
 
             modelBuilder.Entity("KitchenProject.Models.Entities.SiteInfo", b =>
@@ -576,10 +681,10 @@ namespace KitchenProject.Migrations
                     b.HasData(
                         new
                         {
-                            Id = new Guid("44b47e21-a6b8-48d3-b84c-8473ad5806e8"),
+                            Id = new Guid("e19969f5-90ff-4e96-a637-afac07c096da"),
                             About = "We are a specialized news website covering political, sports, and economic events, along with various other sections of general interest to readers. We always strive to provide distinguished and reliable content that reflects the ongoing developments on both the local and global stages.",
                             Activity = "News site",
-                            Created = new DateTime(2026, 9, 5, 15, 1, 21, 489, DateTimeKind.Local).AddTicks(4589),
+                            Created = new DateTime(2026, 10, 3, 18, 39, 29, 154, DateTimeKind.Local).AddTicks(5540),
                             Name = "بن قسومة للمطابخ"
                         });
                 });
@@ -611,9 +716,9 @@ namespace KitchenProject.Migrations
                     b.HasData(
                         new
                         {
-                            Id = new Guid("7b2c5bf8-20f1-4956-abb6-e8821e8ce725"),
+                            Id = new Guid("f986d57d-a118-45f4-8e9f-8893405fd36b"),
                             ClosingMessage = "The site is temporarily closed for development",
-                            Created = new DateTime(2026, 9, 5, 15, 1, 21, 489, DateTimeKind.Local).AddTicks(4910),
+                            Created = new DateTime(2026, 10, 3, 18, 39, 29, 154, DateTimeKind.Local).AddTicks(5770),
                             State = true
                         });
                 });
@@ -899,8 +1004,8 @@ namespace KitchenProject.Migrations
                     b.HasData(
                         new
                         {
-                            Id = "109400b7-ee44-4b6c-bef8-0cc59de1543e",
-                            ConcurrencyStamp = "43dccabf-992f-42c2-8ea0-e023ce5ad8dc",
+                            Id = "1581718f-d94f-49a7-a9d7-5b4bcc41fadb",
+                            ConcurrencyStamp = "e6a1e100-9ced-4c41-82b9-99eb99f8a394",
                             Name = "Prog",
                             NormalizedName = "PROG"
                         });
@@ -1069,8 +1174,8 @@ namespace KitchenProject.Migrations
                     b.HasData(
                         new
                         {
-                            UserId = "6068e8a9-d170-4fa6-abba-bed99e9ef5da",
-                            RoleId = "109400b7-ee44-4b6c-bef8-0cc59de1543e"
+                            UserId = "0cff8e65-f92f-4d3d-93b2-44e2e084a7df",
+                            RoleId = "1581718f-d94f-49a7-a9d7-5b4bcc41fadb"
                         });
                 });
 
@@ -1117,21 +1222,21 @@ namespace KitchenProject.Migrations
                     b.HasData(
                         new
                         {
-                            Id = "6068e8a9-d170-4fa6-abba-bed99e9ef5da",
+                            Id = "0cff8e65-f92f-4d3d-93b2-44e2e084a7df",
                             AccessFailedCount = 0,
-                            ConcurrencyStamp = "50286ee0-8cab-4fd9-b86d-4c9e7d81d85b",
+                            ConcurrencyStamp = "9fc4d71e-8929-419e-9fe2-394615d74817",
                             Email = "Programmer@Gmail.com",
                             EmailConfirmed = true,
                             LockoutEnabled = true,
                             NormalizedEmail = "PROGRAMMER@GMAIL.COM",
                             NormalizedUserName = "PROGRAMMER@GMAIL.COM",
-                            PasswordHash = "AQAAAAIAAYagAAAAEOiMVW5LwaXnP8KCeBDAECPBrxqGZdZDi2qpMwjKPFc0X+YlPL+CABdS42ebB7WrSw==",
+                            PasswordHash = "AQAAAAIAAYagAAAAELbHKuPv8zgAZUCp2jtE+753OugJrL5rgQnpCZOxCRt9nPUVR1PvR8QupZqIhdfL6A==",
                             PhoneNumberConfirmed = true,
-                            SecurityStamp = "04500de6-96fe-4ad7-96dd-fcca96e369d7",
+                            SecurityStamp = "869c72f5-e7bd-475d-92c4-b89b2606286d",
                             TwoFactorEnabled = false,
                             UserName = "Programmer@Gmail.com",
                             Age = 0,
-                            CreatedDate = new DateTime(2026, 9, 5, 13, 1, 21, 489, DateTimeKind.Utc).AddTicks(5206)
+                            CreatedDate = new DateTime(2026, 10, 3, 16, 39, 29, 154, DateTimeKind.Utc).AddTicks(5990)
                         });
                 });
 
@@ -1143,7 +1248,14 @@ namespace KitchenProject.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.HasOne("KitchenProject.Models.Entities.Quote", "Quote")
+                        .WithMany()
+                        .HasForeignKey("QuoteId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.Navigation("Projects");
+
+                    b.Navigation("Quote");
                 });
 
             modelBuilder.Entity("KitchenProject.Models.Entities.CustomerPayment", b =>
@@ -1171,6 +1283,17 @@ namespace KitchenProject.Migrations
                         .HasForeignKey("ProjectId");
 
                     b.Navigation("Project");
+                });
+
+            modelBuilder.Entity("KitchenProject.Models.Entities.MeasurementItem", b =>
+                {
+                    b.HasOne("KitchenProject.Models.Entities.SiteVisit", "SiteVisit")
+                        .WithMany("MeasurementItems")
+                        .HasForeignKey("SiteVisitId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("SiteVisit");
                 });
 
             modelBuilder.Entity("KitchenProject.Models.Entities.Project", b =>
@@ -1258,6 +1381,24 @@ namespace KitchenProject.Migrations
                         .IsRequired();
 
                     b.Navigation("Project");
+                });
+
+            modelBuilder.Entity("KitchenProject.Models.Entities.QuoteItem", b =>
+                {
+                    b.HasOne("KitchenProject.Models.Entities.Item", "Item")
+                        .WithMany()
+                        .HasForeignKey("ItemId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("KitchenProject.Models.Entities.Quote", "Quote")
+                        .WithMany("Items")
+                        .HasForeignKey("QuoteId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Item");
+
+                    b.Navigation("Quote");
                 });
 
             modelBuilder.Entity("KitchenProject.Models.Entities.SiteVisit", b =>
@@ -1412,6 +1553,16 @@ namespace KitchenProject.Migrations
             modelBuilder.Entity("KitchenProject.Models.Entities.Purchase", b =>
                 {
                     b.Navigation("Items");
+                });
+
+            modelBuilder.Entity("KitchenProject.Models.Entities.Quote", b =>
+                {
+                    b.Navigation("Items");
+                });
+
+            modelBuilder.Entity("KitchenProject.Models.Entities.SiteVisit", b =>
+                {
+                    b.Navigation("MeasurementItems");
                 });
 
             modelBuilder.Entity("KitchenProject.Models.Entities.Supplier", b =>

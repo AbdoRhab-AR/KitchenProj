@@ -1,0 +1,17 @@
+@model KitchenProject.Models.Entities.Supplier
+@{ ViewData["Title"] = "إضافة مورد"; Layout = "_DashboardLayout"; }
+<div class="d-flex justify-content-between mb-4"><h2 class="page-header-title">إضافة مورد جديد</h2><a asp-action="Index" class="btn btn-secondary">عودة</a></div>
+<div class="custom-card p-4 col-md-8">
+    <form asp-action="Create" method="post">
+        <div class="row g-3">
+            <div class="col-md-6"><label asp-for="SupplierNo" class="fw-bold">رقم المورد</label><input asp-for="SupplierNo" class="form-control bg-light" readonly/></div>
+            <div class="col-md-6"><label asp-for="Name" class="fw-bold">اسم المورد *</label><input asp-for="Name" class="form-control" required/></div>
+            <div class="col-md-6"><label asp-for="Phone" class="fw-bold">رقم الهاتف</label><input asp-for="Phone" class="form-control"/></div>
+            <div class="col-md-6"><label asp-for="PaymentTerms" class="fw-bold">شروط الدفع</label><input asp-for="PaymentTerms" class="form-control"/></div>
+            <div class="col-12"><label asp-for="Address" class="fw-bold">العنوان</label><input asp-for="Address" class="form-control"/></div>
+            <div class="col-12"><label asp-for="Notes" class="fw-bold">ملاحظات</label><textarea asp-for="Notes" class="form-control" rows="2"></textarea></div>
+            <div class="col-12 form-check mt-3 ms-2"><input asp-for="IsActive" class="form-check-input" checked/><label asp-for="IsActive" class="form-check-label fw-bold">نشط</label></div>
+            <div class="col-12 mt-4"><button type="submit" class="btn btn-primary w-100">حفظ المورد</button></div>
+        </div>
+    </form>
+</div>

@@ -1,0 +1,37 @@
+@model KitchenProject.Models.Entities.Supplier
+@{ ViewData["Title"] = "تفاصيل المورد"; Layout = "_DashboardLayout"; }
+<div class="d-flex justify-content-between mb-4"><h2 class="page-header-title">المورد: @Model.Name</h2>
+    <div><a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-primary">تعديل</a> <a asp-action="Index" class="btn btn-secondary">عودة</a></div>
+</div>
+<div class="row g-4 mb-4">
+    <div class="col-md-6">
+        <div class="custom-card p-4 h-100">
+            <h5>بيانات المورد</h5><hr/>
+            <p><strong>الرقم:</strong> @Model.SupplierNo</p><p><strong>الهاتف:</strong> @Model.Phone</p>
+            <p><strong>العنوان:</strong> @Model.Address</p><p><strong>شروط الدفع:</strong> @Model.PaymentTerms</p>
+            <p><strong>ملاحظات:</strong> @Model.Notes</p>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="custom-card p-4 h-100 border-start border-4 border-primary">
+            <h5>الملخص المالي</h5><hr/>
+            <div class="d-flex justify-content-between mb-2"><span>عدد الأوامر:</span><span class="fw-bold">@ViewBag.PurchasesCount</span></div>
+            <div class="d-flex justify-content-between mb-2"><span>إجمالي المشتريات:</span><span class="fw-bold text-primary">@ViewBag.TotalPurchasesAmount?.ToString("N2") د.ل</span></div>
+            <div class="d-flex justify-content-between mb-2"><span>المدفوع:</span><span class="fw-bold text-success">@ViewBag.TotalPaid?.ToString("N2") د.ل</span></div>
+            <div class="d-flex justify-content-between"><span>المتبقي (الديون):</span><span class="fw-bold text-danger fs-5">@ViewBag.TotalRemaining?.ToString("N2") د.ل</span></div>
+        </div>
+    </div>
+</div>
+<div class="custom-card p-4">
+    <h5>أوامر الشراء المرتبطة</h5>
+    <div class="table-responsive">
+        <table class="table table-sm">
+            <thead><tr><th>الفاتورة</th><th>الإجمالي</th><th>المدفوع</th><th>المتبقي</th><th>الحالة</th></tr></thead>
+            <tbody>
+                @foreach(var p in Model.Purchases) {
+                    <tr><td>@p.InvoiceNo</td><td>@p.Total.ToString("N2")</td><td class="text-success">@p.PaidAmount.ToString("N2")</td><td class="text-danger">@p.RemainingAmount.ToString("N2")</td><td>@p.Status</td></tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

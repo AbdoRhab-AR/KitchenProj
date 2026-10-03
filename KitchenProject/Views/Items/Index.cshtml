@@ -1,0 +1,41 @@
+@model IEnumerable<KitchenProject.Models.Entities.Item>
+@{ ViewData["Title"] = "الأصناف"; Layout = "_DashboardLayout"; }
+<div class="d-flex justify-content-between mb-4"><h2 class="page-header-title"><i class="fa-solid fa-box text-primary me-2"></i> الأصناف</h2><a asp-action="Create" class="btn btn-primary-custom"><i class="fa-solid fa-plus me-1"></i> إضافة صنف</a></div>
+<div class="row g-3 mb-4">
+    <div class="col-md-6"><div class="custom-card p-3 border-start border-4 border-primary">الإجمالي: @ViewBag.TotalItems</div></div>
+    <div class="col-md-6"><div class="custom-card p-3 border-start border-4 border-success">النشطة: @ViewBag.ActiveItems</div></div>
+</div>
+<div class="custom-card p-4">
+    <form method="get" class="d-flex gap-2 mb-4">
+        <input type="text" name="searchString" value="@ViewBag.SearchString" class="form-control w-25" placeholder="بحث كود/اسم..." />
+        <select name="categoryFilter" class="form-select w-25" asp-items="ViewBag.CategoryList"><option value="">-- كل الفئات --</option></select>
+        <button type="submit" class="btn btn-secondary">تصفية</button>
+    </form>
+    <div class="table-responsive">
+        <table class="table table-hover custom-table align-middle">
+            <thead class="table-light"><tr><th>الكود</th><th>الصنف</th><th>الفئة</th><th>شراء</th><th>رصيد</th><th>الحالة</th><th></th></tr></thead>
+            <tbody>
+                @foreach(var item in Model) {
+                    var bal = ((Dictionary<Guid, decimal>)ViewBag.StockBalances).GetValueOrDefault(item.Id, 0);
+                    <tr>
+                        <td><span class="badge bg-secondary">@item.Code</span></td>
+                        <td class="fw-bold">@item.Name</td>
+                        <td>@item.Category</td>
+                        <td>@item.PurchasePrice</td>
+                        <td class="fw-bold @(bal < item.MinQuantity ? "text-danger" : "text-success")">@bal @item.Unit</td>
+                        <td><span class="badge @(item.IsActive ? "bg-success" : "bg-secondary")">@(item.IsActive ? "نشط" : "غير نشط")</span></td>
+                        <td>
+                            <div class="d-flex gap-1 justify-content-end">
+                                <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-sm btn-info text-white"><i class="fa-solid fa-eye"></i></a>
+                                <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-primary"><i class="fa-solid fa-pen"></i></a>
+                                <form asp-action="Delete" asp-route-id="@item.Id" method="post" onsubmit="return confirm('إيقاف الصنف؟');">
+                                    <button type="submit" class="btn btn-sm btn-danger"><i class="fa-solid fa-power-off"></i></button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

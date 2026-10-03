@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 
 namespace KitchenProject.Models.Entities
 {
@@ -11,10 +11,10 @@ namespace KitchenProject.Models.Entities
 		[StringLength(30)]
 		public required string Name { get; set; }
 
-		[RegularExpression(@"^\d{14}$", ErrorMessage = "The phone number must consist of 14 digits.")]
+		[RegularExpression(@"^\d{10}$", ErrorMessage = "يجب أن يتكون رقم الهاتف من 10 أرقام.")]
 		public required string Phone { get; set; }
 
-		[MaxLength(14)]
+		[MaxLength(10)]
 		public string? Phone2 { get; set; }
 
 		[MaxLength(30), EmailAddress]

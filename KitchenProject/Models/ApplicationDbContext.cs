@@ -1,4 +1,4 @@
-﻿using KitchenProject.Models.Entities;
+using KitchenProject.Models.Entities;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
@@ -19,9 +19,11 @@ namespace KitchenProject.Models
 		public DbSet<Customer> Customers { get; set; }
 		public DbSet<Project> Projects { get; set; }
 		public DbSet<SiteVisit> SiteVisits { get; set; }
+		public DbSet<MeasurementItem> MeasurementItems { get; set; }
 		public DbSet<SiteInfo> SiteInfo { get; set; }
 		public DbSet<SiteState> SiteState { get; set; }
 		public DbSet<Quote> Quotes { get; set; }
+		public DbSet<QuoteItem> QuoteItems { get; set; }
 		public DbSet<Contract> Contracts { get; set; }
 		public DbSet<CustomerPayment> CustomerPayments { get; set; }
 		public DbSet<Expense> Expenses { get; set; }
@@ -96,10 +98,28 @@ namespace KitchenProject.Models
 			modelBuilder.Entity<SiteVisit>()
 				.HasOne(x => x.Engineer).WithMany()
 				.HasForeignKey(x => x.EngineerId).OnDelete(DeleteBehavior.Restrict);
+
+			modelBuilder.Entity<MeasurementItem>().Property(x => x.Id).HasDefaultValueSql("NEWID()");
+
+			modelBuilder.Entity<QuoteItem>().Property(x => x.Id).HasDefaultValueSql("NEWID()");
+			modelBuilder.Entity<QuoteItem>()
+				.HasOne(x => x.Quote).WithMany(x => x.Items)
+				.HasForeignKey(x => x.QuoteId).OnDelete(DeleteBehavior.Cascade);
+			modelBuilder.Entity<QuoteItem>()
+				.HasOne(x => x.Item).WithMany()
+				.HasForeignKey(x => x.ItemId).OnDelete(DeleteBehavior.SetNull);
+
+			modelBuilder.Entity<MeasurementItem>()
+				.HasOne(x => x.SiteVisit).WithMany(x => x.MeasurementItems)
+				.HasForeignKey(x => x.SiteVisitId).OnDelete(DeleteBehavior.Cascade);
 		
 			modelBuilder.Entity<Contract>()
 				.HasOne(x => x.Projects).WithMany(x => x.Contracts)
 				.HasForeignKey(x => x.ProjectId).OnDelete(DeleteBehavior.Restrict);
+
+			modelBuilder.Entity<Contract>()
+				.HasOne(x => x.Quote).WithMany()
+				.HasForeignKey(x => x.QuoteId).OnDelete(DeleteBehavior.Restrict);
 
 			modelBuilder.Entity<CustomerPayment>()
 				.HasOne(x => x.Project).WithMany(x => x.CustomerPayments)

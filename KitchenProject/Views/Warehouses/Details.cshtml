@@ -1,0 +1,32 @@
+@model KitchenProject.Models.Entities.Warehouse
+@{
+    ViewData["Title"] = "تفاصيل المخزن";
+    Layout = "_DashboardLayout";
+}
+<div class="d-flex justify-content-between mb-4">
+    <h2 class="page-header-title"><i class="fa-solid fa-box text-info me-2"></i> @Model.Name</h2>
+    <div>
+        <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-primary"><i class="fa-solid fa-pen"></i> تعديل</a>
+        <a asp-action="Index" class="btn btn-secondary">عودة</a>
+    </div>
+</div>
+<div class="custom-card p-4 mb-4">
+    <p><strong>الموقع:</strong> @Model.Location</p>
+    <p><strong>الحالة:</strong> <span class="badge @(Model.IsActive ? "bg-success" : "bg-secondary")">@(Model.IsActive ? "نشط" : "غير نشط")</span></p>
+    <p><strong>إجمالي الحركات:</strong> @ViewBag.TotalTransactions</p>
+</div>
+<h4 class="mb-3">رصيد الأصناف في المخزن</h4>
+<div class="custom-card p-4">
+    <table class="table table-hover">
+        <thead class="table-light"><tr><th>كود</th><th>الصنف</th><th>الوحدة</th><th>وارد</th><th>منصرف</th><th>الرصيد</th></tr></thead>
+        <tbody>
+            @foreach(var row in ViewBag.StockSummary) {
+                <tr>
+                    <td>@row.ItemCode</td><td class="fw-bold">@row.ItemName</td><td>@row.Unit</td>
+                    <td class="text-success">@row.TotalIn</td><td class="text-danger">@row.TotalOut</td>
+                    <td class="fw-bold @(row.Balance > 0 ? "text-success" : "text-danger")">@row.Balance</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>

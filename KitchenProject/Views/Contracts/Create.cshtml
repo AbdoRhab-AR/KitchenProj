@@ -1,0 +1,223 @@
+@model KitchenProject.Models.Entities.Contract
+@{
+    ViewData["Title"] = "إضافة عقد جديد";
+    Layout = "_DashboardLayout";
+}
+
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+    <div>
+        <h2 class="page-header-title mb-1">
+            <i class="fa-solid fa-plus-circle text-primary me-2"></i> إضافة عقد جديد
+        </h2>
+        <p class="text-muted mb-0">إنشاء عقد جديد وربطه بالمشروع وتحديد القيمة والمدة</p>
+    </div>
+    <a asp-action="Index" class="btn btn-outline-secondary d-inline-flex align-items-center gap-2">
+        <i class="fa-solid fa-arrow-right"></i><span>العودة للعقود</span>
+    </a>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-12 col-lg-9">
+        <div class="custom-card p-4">
+            <form asp-action="Create" method="post">
+                @Html.AntiForgeryToken()
+                <div asp-validation-summary="ModelOnly" class="alert alert-danger mb-4 rounded-3"></div>
+
+                <!-- Section 1: Basic Info -->
+                <div class="border-bottom pb-3 mb-4">
+                    <h5 class="fw-bold text-primary mb-3"><i class="fa-solid fa-info-circle me-2"></i> البيانات الأساسية</h5>
+                    <div class="row g-3">
+                        <div class="col-12 col-md-4">
+                            <label asp-for="ContractNo" class="form-label fw-bold">رقم العقد</label>
+                            <input asp-for="ContractNo" class="form-control bg-light" readonly />
+                        </div>
+                        <div class="col-12 col-md-4">
+                            <label asp-for="Type" class="form-label fw-bold">نوع العقد <span class="text-danger">*</span></label>
+                            <select asp-for="Type" class="form-select" asp-items="ViewBag.TypeList" id="contractTypeSelect"></select>
+                        </div>
+                        <div class="col-12 col-md-4">
+                            <label asp-for="ProjectId" class="form-label fw-bold">المشروع <span class="text-danger">*</span></label>
+                            <select asp-for="ProjectId" class="form-select" asp-items="ViewBag.ProjectId" id="projectIdSelect">
+                                <option value="">-- اختر المشروع --</option>
+                            </select>
+                            <span asp-validation-for="ProjectId" class="text-danger small"></span>
+                        </div>
+                        
+                        <div class="col-12 col-md-4" id="quoteContainer">
+                            <label asp-for="QuoteId" class="form-label fw-bold">عرض السعر <span class="text-danger">*</span></label>
+                            <select asp-for="QuoteId" class="form-select" asp-items="ViewBag.QuoteId" id="quoteIdSelect">
+                                <option value="">-- اختر عرض السعر --</option>
+                            </select>
+                            <span asp-validation-for="QuoteId" class="text-danger small"></span>
+                        </div>
+                        
+                        <div class="col-12 col-md-4">
+                            <label asp-for="Status" class="form-label fw-bold">حالة العقد</label>
+                            <select asp-for="Status" class="form-select" asp-items="ViewBag.StatusList"></select>
+                        </div>
+                        <div class="col-12 col-md-4">
+                            <label asp-for="ContractFilePath" class="form-label fw-bold">مسار ملف العقد</label>
+                            <input asp-for="ContractFilePath" class="form-control" placeholder="رابط الملف أو مساره" />
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section 2: Dates -->
+                <div class="border-bottom pb-3 mb-4">
+                    <h5 class="fw-bold text-primary mb-3"><i class="fa-solid fa-calendar me-2"></i> التواريخ</h5>
+                    <div class="row g-3">
+                        <div class="col-12 col-md-6">
+                            <label asp-for="StartDate" class="form-label fw-bold">تاريخ بداية العقد</label>
+                            <input asp-for="StartDate" type="date" class="form-control"
+                                   value="@DateTime.Now.ToString("yyyy-MM-dd")" />
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <label asp-for="ExpectedEndDate" class="form-label fw-bold">تاريخ الانتهاء المتوقع</label>
+                            <input asp-for="ExpectedEndDate" type="date" class="form-control" />
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section 3: Financial -->
+                <div class="border-bottom pb-3 mb-4">
+                    <h5 class="fw-bold text-primary mb-3"><i class="fa-solid fa-money-bill me-2"></i> القيمة المالية</h5>
+                    <div class="row g-3">
+                        <div class="col-12 col-md-4">
+                            <label asp-for="TotalAmount" class="form-label fw-bold">قيمة العقد الإجمالية (د.ل)</label>
+                            <input asp-for="TotalAmount" type="number" step="0.01" class="form-control" id="totalAmountInput" placeholder="0.00" />
+                            <span asp-validation-for="TotalAmount" class="text-danger small"></span>
+                        </div>
+                        
+                        <div class="col-12 col-md-4" id="downPaymentContainer">
+                            <label asp-for="DownPaymentPercentage" class="form-label fw-bold">نسبة الدفعة المقدمة (%)</label>
+                            <input asp-for="DownPaymentPercentage" type="number" step="0.01" class="form-control" id="dpPercentInput" />
+                            <small class="text-info d-none" id="dpAmountInfo">المطلوب دفعه: <span id="dpAmountValue">0</span> د.ل</small>
+                        </div>
+
+                        <div class="col-12 col-md-4">
+                            <label asp-for="PaidAmount" class="form-label fw-bold">المبلغ المسدد الآن (د.ل)</label>
+                            <input asp-for="PaidAmount" type="number" step="0.01" class="form-control" placeholder="0.00" id="paidAmountInput" />
+                            <span asp-validation-for="PaidAmount" class="text-danger small"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section 4: Notes -->
+                <div class="mb-4">
+                    <label asp-for="Notes" class="form-label fw-bold">ملاحظات وبنود العقد</label>
+                    <textarea asp-for="Notes" class="form-control" rows="3" placeholder="أضف أي شروط أو بنود خاصة بالعقد..."></textarea>
+                </div>
+
+                <div class="d-flex justify-content-end gap-2">
+                    <a asp-action="Index" class="btn btn-light border fw-bold px-4">إلغاء</a>
+                    <button type="submit" class="btn btn-primary-custom px-5">
+                        <i class="fa-solid fa-save me-2"></i> حفظ العقد
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+    <script>
+        $(document).ready(function () {
+            
+            function toggleType() {
+                var type = $('#contractTypeSelect').val();
+                if (type == 1) { // Preliminary
+                    $('#quoteContainer').hide();
+                    $('#downPaymentContainer').hide();
+                    $('#totalAmountInput').prop('readonly', false).removeClass('bg-light');
+                } else { // Final
+                    $('#quoteContainer').show();
+                    $('#downPaymentContainer').show();
+                    $('#totalAmountInput').prop('readonly', true).addClass('bg-light');
+                    updateAmount();
+                }
+            }
+
+            function calcDp() {
+                var total = parseFloat($('#totalAmountInput').val()) || 0;
+                var dpPercent = parseFloat($('#dpPercentInput').val()) || 0;
+                if (total > 0 && dpPercent > 0) {
+                    var amt = (total * (dpPercent / 100)).toFixed(2);
+                    $('#dpAmountValue').text(amt);
+                    $('#dpAmountInfo').removeClass('d-none');
+                } else {
+                    $('#dpAmountInfo').addClass('d-none');
+                }
+            }
+
+            $('#contractTypeSelect').change(toggleType);
+            $('#totalAmountInput, #dpPercentInput').on('input', calcDp);
+
+            function loadQuotes(projectId, selectedQuoteId = null) {
+                var quoteDropdown = $('#quoteIdSelect');
+                quoteDropdown.empty();
+                quoteDropdown.append($('<option>', { value: '', text: '-- اختر عرض السعر --' }));
+                
+                if ($('#contractTypeSelect').val() == 2) {
+                    $('#totalAmountInput').val('');
+                }
+
+                if (projectId) {
+                    $.ajax({
+                        url: '@Url.Action("GetApprovedQuotes", "Contracts")',
+                        type: 'GET',
+                        data: { projectId: projectId },
+                        success: function (data) {
+                            $.each(data, function (i, item) {
+                                var option = $('<option>', {
+                                    value: item.id,
+                                    text: item.text,
+                                    'data-total': item.total
+                                });
+                                quoteDropdown.append(option);
+                            });
+                            
+                            if (selectedQuoteId) {
+                                quoteDropdown.val(selectedQuoteId);
+                                updateAmount();
+                            }
+                            quoteDropdown.trigger('change');
+                        }
+                    });
+                }
+            }
+
+            function updateAmount() {
+                if ($('#contractTypeSelect').val() == 2) { // Final only
+                    var selectedOption = $('#quoteIdSelect option:selected');
+                    if (selectedOption.val()) {
+                        var total = selectedOption.data('total');
+                        $('#totalAmountInput').val(total);
+                        calcDp();
+                    } else {
+                        $('#totalAmountInput').val('');
+                        $('#dpAmountInfo').addClass('d-none');
+                    }
+                }
+            }
+
+            $('#projectIdSelect').change(function () {
+                var projectId = $(this).val();
+                loadQuotes(projectId);
+            });
+
+            $('#quoteIdSelect').change(function () {
+                updateAmount();
+            });
+
+            toggleType();
+            var initialProjectId = $('#projectIdSelect').val();
+            var initialQuoteId = '@(Model?.QuoteId != null ? Model.QuoteId.ToString() : "")';
+            if (initialProjectId) {
+                loadQuotes(initialProjectId, initialQuoteId);
+            }
+        });
+    </script>
+}

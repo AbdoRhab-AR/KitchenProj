@@ -1,0 +1,387 @@
+@model KitchenProject.Models.Entities.SiteVisit
+@using KitchenProject.Models.Enums
+@{
+    ViewData["Title"] = "تفاصيل المعاينة";
+    Layout = "_DashboardLayout";
+    var totalArea = Model.MeasurementItems.Where(m => m.Area.HasValue).Sum(m => m.Area!.Value);
+}
+
+<!-- Page Header -->
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+    <div>
+        <h2 class="page-header-title mb-1">
+            <i class="fa-solid fa-ruler-combined text-primary me-2"></i> تفاصيل المعاينة الميدانية
+        </h2>
+        <p class="text-muted mb-0">
+            مشروع: <strong>@(Model.Project?.ProjectNo ?? "-")</strong>
+            <span class="mx-2">•</span>
+            @Model.VisitDate.ToString("yyyy/MM/dd - hh:mm tt")
+        </p>
+    </div>
+    <div class="d-flex gap-2">
+        <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-warning fw-bold d-inline-flex align-items-center gap-2">
+            <i class="fa-solid fa-pen"></i><span>تعديل</span>
+        </a>
+        <a asp-action="Index" class="btn btn-outline-secondary d-inline-flex align-items-center gap-2">
+            <i class="fa-solid fa-arrow-right"></i><span>رجوع</span>
+        </a>
+    </div>
+</div>
+
+
+
+<!-- Status Badge -->
+<div class="mb-4">
+    @switch (Model.Status)
+    {
+        case SiteVisitStatus.Scheduled:
+            <span class="badge bg-warning text-dark fs-6 px-4 py-2 rounded-pill">
+                <i class="fa-solid fa-clock me-2"></i>مجدولة
+            </span>
+            break;
+        case SiteVisitStatus.Completed:
+            <span class="badge bg-info fs-6 px-4 py-2 rounded-pill">
+                <i class="fa-solid fa-check me-2"></i>اكتملت
+            </span>
+            break;
+        case SiteVisitStatus.Approved:
+            <span class="badge bg-success fs-6 px-4 py-2 rounded-pill">
+                <i class="fa-solid fa-thumbs-up me-2"></i>تمت الموافقة
+            </span>
+            break;
+        case SiteVisitStatus.Cancelled:
+            <span class="badge bg-danger fs-6 px-4 py-2 rounded-pill">
+                <i class="fa-solid fa-ban me-2"></i>ملغاة
+            </span>
+            break;
+    }
+</div>
+
+<div class="row g-4">
+    <!-- Project & Engineer Info -->
+    <div class="col-12 col-lg-5">
+        <div class="custom-card h-100 p-4">
+            <h5 class="fw-bold text-primary mb-3 border-bottom pb-2">
+                <i class="fa-solid fa-diagram-project me-2"></i> بيانات المشروع والمهندس
+            </h5>
+            <div class="row g-3">
+                <div class="col-6">
+                    <span class="text-muted d-block small">رقم المشروع</span>
+                    <strong>
+                        <a asp-controller="Projects" asp-action="Details" asp-route-id="@Model.ProjectId"
+                           class="text-primary text-decoration-none">@(Model.Project?.ProjectNo ?? "-")</a>
+                    </strong>
+                </div>
+                <div class="col-6">
+                    <span class="text-muted d-block small">اسم المشروع</span>
+                    <strong>@(Model.Project?.ProjectName ?? "-")</strong>
+                </div>
+                <div class="col-6">
+                    <span class="text-muted d-block small">العميل</span>
+                    <strong><i class="fa-solid fa-user me-1 text-secondary"></i>@(Model.Project?.Customer?.Name ?? "-")</strong>
+                </div>
+                <div class="col-6">
+                    <span class="text-muted d-block small">هاتف العميل</span>
+                    <strong>@(Model.Project?.Customer?.Phone ?? "-")</strong>
+                </div>
+                <div class="col-12">
+                    <span class="text-muted d-block small">المهندس المعاين</span>
+                    <strong><i class="fa-solid fa-hard-hat me-1 text-primary"></i>
+                        @(Model.Engineer?.UserProfile?.DisplayName ?? Model.Engineer?.UserName ?? "غير مكلف")
+                    </strong>
+                </div>
+                <div class="col-6">
+                    <span class="text-muted d-block small">تاريخ المعاينة</span>
+                    <strong>@Model.VisitDate.ToString("yyyy/MM/dd")</strong>
+                </div>
+                <div class="col-6">
+                    <span class="text-muted d-block small">وقت المعاينة</span>
+                    <strong>@Model.VisitDate.ToString("hh:mm tt")</strong>
+                </div>
+            </div>
+            @if (!string.IsNullOrEmpty(Model.Notes))
+            {
+                <div class="mt-3 pt-3 border-top">
+                    <span class="text-muted d-block small fw-bold mb-1">ملاحظات المعاينة</span>
+                    <p class="mb-0 bg-light p-2 rounded text-dark" style="white-space:pre-wrap; font-size:0.9rem;">@Model.Notes</p>
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- Measurements Summary -->
+    <div class="col-12 col-lg-7">
+        <div class="custom-card h-100 p-4">
+            <h5 class="fw-bold text-primary mb-3 border-bottom pb-2">
+                <i class="fa-solid fa-ruler me-2"></i> ملخص المقاسات
+            </h5>
+            @if (Model.MeasurementItems.Any())
+            {
+                <div class="row g-3 mb-3">
+                    <div class="col-4 text-center">
+                        <div class="p-3 bg-primary-subtle rounded-3">
+                            <div class="fw-bold fs-2 text-primary">@Model.MeasurementItems.Count</div>
+                            <small class="text-muted">منطقة / مطبخ</small>
+                        </div>
+                    </div>
+                    <div class="col-4 text-center">
+                        <div class="p-3 bg-success-subtle rounded-3">
+                            <div class="fw-bold fs-4 text-success">@totalArea.ToString("N2")</div>
+                            <small class="text-muted">م² إجمالي المساحة</small>
+                        </div>
+                    </div>
+                    <div class="col-4 text-center">
+                        <div class="p-3 bg-info-subtle rounded-3">
+                            <div class="fw-bold fs-4 text-info">
+                                @(Model.MeasurementItems.Where(m => m.Area.HasValue).Any()
+                                    ? Model.MeasurementItems.Where(m => m.Area.HasValue).Average(m => m.Area!.Value).ToString("N2")
+                                    : "-")
+                            </div>
+                            <small class="text-muted">م² متوسط</small>
+                        </div>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <div class="text-center py-3 text-muted">
+                    <i class="fa-solid fa-ruler-horizontal fs-2 d-block mb-2 opacity-50"></i>
+                    لم يتم إضافة أي مقاسات تفصيلية بعد
+                </div>
+            }
+
+            <!-- Old single measurement if exists -->
+            @if (Model.Length.HasValue || Model.Width.HasValue || Model.Height.HasValue)
+            {
+                <div class="mt-2 p-2 bg-light rounded border">
+                    <small class="text-muted d-block mb-1"><i class="fa-solid fa-info-circle me-1"></i>مقاس عام (الإدخال القديم)</small>
+                    <span class="badge bg-light text-dark border">
+                        @(Model.Length?.ToString("N2") ?? "-") ×
+                        @(Model.Width?.ToString("N2") ?? "-") ×
+                        @(Model.Height?.ToString("N2") ?? "-") م
+                    </span>
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- ─── Measurement Items Table ─────────────────────────────────── -->
+    <div class="col-12">
+        <div class="custom-card">
+            <div class="card-header-custom">
+                <h5 class="fw-bold mb-0 text-dark">
+                    <i class="fa-solid fa-list-ol text-secondary me-2"></i> المقاسات التفصيلية
+                    @if (Model.MeasurementItems.Any())
+                    {
+                        <span class="badge bg-primary rounded-pill ms-2">@Model.MeasurementItems.Count</span>
+                    }
+                </h5>
+                <button class="btn btn-primary-custom btn-sm d-inline-flex align-items-center gap-2"
+                        data-bs-toggle="modal" data-bs-target="#addMeasurementModal">
+                    <i class="fa-solid fa-plus"></i> إضافة مقاس
+                </button>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="bg-light text-muted" style="font-size:0.85rem; text-transform:uppercase;">
+                        <tr>
+                            <th class="ps-4">#</th>
+                            <th>المنطقة / المطبخ</th>
+                            <th>الطول (م)</th>
+                            <th>العرض (م)</th>
+                            <th>الارتفاع (م)</th>
+                            <th>المساحة (م²)</th>
+                            <th>ملاحظات</th>
+                            <th class="text-center pe-4">حذف</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (!Model.MeasurementItems.Any())
+                        {
+                            <tr>
+                                <td colspan="8" class="text-center py-4 text-muted">
+                                    <i class="fa-solid fa-ruler-combined fs-2 d-block mb-2 opacity-40"></i>
+                                    لا توجد مقاسات — اضغط "إضافة مقاس" لإدخال أول منطقة
+                                </td>
+                            </tr>
+                        }
+                        else
+                        {
+                            int idx = 1;
+                            @foreach (var item in Model.MeasurementItems)
+                            {
+                                <tr>
+                                    <td class="ps-4 text-muted fw-semibold">@(idx++)</td>
+                                    <td class="fw-bold text-dark">@item.AreaName</td>
+                                    <td>@(item.Length.HasValue ? item.Length.Value.ToString("N2") : "-")</td>
+                                    <td>@(item.Width.HasValue ? item.Width.Value.ToString("N2") : "-")</td>
+                                    <td>@(item.Height.HasValue ? item.Height.Value.ToString("N2") : "-")</td>
+                                    <td>
+                                        @if (item.Area.HasValue)
+                                        {
+                                            <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2">
+                                                @item.Area.Value.ToString("N2") م²
+                                            </span>
+                                        }
+                                        else { <span class="text-muted">-</span> }
+                                    </td>
+                                    <td class="text-muted" style="font-size:0.88rem; max-width:160px;">
+                                        <span class="d-block text-truncate" title="@item.Notes">@(item.Notes ?? "-")</span>
+                                    </td>
+                                    <td class="text-center pe-4">
+                                        <button type="button" class="btn btn-outline-danger btn-sm"
+                                                data-bs-toggle="modal" data-bs-target="#delModal-@item.Id"
+                                                title="حذف هذا المقاس">
+                                            <i class="fa-solid fa-trash"></i>
+                                        </button>
+
+                                        <!-- Delete Measurement Modal -->
+                                        <div class="modal fade" id="delModal-@item.Id" tabindex="-1" aria-hidden="true">
+                                            <div class="modal-dialog modal-dialog-centered">
+                                                <div class="modal-content">
+                                                    <div class="modal-header bg-danger text-white">
+                                                        <h5 class="modal-header-title mb-0">تأكيد حذف المقاس</h5>
+                                                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                                                    </div>
+                                                    <div class="modal-body py-4">
+                                                        <p class="mb-0">هل أنت متأكد من حذف مقاس <strong>"@item.AreaName"</strong>؟</p>
+                                                    </div>
+                                                    <div class="modal-footer bg-light">
+                                                        <button type="button" class="btn btn-secondary px-4" data-bs-dismiss="modal">إلغاء</button>
+                                                        <form asp-action="DeleteMeasurement" method="post" class="d-inline">
+                                                            @Html.AntiForgeryToken()
+                                                            <input type="hidden" name="id" value="@item.Id" />
+                                                            <input type="hidden" name="siteVisitId" value="@Model.Id" />
+                                                            <button type="submit" class="btn btn-danger px-4 fw-bold">تأكيد الحذف</button>
+                                                        </form>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                    @if (Model.MeasurementItems.Any() && totalArea > 0)
+                    {
+                        <tfoot class="bg-light fw-bold">
+                            <tr>
+                                <td colspan="5" class="text-end ps-4 py-3">إجمالي المساحة الكلية:</td>
+                                <td class="text-success fs-5 py-3">@totalArea.ToString("N2") م²</td>
+                                <td colspan="2"></td>
+                            </tr>
+                        </tfoot>
+                    }
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Metadata -->
+    <div class="col-12">
+        <div class="custom-card p-3">
+            <div class="row text-center text-muted" style="font-size:0.82rem;">
+                <div class="col-6 col-md-3">
+                    <i class="fa-solid fa-calendar-plus d-block mb-1 text-primary"></i>
+                    <span class="d-block fw-bold text-dark">تاريخ الإنشاء</span>
+                    @Model.Created.ToLocalTime().ToString("yyyy/MM/dd hh:mm tt")
+                </div>
+                @if (Model.Modified.HasValue)
+                {
+                    <div class="col-6 col-md-3">
+                        <i class="fa-solid fa-calendar-pen d-block mb-1 text-warning"></i>
+                        <span class="d-block fw-bold text-dark">آخر تعديل</span>
+                        @Model.Modified.Value.ToLocalTime().ToString("yyyy/MM/dd hh:mm tt")
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ─── Add Measurement Modal ────────────────────────────────────────────── -->
+<div class="modal fade" id="addMeasurementModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-header-title mb-0">
+                    <i class="fa-solid fa-ruler me-2"></i> إضافة مقاس جديد
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form asp-action="AddMeasurement" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="SiteVisitId" value="@Model.Id" />
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <label class="form-label fw-bold">اسم المنطقة / المطبخ <span class="text-danger">*</span></label>
+                            <input type="text" name="AreaName" class="form-control" required
+                                   placeholder="مثال: مطبخ رئيسي، مطبخ خلفي، غرفة تخزين..." />
+                        </div>
+                        <div class="col-12 col-md-4">
+                            <label class="form-label fw-bold">الطول (م)</label>
+                            <div class="input-group">
+                                <input type="number" name="Length" step="0.01" class="form-control" placeholder="0.00"
+                                       id="mLength" oninput="calcModalArea()" />
+                                <span class="input-group-text text-muted">م</span>
+                            </div>
+                        </div>
+                        <div class="col-12 col-md-4">
+                            <label class="form-label fw-bold">العرض (م)</label>
+                            <div class="input-group">
+                                <input type="number" name="Width" step="0.01" class="form-control" placeholder="0.00"
+                                       id="mWidth" oninput="calcModalArea()" />
+                                <span class="input-group-text text-muted">م</span>
+                            </div>
+                        </div>
+                        <div class="col-12 col-md-4">
+                            <label class="form-label fw-bold">الارتفاع (م)</label>
+                            <div class="input-group">
+                                <input type="number" name="Height" step="0.01" class="form-control" placeholder="0.00" />
+                                <span class="input-group-text text-muted">م</span>
+                            </div>
+                        </div>
+                        <!-- Live Area Preview -->
+                        <div class="col-12">
+                            <div class="bg-light rounded-3 p-3 text-center" id="areaPreview" style="display:none;">
+                                <span class="text-muted small">المساحة المحسوبة: </span>
+                                <strong class="text-success fs-5" id="areaResult">0.00 م²</strong>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label fw-bold">ملاحظات</label>
+                            <textarea name="Notes" class="form-control" rows="2"
+                                      placeholder="مثال: توجد نافذة بعرض 1.2م، الباب من الجهة الشمالية..."></textarea>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary px-4" data-bs-dismiss="modal">إلغاء</button>
+                    <button type="submit" class="btn btn-primary-custom px-5">
+                        <i class="fa-solid fa-save me-2"></i> حفظ المقاس
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function calcModalArea() {
+            var l = parseFloat(document.getElementById('mLength').value) || 0;
+            var w = parseFloat(document.getElementById('mWidth').value) || 0;
+            var preview = document.getElementById('areaPreview');
+            var result = document.getElementById('areaResult');
+            if (l > 0 && w > 0) {
+                result.textContent = (l * w).toFixed(2) + ' م²';
+                preview.style.display = 'block';
+            } else {
+                preview.style.display = 'none';
+            }
+        }
+    </script>
+}

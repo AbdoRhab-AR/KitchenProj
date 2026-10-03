@@ -31,5 +31,7 @@ namespace KitchenProject.Models.Entities
 		public string? Notes { get; set; }
 		public SiteVisitStatus Status { get; set; } = SiteVisitStatus.Scheduled;
 
+		// مقاسات تفصيلية متعددة لكل معاينة
+		public ICollection<MeasurementItem> MeasurementItems { get; set; } = new List<MeasurementItem>();
 	}
 }

@@ -1,0 +1,19 @@
+@model KitchenProject.Models.Entities.Item
+@{ ViewData["Title"] = "إضافة صنف"; Layout = "_DashboardLayout"; }
+<div class="d-flex justify-content-between mb-4"><h2 class="page-header-title">إضافة صنف</h2><a asp-action="Index" class="btn btn-secondary">عودة</a></div>
+<div class="custom-card p-4 col-md-8">
+    <form asp-action="Create" method="post">
+        <div class="row g-3">
+            <div class="col-md-6"><label asp-for="Code" class="fw-bold">كود الصنف *</label><input asp-for="Code" class="form-control" required/></div>
+            <div class="col-md-6"><label asp-for="Name" class="fw-bold">اسم الصنف *</label><input asp-for="Name" class="form-control" required/></div>
+            <div class="col-md-6"><label asp-for="Category" class="fw-bold">الفئة</label><input asp-for="Category" class="form-control" list="cats"/>
+                <datalist id="cats">@foreach(var c in ViewBag.CategoryList as SelectList){<option value="@c.Value"></option>}</datalist></div>
+            <div class="col-md-6"><label asp-for="Unit" class="fw-bold">الوحدة</label><input asp-for="Unit" class="form-control" value="وحدة"/></div>
+            <div class="col-md-4"><label asp-for="PurchasePrice" class="fw-bold">سعر الشراء</label><input asp-for="PurchasePrice" type="number" step="0.01" class="form-control"/></div>
+            <div class="col-md-4"><label asp-for="SalePrice" class="fw-bold">سعر البيع</label><input asp-for="SalePrice" type="number" step="0.01" class="form-control"/></div>
+            <div class="col-md-4"><label asp-for="MinQuantity" class="fw-bold">الحد الأدنى للطلب</label><input asp-for="MinQuantity" type="number" class="form-control"/></div>
+            <div class="col-12 form-check mt-3 ms-2"><input asp-for="IsActive" class="form-check-input" checked/><label asp-for="IsActive" class="form-check-label fw-bold">نشط</label></div>
+            <div class="col-12 mt-4"><button type="submit" class="btn btn-primary w-100">حفظ</button></div>
+        </div>
+    </form>
+</div>

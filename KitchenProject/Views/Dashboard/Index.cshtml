@@ -1,0 +1,142 @@
+@model KitchenProject.Controllers.DashboardViewModel
+@{
+    ViewData["Title"] = "لوحة التحكم الرئيسية";
+    Layout = "_DashboardLayout";
+}
+
+<!-- Page Header Bar -->
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+    <div>
+        <h2 class="page-header-title mb-0">
+            <i class="fa-solid fa-chart-pie text-primary me-2"></i> لوحة التحكم الرئيسية
+        </h2>
+        <p class="text-muted mt-2 mb-0">نظرة عامة على الإحصائيات والأرقام الحيوية للمصنع</p>
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+    <!-- Projects Stats -->
+    <div class="col-12 col-md-6 col-xl-3">
+        <div class="custom-card p-4 h-100 position-relative overflow-hidden hover-lift">
+            <div class="position-absolute top-0 end-0 p-3 opacity-25">
+                <i class="fa-solid fa-diagram-project fa-4x text-primary"></i>
+            </div>
+            <div class="position-relative z-1">
+                <span class="text-muted fw-bold d-block mb-2">إجمالي المشاريع</span>
+                <h2 class="display-5 fw-extrabold text-dark mb-3">@Model.TotalProjects</h2>
+                <div class="d-flex justify-content-between text-sm">
+                    <span class="text-success fw-bold"><i class="fa-solid fa-play me-1"></i> @Model.ActiveProjects قيد التنفيذ</span>
+                    <span class="text-secondary"><i class="fa-solid fa-check me-1"></i> @Model.CompletedProjects منجزة</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Customers Stats -->
+    <div class="col-12 col-md-6 col-xl-3">
+        <div class="custom-card p-4 h-100 position-relative overflow-hidden hover-lift">
+            <div class="position-absolute top-0 end-0 p-3 opacity-25">
+                <i class="fa-solid fa-users fa-4x text-info"></i>
+            </div>
+            <div class="position-relative z-1">
+                <span class="text-muted fw-bold d-block mb-2">إجمالي العملاء</span>
+                <h2 class="display-5 fw-extrabold text-dark mb-3">@Model.TotalCustomers</h2>
+                <div class="d-flex justify-content-between text-sm">
+                    <span class="text-info fw-bold"><i class="fa-solid fa-user-plus me-1"></i> @Model.NewCustomersThisMonth هذا الشهر</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Financial Revenues -->
+    <div class="col-12 col-md-6 col-xl-3">
+        <div class="custom-card p-4 h-100 position-relative overflow-hidden hover-lift">
+            <div class="position-absolute top-0 end-0 p-3 opacity-25">
+                <i class="fa-solid fa-money-bill-trend-up fa-4x text-success"></i>
+            </div>
+            <div class="position-relative z-1">
+                <span class="text-muted fw-bold d-block mb-2">الإيرادات (المدفوعات المستلمة)</span>
+                <h2 class="display-6 fw-extrabold text-dark mb-3">@Model.TotalRevenues.ToString("N2") <span class="fs-6 text-muted">د.ل</span></h2>
+                <div class="d-flex justify-content-between text-sm">
+                    <span class="text-success fw-bold"><i class="fa-solid fa-arrow-trend-up me-1"></i> @Model.RevenuesThisMonth.ToString("N2") هذا الشهر</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Expected vs Remaining -->
+    <div class="col-12 col-md-6 col-xl-3">
+        <div class="custom-card p-4 h-100 position-relative overflow-hidden hover-lift">
+            <div class="position-absolute top-0 end-0 p-3 opacity-25">
+                <i class="fa-solid fa-file-invoice-dollar fa-4x text-warning"></i>
+            </div>
+            <div class="position-relative z-1">
+                <span class="text-muted fw-bold d-block mb-2">حجم التعاقدات (المتوقع)</span>
+                <h2 class="display-6 fw-extrabold text-dark mb-3">@Model.ExpectedRevenue.ToString("N2") <span class="fs-6 text-muted">د.ل</span></h2>
+                <div class="d-flex justify-content-between text-sm">
+                    <span class="text-danger fw-bold"><i class="fa-solid fa-clock-rotate-left me-1"></i> @Model.RemainingRevenue.ToString("N2") متبقي تحصيله</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Expenses and Operations -->
+    <div class="col-12 col-lg-6">
+        <div class="custom-card p-4 h-100">
+            <h5 class="fw-bold mb-4 text-dark border-bottom pb-2">
+                <i class="fa-solid fa-chart-line text-danger me-2"></i> المصروفات والعمليات التشغيلية
+            </h5>
+            
+            <div class="d-flex flex-column gap-4 mt-3">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="bg-danger-subtle text-danger rounded-circle p-3">
+                            <i class="fa-solid fa-wallet fs-4"></i>
+                        </div>
+                        <div>
+                            <span class="fw-bold d-block text-dark fs-5">إجمالي المصروفات</span>
+                            <small class="text-muted">المصروفات العامة ومدفوعات الموردين</small>
+                        </div>
+                    </div>
+                    <h4 class="fw-bold text-dark mb-0">@Model.TotalExpenses.ToString("N2") <small class="text-muted fs-6">د.ل</small></h4>
+                </div>
+
+                <div class="d-flex align-items-center justify-content-between">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="bg-warning-subtle text-warning rounded-circle p-3">
+                            <i class="fa-solid fa-calendar-check fs-4"></i>
+                        </div>
+                        <div>
+                            <span class="fw-bold d-block text-dark fs-5">الزيارات الميدانية المعلقة</span>
+                            <small class="text-muted">مواعيد بانتظار رفع المقاسات</small>
+                        </div>
+                    </div>
+                    <h4 class="fw-bold text-dark mb-0">@Model.PendingVisits <small class="text-muted fs-6">موعد</small></h4>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- System Status Summary -->
+    <div class="col-12 col-lg-6">
+        <div class="custom-card p-4 h-100 bg-primary text-white position-relative overflow-hidden">
+            <div class="position-absolute top-0 end-0 p-4" style="opacity: 0.1;">
+                <i class="fa-solid fa-industry fa-8x"></i>
+            </div>
+            <div class="position-relative z-1">
+                <h4 class="fw-bold mb-4 border-bottom border-light pb-2 border-opacity-25">
+                    <i class="fa-solid fa-shield-halved me-2"></i> حالة النظام
+                </h4>
+                
+                <p class="fs-5 mb-4">النظام يعمل بشكل ممتاز، الإحصائيات محدثة تلقائياً وتعكس الأرقام الحقيقية لقاعدة البيانات الخاصة بالمصنع.</p>
+                
+                <ul class="list-unstyled d-flex flex-column gap-3 mb-0">
+                    <li><i class="fa-solid fa-check-circle text-success me-2 bg-white rounded-circle"></i> جميع الوحدات (العملاء، المشاريع، المالية) متصلة.</li>
+                    <li><i class="fa-solid fa-check-circle text-success me-2 bg-white rounded-circle"></i> قاعدة البيانات محدثة لآخر لحظة.</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>

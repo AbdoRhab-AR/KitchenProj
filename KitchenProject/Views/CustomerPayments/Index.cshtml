@@ -1,0 +1,168 @@
+@model IEnumerable<KitchenProject.Models.Entities.CustomerPayment>
+@using KitchenProject.Models.Enums
+@{
+    ViewData["Title"] = "دفعات العملاء";
+    Layout = "_DashboardLayout";
+}
+
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+    <div>
+        <h2 class="page-header-title mb-1">
+            <i class="fa-solid fa-file-invoice-dollar text-primary me-2"></i> دفعات العملاء
+        </h2>
+        <p class="text-muted mb-0">إدارة ومتابعة المبالغ المقبوضة من العملاء</p>
+    </div>
+    <a asp-action="Create" class="btn btn-primary-custom d-inline-flex align-items-center gap-2 shadow-sm">
+        <i class="fa-solid fa-plus"></i><span>إضافة دفعة جديدة</span>
+    </a>
+</div>
+
+<!-- Statistics Cards -->
+<div class="row g-3 mb-4">
+    <div class="col-12 col-md-4">
+        <div class="custom-card p-3 border-start border-4 border-primary">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <p class="text-muted mb-1 fs-sm">إجمالي المقبوضات</p>
+                    <h4 class="mb-0 fw-bold">@ViewBag.TotalPaymentsAmount.ToString("N2") د.ل</h4>
+                </div>
+                <div class="bg-primary bg-opacity-10 p-3 rounded-circle text-primary">
+                    <i class="fa-solid fa-money-bill-wave fs-4"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-12 col-md-4">
+        <div class="custom-card p-3 border-start border-4 border-success">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <p class="text-muted mb-1 fs-sm">إجمالي عدد الدفعات</p>
+                    <h4 class="mb-0 fw-bold">@ViewBag.TotalCount</h4>
+                </div>
+                <div class="bg-success bg-opacity-10 p-3 rounded-circle text-success">
+                    <i class="fa-solid fa-hashtag fs-4"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="custom-card p-4">
+    <form asp-action="Index" method="get" class="row g-3 mb-4 align-items-end">
+        <div class="col-12 col-md-4">
+            <label class="form-label text-muted fs-sm">بحث برقم الإيصال أو العميل</label>
+            <div class="input-group">
+                <span class="input-group-text bg-light"><i class="fa-solid fa-search text-muted"></i></span>
+                <input type="text" name="searchString" value="@ViewBag.SearchString" class="form-control" placeholder="ابحث هنا..." />
+            </div>
+        </div>
+        <div class="col-12 col-md-4">
+            <label class="form-label text-muted fs-sm">تصفية بالمشروع</label>
+            <select name="projectFilter" class="form-select" asp-items="ViewBag.ProjectsList">
+                <option value="">-- كل المشاريع --</option>
+            </select>
+        </div>
+        <div class="col-12 col-md-4">
+            <button type="submit" class="btn btn-secondary w-100">
+                <i class="fa-solid fa-filter me-2"></i> تصفية النتائج
+            </button>
+        </div>
+    </form>
+
+    <div class="table-responsive">
+        <table class="table table-hover align-middle custom-table">
+            <thead class="table-light">
+                <tr>
+                    <th>رقم الإيصال</th>
+                    <th>المشروع / العميل</th>
+                    <th>تاريخ القبض</th>
+                    <th>القيمة</th>
+                    <th>طريقة الدفع</th>
+                    <th class="text-center">الإجراءات</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.Any())
+                {
+                    foreach (var item in Model)
+                    {
+                        <tr>
+                            <td>
+                                <span class="badge bg-secondary">@item.ReceiptNo</span>
+                            </td>
+                            <td>
+                                <div class="fw-bold">@item.Project?.ProjectName</div>
+                                <div class="text-muted fs-sm">@(item.Project?.Customer?.Name ?? "بدون عميل")</div>
+                            </td>
+                            <td>
+                                <div class="text-muted">
+                                    <i class="fa-regular fa-calendar me-1"></i> @item.Created.ToString("dd-MM-yyyy")
+                                </div>
+                            </td>
+                            <td>
+                                <strong class="text-success">@item.Amount.ToString("N2") د.ل</strong>
+                            </td>
+                            <td>
+                                @{
+                                    string paymentClass = item.Payment == PaymentMethod.Cash ? "bg-success" : 
+                                                         (item.Payment == PaymentMethod.Transfer ? "bg-info text-dark" : "bg-primary");
+                                    string paymentIcon = item.Payment == PaymentMethod.Cash ? "fa-money-bill" : 
+                                                        (item.Payment == PaymentMethod.Transfer ? "fa-building-columns" : "fa-credit-card");
+                                }
+                                <span class="badge @paymentClass">
+                                    <i class="fa-solid @paymentIcon me-1"></i>
+                                    @Html.DisplayFor(modelItem => item.Payment)
+                                </span>
+                            </td>
+                            <td>
+                                <div class="d-flex justify-content-center gap-2">
+                                    <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-sm btn-outline-info" title="التفاصيل">
+                                        <i class="fa-solid fa-eye"></i>
+                                    </a>
+                                    <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-outline-primary" title="تعديل">
+                                        <i class="fa-solid fa-pen"></i>
+                                    </a>
+                                    <form asp-action="Delete" asp-route-id="@item.Id" method="post" class="d-inline" onsubmit="return confirm('هل أنت متأكد من حذف هذه الدفعة نهائياً؟ سيتم خصمها من حساب العقد.');">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="حذف">
+                                            <i class="fa-solid fa-trash"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="6" class="text-center py-5 text-muted">
+                            <i class="fa-solid fa-receipt fs-1 mb-3 text-light"></i>
+                            <p class="mb-0">لا توجد دفعات مطابقة للبحث</p>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Pagination -->
+    @if (ViewBag.TotalPages > 1)
+    {
+        <nav aria-label="Page navigation" class="mt-4">
+            <ul class="pagination justify-content-center mb-0">
+                <li class="page-item @(ViewBag.CurrentPage == 1 ? "disabled" : "")">
+                    <a class="page-link" href="@Url.Action("Index", new { page = ViewBag.CurrentPage - 1, searchString = ViewBag.SearchString, projectFilter = ViewBag.ProjectFilter })">السابق</a>
+                </li>
+                @for (int i = 1; i <= ViewBag.TotalPages; i++)
+                {
+                    <li class="page-item @(i == ViewBag.CurrentPage ? "active" : "")">
+                        <a class="page-link" href="@Url.Action("Index", new { page = i, searchString = ViewBag.SearchString, projectFilter = ViewBag.ProjectFilter })">@i</a>
+                    </li>
+                }
+                <li class="page-item @(ViewBag.CurrentPage == ViewBag.TotalPages ? "disabled" : "")">
+                    <a class="page-link" href="@Url.Action("Index", new { page = ViewBag.CurrentPage + 1, searchString = ViewBag.SearchString, projectFilter = ViewBag.ProjectFilter })">التالي</a>
+                </li>
+            </ul>
+        </nav>
+    }
+</div>

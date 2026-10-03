@@ -1,0 +1,30 @@
+@model KitchenProject.Models.Entities.SupplierPayment
+@{ ViewData["Title"] = "تعديل دفعة"; Layout = "_DashboardLayout"; }
+<div class="d-flex justify-content-between mb-4"><h2 class="page-header-title">تعديل الدفعة</h2><a asp-action="Index" class="btn btn-secondary">عودة</a></div>
+<div class="custom-card p-4 col-md-8">
+    <form asp-action="Edit" method="post">
+        <input type="hidden" asp-for="Id"/><input type="hidden" asp-for="Created"/>
+        <div class="row g-3">
+            <div class="col-md-6"><label asp-for="SupplierId" class="fw-bold">المورد *</label><select asp-for="SupplierId" class="form-select" asp-items="ViewBag.SupplierId" id="supplierSelect"><option value="">-- اختر --</option></select></div>
+            <div class="col-md-6"><label asp-for="PurchaseId" class="fw-bold">ارتباط بفاتورة (اختياري)</label><select asp-for="PurchaseId" class="form-select" id="purchaseSelect" asp-items="ViewBag.PurchaseId"><option value="">-- دفعة عامة --</option></select></div>
+            <div class="col-md-6"><label asp-for="Amount" class="fw-bold">المبلغ *</label><input asp-for="Amount" type="number" step="0.01" class="form-control text-success fw-bold" required/></div>
+            <div class="col-md-6"><label asp-for="PaymentMethod" class="fw-bold">طريقة الدفع</label><select asp-for="PaymentMethod" class="form-select" asp-items="ViewBag.PaymentMethod"></select></div>
+            <div class="col-12"><label asp-for="Notes" class="fw-bold">البيان</label><textarea asp-for="Notes" class="form-control" rows="2"></textarea></div>
+            <div class="col-12 mt-4"><button type="submit" class="btn btn-primary w-100">تحديث</button></div>
+        </div>
+    </form>
+</div>
+@section Scripts {
+    <script>
+        $('#supplierSelect').change(function(){
+            var sid = $(this).val();
+            var $p = $('#purchaseSelect'); $p.empty().append('<option value="">-- دفعة عامة --</option>');
+            if(sid){
+                $.get('@Url.Action("GetSupplierPurchases")', {supplierId: sid}, function(data){
+                    $.each(data, function(i, v){ $p.append($('<option>').val(v.id).text(v.text)); });
+                    $p.trigger('change');
+                });
+            }
+        });
+    </script>
+}

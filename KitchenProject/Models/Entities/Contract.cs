@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
+using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -12,8 +12,19 @@ namespace KitchenProject.Models.Entities
 		[Display(Name = "Projects")]
 		public Guid ProjectId { get; set; }
 
+		[ValidateNever]
+		public Quote? Quote { get; set; }
+		[Display(Name = "عرض السعر")]
+		public Guid? QuoteId { get; set; }
+
 		[MaxLength(30)]
 		public required string ContractNo { get; set; }
+
+        public KitchenProject.Models.Enums.ContractType Type { get; set; } = KitchenProject.Models.Enums.ContractType.Final;
+
+        [Display(Name = "نسبة الدفعة المقدمة (%)")]
+        public decimal DownPaymentPercentage { get; set; } = 70;
+
 		[DisplayFormat(DataFormatString = "{0:dd-MM-yyyy hh:mm:ss tt}")]
 		public DateTime? StartDate { get; set; }
 		[DisplayFormat(DataFormatString = "{0:dd-MM-yyyy hh:mm:ss tt}")]

@@ -1,0 +1,25 @@
+@model KitchenProject.Models.Entities.SupplierPayment
+@{ ViewData["Title"] = "سند دفع"; Layout = "_DashboardLayout"; }
+<div class="d-flex justify-content-between mb-4 d-print-none">
+    <h2 class="page-header-title">تفاصيل الدفعة</h2>
+    <div><button onclick="window.print()" class="btn btn-primary"><i class="fa-solid fa-print"></i> طباعة</button> <a asp-action="Index" class="btn btn-secondary">عودة</a></div>
+</div>
+<div class="custom-card p-5" id="printable">
+    <div class="text-center mb-4 border-bottom pb-3"><h3 class="fw-bold">سند صرف למورد</h3><p class="text-muted mb-0">التاريخ: @Model.Created.ToString("yyyy-MM-dd HH:mm")</p></div>
+    <div class="p-4 bg-light rounded-3 mb-4 text-center">
+        <h6 class="text-muted">صرفنا مبلغ وقدره</h6><h2 class="text-success fw-bold">@Model.Amount.ToString("N2") <span class="fs-5 text-dark">د.ل</span></h2>
+    </div>
+    <div class="row g-4 mb-5">
+        <div class="col-6"><p class="text-muted mb-1">يصرف للسيد / الشركة:</p><h5 class="fw-bold">@Model.supplier?.Name</h5></div>
+        <div class="col-6"><p class="text-muted mb-1">طريقة الدفع:</p><h5>@Model.PaymentMethod</h5></div>
+        <div class="col-12"><p class="text-muted mb-1">وذلك عن:</p><h6 class="mb-0">@(string.IsNullOrEmpty(Model.Notes) ? "دفعة حساب" : Model.Notes)</h6></div>
+        @if (ViewBag.LinkedPurchase != null) {
+            <div class="col-12 mt-3 pt-3 border-top"><span class="badge bg-secondary">مرتبط بفاتورة رقم: @ViewBag.LinkedPurchase.InvoiceNo</span></div>
+        }
+    </div>
+    <div class="row mt-5 pt-5 text-center border-top">
+        <div class="col-6"><p class="text-muted mb-4">توقيع المستلم</p><p>.....................</p></div>
+        <div class="col-6"><p class="text-muted mb-4">توقيع المحاسب</p><p>.....................</p></div>
+    </div>
+</div>
+<style>@@media print { body * { visibility: hidden; } #printable, #printable * { visibility: visible; } #printable { position: absolute; left: 0; top: 0; width: 100%; border:none; box-shadow:none;} }</style>

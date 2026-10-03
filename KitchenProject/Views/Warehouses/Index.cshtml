@@ -1,0 +1,42 @@
+@model IEnumerable<KitchenProject.Models.Entities.Warehouse>
+@{
+    ViewData["Title"] = "المخازن";
+    Layout = "_DashboardLayout";
+}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="page-header-title"><i class="fa-solid fa-boxes-stacked text-primary me-2"></i> المخازن</h2>
+    <a asp-action="Create" class="btn btn-primary-custom"><i class="fa-solid fa-plus me-1"></i> إضافة مخزن جديد</a>
+</div>
+<div class="row g-3 mb-4">
+    <div class="col-md-6"><div class="custom-card p-3 border-start border-4 border-primary">العدد الكلي: @ViewBag.TotalWarehouses</div></div>
+    <div class="col-md-6"><div class="custom-card p-3 border-start border-4 border-success">المخازن النشطة: @ViewBag.ActiveWarehouses</div></div>
+</div>
+<div class="custom-card p-4">
+    <form method="get" class="d-flex gap-2 mb-4">
+        <input type="text" name="searchString" value="@ViewBag.SearchString" class="form-control w-25" placeholder="بحث..." />
+        <button type="submit" class="btn btn-secondary"><i class="fa-solid fa-filter"></i> تصفية</button>
+    </form>
+    <div class="table-responsive">
+        <table class="table table-hover custom-table">
+            <thead class="table-light"><tr><th>الاسم</th><th>الموقع</th><th>الحالة</th><th></th></tr></thead>
+            <tbody>
+                @foreach(var item in Model) {
+                    <tr>
+                        <td class="fw-bold">@item.Name</td>
+                        <td>@item.Location</td>
+                        <td><span class="badge @(item.IsActive ? "bg-success" : "bg-secondary")">@(item.IsActive ? "نشط" : "غير نشط")</span></td>
+                        <td>
+                            <div class="d-flex gap-1 justify-content-end">
+                                <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-sm btn-info text-white"><i class="fa-solid fa-eye"></i></a>
+                                <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-primary"><i class="fa-solid fa-pen"></i></a>
+                                <form asp-action="Delete" asp-route-id="@item.Id" method="post" onsubmit="return confirm('تأكيد الحذف؟');">
+                                    <button type="submit" class="btn btn-sm btn-danger"><i class="fa-solid fa-trash"></i></button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

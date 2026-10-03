@@ -1,0 +1,420 @@
+@model KitchenProject.Models.Entities.Project
+@using KitchenProject.Models.Enums
+
+@{
+    ViewData["Title"] = $"تفاصيل المشروع - {Model.ProjectNo}";
+    Layout = "_DashboardLayout";
+
+    var totalPaid = Model.CustomerPayments?.Sum(p => p.Amount) ?? 0;
+    var totalExpenses = Model.Expenses?.Sum(e => e.Amount) ?? 0;
+    var remainingBalance = (Model.FinalAmount > 0 ? Model.FinalAmount : Model.EstimatedAmount) - totalPaid;
+}
+
+<!-- Page Header Bar -->
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+    <div>
+        <div class="d-flex align-items-center gap-2 mb-1">
+            <h2 class="page-header-title mb-0">@Model.ProjectName</h2>
+            <span class="badge bg-primary fs-6">@Model.ProjectNo</span>
+        </div>
+        <p class="text-muted mb-0">
+            <i class="fa-solid fa-user me-1"></i> العميل: <strong>@(Model.Customer?.Name ?? "غير محدد")</strong>
+            <span class="mx-2">•</span>
+            <i class="fa-solid fa-calendar me-1"></i> تاريخ الإنشاء: @Model.Created.ToString("yyyy/MM/dd")
+        </p>
+    </div>
+    <div class="d-flex gap-2">
+        @if (Model.Status != ProjectStatus.Delivered && Model.Status != ProjectStatus.Closed)
+        {
+            <form asp-action="DeliverProject" asp-route-id="@Model.Id" method="post" class="d-inline">
+                <button type="submit" class="btn btn-success fw-bold d-inline-flex align-items-center gap-2" onclick="return confirm('هل أنت متأكد من تسليم المشروع وإغلاقه مالياً؟');">
+                    <i class="fa-solid fa-check-double"></i>
+                    <span>تسليم المشروع</span>
+                </button>
+            </form>
+        }
+        <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-warning fw-bold d-inline-flex align-items-center gap-2">
+            <i class="fa-solid fa-pen"></i>
+            <span>تعديل المشروع</span>
+        </a>
+        <a asp-action="Index" class="btn btn-outline-secondary d-inline-flex align-items-center gap-2">
+            <i class="fa-solid fa-arrow-right"></i>
+            <span>رجوع</span>
+        </a>
+    </div>
+</div>
+
+<!-- Status Banner & Financial Overview Cards -->
+<div class="row g-3 mb-4">
+    <div class="col-12 col-sm-6 col-lg-3">
+        <div class="custom-card p-3 d-flex align-items-center justify-content-between">
+            <div>
+                <span class="text-muted fw-bold d-block mb-1" style="font-size:0.85rem;">حالة المشروع</span>
+                <h5 class="fw-bold mb-0">
+                    @switch (Model.Status)
+                    {
+                        case ProjectStatus.New:
+                            <span class="badge bg-primary">جديد</span>
+                            break;
+                        case ProjectStatus.SiteVisit:
+                            <span class="badge bg-info">معاينة</span>
+                            break;
+                        case ProjectStatus.Design:
+                            <span class="badge bg-warning text-dark">تصميم</span>
+                            break;
+                        case ProjectStatus.Quote:
+                            <span class="badge bg-secondary">عرض سعر</span>
+                            break;
+                        case ProjectStatus.Contracted:
+                            <span class="badge bg-primary">تم التعاقد</span>
+                            break;
+                        case ProjectStatus.InProgress:
+                            <span class="badge bg-warning text-dark"><i class="fa-solid fa-spinner fa-spin me-1"></i>قيد التنفيذ</span>
+                            break;
+                        case ProjectStatus.Delivered:
+                            <span class="badge bg-success">تم التسليم</span>
+                            break;
+                        case ProjectStatus.Closed:
+                            <span class="badge bg-dark">مغلق</span>
+                            break;
+                        case ProjectStatus.Cancelled:
+                            <span class="badge bg-danger">ملغى</span>
+                            break;
+                        default:
+                            <span class="badge bg-light text-dark">@Model.Status</span>
+                            break;
+                    }
+                </h5>
+            </div>
+            <div class="bg-primary-subtle text-primary rounded-3 p-3">
+                <i class="fa-solid fa-flag fs-3"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-12 col-sm-6 col-lg-3">
+        <div class="custom-card p-3 d-flex align-items-center justify-content-between">
+            <div>
+                <span class="text-muted fw-bold d-block mb-1" style="font-size:0.85rem;">إجمالي العقد / التقديري</span>
+                <h4 class="fw-extrabold mb-0 text-dark">@((Model.FinalAmount > 0 ? Model.FinalAmount : Model.EstimatedAmount).ToString("N0")) <small class="fs-6 text-muted">د.ل</small></h4>
+            </div>
+            <div class="bg-info-subtle text-info rounded-3 p-3">
+                <i class="fa-solid fa-calculator fs-3"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-12 col-sm-6 col-lg-3">
+        <div class="custom-card p-3 d-flex align-items-center justify-content-between">
+            <div>
+                <span class="text-muted fw-bold d-block mb-1" style="font-size:0.85rem;">إجمالي المدفوع</span>
+                <h4 class="fw-extrabold mb-0 text-success">@totalPaid.ToString("N0") <small class="fs-6 text-muted">د.ل</small></h4>
+            </div>
+            <div class="bg-success-subtle text-success rounded-3 p-3">
+                <i class="fa-solid fa-money-bill-check fs-3"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-12 col-sm-6 col-lg-3">
+        <div class="custom-card p-3 d-flex align-items-center justify-content-between">
+            <div>
+                <span class="text-muted fw-bold d-block mb-1" style="font-size:0.85rem;">المتبقي على العميل</span>
+                <h4 class="fw-extrabold mb-0 @(remainingBalance > 0 ? "text-danger" : "text-success")">@remainingBalance.ToString("N0") <small class="fs-6 text-muted">د.ل</small></h4>
+            </div>
+            <div class="bg-danger-subtle text-danger rounded-3 p-3">
+                <i class="fa-solid fa-hand-holding-dollar fs-3"></i>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Main Details Grid -->
+<div class="row g-4 mb-4">
+    <!-- Left Column: Customer & Project Details -->
+    <div class="col-12 col-lg-6">
+        <div class="custom-card h-100 p-4">
+            <h5 class="fw-bold text-primary mb-3 border-bottom pb-2">
+                <i class="fa-solid fa-address-card me-2"></i> بيانات العميل والموقع
+            </h5>
+            <div class="row g-3">
+                <div class="col-6">
+                    <span class="text-muted d-block small">اسم العميل</span>
+                    <strong class="text-dark fs-6">@(Model.Customer?.Name ?? "-")</strong>
+                </div>
+                <div class="col-6">
+                    <span class="text-muted d-block small">كود العميل</span>
+                    <strong class="text-dark fs-6">@(Model.Customer?.CustomerNo ?? "-")</strong>
+                </div>
+                <div class="col-6">
+                    <span class="text-muted d-block small">رقم الهاتف</span>
+                    <strong class="text-dark fs-6"><i class="fa-solid fa-phone me-1 text-primary"></i>@(Model.Customer?.Phone ?? "-")</strong>
+                </div>
+                <div class="col-6">
+                    <span class="text-muted d-block small">نوع المطبخ / الخامة</span>
+                    <strong class="text-dark fs-6">@(string.IsNullOrEmpty(Model.KitchenType) ? "غير محدد" : Model.KitchenType)</strong>
+                </div>
+                <div class="col-12">
+                    <span class="text-muted d-block small">عنوان التركيب والموقع</span>
+                    <strong class="text-dark fs-6"><i class="fa-solid fa-location-dot me-1 text-danger"></i>@(string.IsNullOrEmpty(Model.Address) ? Model.Customer?.Address ?? "غير محدد" : Model.Address)</strong>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right Column: Team & Schedule -->
+    <div class="col-12 col-lg-6">
+        <div class="custom-card h-100 p-4">
+            <h5 class="fw-bold text-primary mb-3 border-bottom pb-2">
+                <i class="fa-solid fa-user-gear me-2"></i> الفريق المكلف والجدول الزمني
+            </h5>
+            <div class="row g-3 mb-3">
+                <div class="col-4">
+                    <span class="text-muted d-block small">المبيعات</span>
+                    <strong class="text-dark small d-block"><i class="fa-solid fa-user-tie me-1 text-secondary"></i>@(Model.SalesUser?.UserProfile?.DisplayName ?? Model.SalesUser?.UserName ?? "غير مكلف")</strong>
+                </div>
+                <div class="col-4">
+                    <span class="text-muted d-block small">المهندس</span>
+                    <strong class="text-dark small d-block"><i class="fa-solid fa-compass me-1 text-primary"></i>@(Model.EngineerUser?.UserProfile?.DisplayName ?? Model.EngineerUser?.UserName ?? "غير مكلف")</strong>
+                </div>
+                <div class="col-4">
+                    <span class="text-muted d-block small">المصمم</span>
+                    <strong class="text-dark small d-block"><i class="fa-solid fa-pen-ruler me-1 text-warning"></i>@(Model.DesignerUser?.UserProfile?.DisplayName ?? Model.DesignerUser?.UserName ?? "غير مكلف")</strong>
+                </div>
+            </div>
+
+            <div class="row g-3 border-top pt-2">
+                <div class="col-6 col-sm-3">
+                    <span class="text-muted d-block small">تاريخ البدء</span>
+                    <strong class="text-dark small">@(Model.StartDate?.ToString("yyyy/MM/dd") ?? "-")</strong>
+                </div>
+                <div class="col-6 col-sm-3">
+                    <span class="text-muted d-block small">التسليم المتوقع</span>
+                    <strong class="text-dark small">@(Model.ExpectedDeliveryDate?.ToString("yyyy/MM/dd") ?? "-")</strong>
+                </div>
+                <div class="col-6 col-sm-3">
+                    <span class="text-muted d-block small">التسليم الفعلي</span>
+                    <strong class="text-dark small">@(Model.DeliveredAt?.ToString("yyyy/MM/dd") ?? "-")</strong>
+                </div>
+                <div class="col-6 col-sm-3">
+                    <span class="text-muted d-block small">تاريخ الإغلاق</span>
+                    <strong class="text-dark small">@(Model.ClosedAt?.ToString("yyyy/MM/dd") ?? "-")</strong>
+                </div>
+            </div>
+
+            @if (!string.IsNullOrEmpty(Model.Notes))
+            {
+                <div class="mt-3 border-top pt-2">
+                    <span class="text-muted d-block small">ملاحظات المشروع</span>
+                    <p class="mb-0 text-dark small bg-light p-2 rounded">@Model.Notes</p>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<!-- Tabbed Sections for Related Work -->
+<div class="custom-card p-4 mb-4">
+    <ul class="nav nav-tabs border-bottom mb-3" id="projectTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active fw-bold" id="visits-tab" data-bs-toggle="tab" data-bs-target="#visits-tab-pane" type="button" role="tab">
+                <i class="fa-solid fa-ruler-combined me-1"></i> المعاينات والمقاسات (@(Model.SiteVisits?.Count ?? 0))
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link fw-bold" id="quotes-tab" data-bs-toggle="tab" data-bs-target="#quotes-tab-pane" type="button" role="tab">
+                <i class="fa-solid fa-file-invoice-dollar me-1"></i> عروض الأسعار (@(Model.Quotes?.Count ?? 0))
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link fw-bold" id="contracts-tab" data-bs-toggle="tab" data-bs-target="#contracts-tab-pane" type="button" role="tab">
+                <i class="fa-solid fa-file-contract me-1"></i> العقود (@(Model.Contracts?.Count ?? 0))
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link fw-bold" id="payments-tab" data-bs-toggle="tab" data-bs-target="#payments-tab-pane" type="button" role="tab">
+                <i class="fa-solid fa-wallet me-1"></i> التحصيلات والمدفوعات (@(Model.CustomerPayments?.Count ?? 0))
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link fw-bold" id="expenses-tab" data-bs-toggle="tab" data-bs-target="#expenses-tab-pane" type="button" role="tab">
+                <i class="fa-solid fa-receipt me-1"></i> المصروفات المباشرة (@(Model.Expenses?.Count ?? 0))
+            </button>
+        </li>
+    </ul>
+
+    <div class="tab-content" id="projectTabsContent">
+        <!-- Site Visits Tab Pane -->
+        <div class="tab-pane fade show active" id="visits-tab-pane" role="tabpanel" aria-labelledby="visits-tab" tabindex="0">
+            @if (Model.SiteVisits == null || !Model.SiteVisits.Any())
+            {
+                <p class="text-muted text-center py-4">لا توجد معاينات مسجلة لهذا المشروع حتى الآن.</p>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead class="bg-light">
+                            <tr>
+                                <th>التاريخ</th>
+                                <th>المهندس المعاين</th>
+                                <th>الحالة</th>
+                                <th>الملاحظات</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var visit in Model.SiteVisits)
+                            {
+                                <tr>
+                                    <td>@visit.VisitDate.ToString("yyyy/MM/dd hh:mm tt")</td>
+                                    <td>@(visit.Engineer?.UserProfile?.DisplayName ?? visit.Engineer?.UserName ?? "-")</td>
+                                    <td><span class="badge bg-secondary">@visit.Status</span></td>
+                                    <td>@(visit.Notes ?? "-")</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+
+        <!-- Quotes Tab Pane -->
+        <div class="tab-pane fade" id="quotes-tab-pane" role="tabpanel" aria-labelledby="quotes-tab" tabindex="0">
+            @if (Model.Quotes == null || !Model.Quotes.Any())
+            {
+                <p class="text-muted text-center py-4">لا توجد عروض أسعار مسجلة لهذا المشروع حتى الآن.</p>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead class="bg-light">
+                            <tr>
+                                <th>رقم العرض</th>
+                                <th>التاريخ</th>
+                                <th>القيمة الاجمالية</th>
+                                <th>الحالة</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var q in Model.Quotes)
+                            {
+                                <tr>
+                                    <td class="fw-bold text-primary">@q.QuoteNo</td>
+                                    <td>@q.Created.ToString("yyyy/MM/dd")</td>
+                                    <td class="fw-bold">@q.Total.ToString("N2") د.ل</td>
+                                    <td><span class="badge bg-info">@q.Status</span></td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+
+        <!-- Contracts Tab Pane -->
+        <div class="tab-pane fade" id="contracts-tab-pane" role="tabpanel" aria-labelledby="contracts-tab" tabindex="0">
+            @if (Model.Contracts == null || !Model.Contracts.Any())
+            {
+                <p class="text-muted text-center py-4">لا توجد عقود مسجلة لهذا المشروع حتى الآن.</p>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead class="bg-light">
+                            <tr>
+                                <th>رقم العقد</th>
+                                <th>تاريخ البداية</th>
+                                <th>قيمة العقد</th>
+                                <th>المبلغ المسدد</th>
+                                <th>المتسلم المتوقع</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var c in Model.Contracts)
+                            {
+                                <tr>
+                                    <td class="fw-bold text-primary">@c.ContractNo</td>
+                                    <td>@(c.StartDate?.ToString("yyyy/MM/dd") ?? "-")</td>
+                                    <td class="fw-bold">@c.TotalAmount.ToString("N2") د.ل</td>
+                                    <td class="text-success fw-bold">@c.PaidAmount.ToString("N2") د.ل</td>
+                                    <td>@(c.ExpectedEndDate?.ToString("yyyy/MM/dd") ?? "-")</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+
+        <!-- Customer Payments Tab Pane -->
+        <div class="tab-pane fade" id="payments-tab-pane" role="tabpanel" aria-labelledby="payments-tab" tabindex="0">
+            @if (Model.CustomerPayments == null || !Model.CustomerPayments.Any())
+            {
+                <p class="text-muted text-center py-4">لا توجد دفعة محصلة مسجلة لهذا المشروع حتى الآن.</p>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead class="bg-light">
+                            <tr>
+                                <th>رقم الإيصال / المرجع</th>
+                                <th>تاريخ الدفع</th>
+                                <th>المبلغ المسدد</th>
+                                <th>طريقة الدفع</th>
+                                <th>البيان / الملاحظات</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var p in Model.CustomerPayments)
+                            {
+                                <tr>
+                                    <td class="fw-bold text-primary">@p.ReceiptNo</td>
+                                    <td>@p.Created.ToString("yyyy/MM/dd")</td>
+                                    <td class="fw-bold text-success">@p.Amount.ToString("N2") د.ل</td>
+                                    <td><span class="badge bg-light text-dark border">@p.Payment</span></td>
+                                    <td>@(p.Notes ?? "-")</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+
+        <!-- Expenses Tab Pane -->
+        <div class="tab-pane fade" id="expenses-tab-pane" role="tabpanel" aria-labelledby="expenses-tab" tabindex="0">
+            @if (Model.Expenses == null || !Model.Expenses.Any())
+            {
+                <p class="text-muted text-center py-4">لا توجد مصروفات مباشرة مسجلة لهذا المشروع حتى الآن.</p>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead class="bg-light">
+                            <tr>
+                                <th>التاريخ</th>
+                                <th>نوع المصروف</th>
+                                <th>المبلغ</th>
+                                <th>طريقة الدفع</th>
+                                <th>الملاحظات / البيان</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var exp in Model.Expenses)
+                            {
+                                <tr>
+                                    <td>@exp.Created.ToString("yyyy/MM/dd")</td>
+                                    <td class="fw-bold">@exp.ExpenseType</td>
+                                    <td class="fw-bold text-danger">@exp.Amount.ToString("N2") د.ل</td>
+                                    <td><span class="badge bg-light text-dark border">@exp.Payment</span></td>
+                                    <td>@(exp.Description ?? exp.Notes ?? "-")</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+    </div>
+</div>

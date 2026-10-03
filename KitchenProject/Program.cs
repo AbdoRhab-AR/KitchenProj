@@ -126,7 +126,7 @@ app.UseAuthorization();//What you allowed to do//·· Õﬁﬁ „‰ ’·«ÕÌ… «·„” Œœ„
 
 app.MapControllerRoute(
 	name: "default",
-	pattern: "{controller=Customers}/{action=Index}/{id?}");
+	pattern: "{controller=Dashboard}/{action=Index}/{id?}");
 
 
 

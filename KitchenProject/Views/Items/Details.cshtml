@@ -1,0 +1,43 @@
+@using KitchenProject.Models.Enums
+@model KitchenProject.Models.Entities.Item
+@{ ViewData["Title"] = "تفاصيل الصنف"; Layout = "_DashboardLayout"; }
+<div class="d-flex justify-content-between mb-4"><h2 class="page-header-title">@Model.Name <span class="text-muted fs-5">(@Model.Code)</span></h2>
+    <div><a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-primary">تعديل</a> <a asp-action="Index" class="btn btn-secondary">عودة</a></div>
+</div>
+<div class="row g-4">
+    <div class="col-md-4">
+        <div class="custom-card p-4 h-100 border-start border-4 border-info">
+            <h5>بيانات الصنف</h5><hr/>
+            <p><strong>الفئة:</strong> @Model.Category</p>
+            <p><strong>الوحدة:</strong> @Model.Unit</p>
+            <p><strong>سعر الشراء:</strong> @Model.PurchasePrice</p>
+            <p><strong>الحد الأدنى:</strong> @Model.MinQuantity</p>
+            <p><strong>الرصيد الكلي:</strong> <span class="fs-4 fw-bold @(ViewBag.TotalBalance < Model.MinQuantity ? "text-danger" : "text-success")">@ViewBag.TotalBalance</span></p>
+        </div>
+    </div>
+    <div class="col-md-8">
+        <div class="custom-card p-4 mb-4">
+            <h5>توزيع الأرصدة عالمخازن</h5>
+            <table class="table table-sm">
+                <thead><tr><th>المخزن</th><th>وارد</th><th>منصرف</th><th>الرصيد</th></tr></thead>
+                <tbody>
+                    @foreach(var w in ViewBag.WarehouseStock) { 
+                        <tr><td>@w.WarehouseName</td><td class="text-success">@w.In</td><td class="text-danger">@w.Out</td><td class="fw-bold">@w.Balance</td></tr> 
+                    }
+                </tbody>
+            </table>
+        </div>
+        <div class="custom-card p-4">
+            <h5>آخر الحركات</h5>
+            <table class="table table-sm">
+                <thead><tr><th>التاريخ</th><th>المخزن</th><th>النوع</th><th>وارد</th><th>منصرف</th><th>ملاحظة</th></tr></thead>
+                <tbody>
+                    @foreach(var t in ViewBag.RecentTransactions) {
+                        <tr><td>@t.Created.ToString("yyyy-MM-dd")</td><td>@t.Warehouses?.Name</td><td>@t.TransactionType</td>
+                        <td class="text-success">@t.QuantityIn</td><td class="text-danger">@t.QuantityOut</td><td>@t.ReferenceNo</td></tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

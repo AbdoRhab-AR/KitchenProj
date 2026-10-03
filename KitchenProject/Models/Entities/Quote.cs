@@ -29,9 +29,22 @@ namespace KitchenProject.Models.Entities
 		[Column(TypeName = "decimal(18,2)")]
 		public decimal Total { get; set; }
 
-		[MaxLength(30)]
 		public DesignStatus Status { get; set; } = DesignStatus.Draft;
 
 		public string? Notes { get; set; }
+
+		// نوع الفاتورة: مبدئية أو نهائية
+		[Display(Name = "نوع الفاتورة")]
+		public ContractType Type { get; set; } = ContractType.Preliminary;
+
+		// شروط وملاحظات تطبع أسفل الفاتورة (سطر لكل شرط)
+		[Display(Name = "الشروط")]
+		public string? Terms { get; set; }
+
+		// الفاتورة المبدئية التي أنشئت منها هذه الفاتورة النهائية
+		public Guid? SourceQuoteId { get; set; }
+
+		[ValidateNever]
+		public ICollection<QuoteItem> Items { get; set; } = new List<QuoteItem>();
 	}
 }

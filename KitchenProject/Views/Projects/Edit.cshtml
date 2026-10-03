@@ -1,0 +1,159 @@
+@model KitchenProject.Models.Entities.Project
+@using KitchenProject.Models.Enums
+
+@{
+    ViewData["Title"] = "تعديل بيانات المشروع";
+    Layout = "_DashboardLayout";
+}
+
+<!-- Page Header Bar -->
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+    <div>
+        <h2 class="page-header-title mb-1">
+            <i class="fa-solid fa-pen-to-square text-primary me-2"></i> تعديل بيانات المشروع: @Model.ProjectNo
+        </h2>
+        <p class="text-muted mb-0">تحديث حالة وتفاصيل وفريق عمل المشروع الحالي</p>
+    </div>
+    <div>
+        <a asp-action="Index" class="btn btn-outline-secondary d-inline-flex align-items-center gap-2">
+            <i class="fa-solid fa-arrow-right"></i>
+            <span>العودة للمشاريع</span>
+        </a>
+    </div>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-12 col-lg-10">
+        <div class="custom-card p-4">
+            <form asp-action="Edit" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" asp-for="Id" />
+                <input type="hidden" asp-for="Created" />
+                <div asp-validation-summary="ModelOnly" class="alert alert-danger mb-4 rounded-3" role="alert"></div>
+
+                <!-- Section 1: Basic Information -->
+                <div class="border-bottom pb-3 mb-4">
+                    <h5 class="fw-bold text-primary mb-3">
+                        <i class="fa-solid fa-info-circle me-2"></i> البيانات الأساسية للمشروع
+                    </h5>
+                    <div class="row g-3">
+                        <div class="col-12 col-md-4">
+                            <label asp-for="ProjectNo" class="form-label fw-bold">رقم المشروع</label>
+                            <input asp-for="ProjectNo" class="form-control bg-light" readonly />
+                            <span asp-validation-for="ProjectNo" class="text-danger small"></span>
+                        </div>
+                        <div class="col-12 col-md-8">
+                            <label asp-for="CustomerId" class="form-label fw-bold">العميل <span class="text-danger">*</span></label>
+                            <select asp-for="CustomerId" class="form-select" asp-items="ViewBag.CustomerId"></select>
+                            <span asp-validation-for="CustomerId" class="text-danger small"></span>
+                        </div>
+                        <div class="col-12 col-md-8">
+                            <label asp-for="ProjectName" class="form-label fw-bold">اسم المشروع <span class="text-danger">*</span></label>
+                            <input asp-for="ProjectName" class="form-control" />
+                            <span asp-validation-for="ProjectName" class="text-danger small"></span>
+                        </div>
+                        <div class="col-12 col-md-4">
+                            <label asp-for="KitchenType" class="form-label fw-bold">نوع المطبخ / الخامة</label>
+                            <input asp-for="KitchenType" class="form-control" />
+                            <span asp-validation-for="KitchenType" class="text-danger small"></span>
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <label asp-for="Status" class="form-label fw-bold">حالة المشروع <span class="text-danger">*</span></label>
+                            <select asp-for="Status" class="form-select" asp-items="Html.GetEnumSelectList<ProjectStatus>()"></select>
+                            <span asp-validation-for="Status" class="text-danger small"></span>
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <label asp-for="Address" class="form-label fw-bold">عنوان المطبخ / الموقع</label>
+                            <input asp-for="Address" class="form-control" />
+                            <span asp-validation-for="Address" class="text-danger small"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section 2: Assigned Team -->
+                <div class="border-bottom pb-3 mb-4">
+                    <h5 class="fw-bold text-primary mb-3">
+                        <i class="fa-solid fa-users-gear me-2"></i> فريق العمل المسؤول
+                    </h5>
+                    <div class="row g-3">
+                        <div class="col-12 col-md-4">
+                            <label asp-for="SalesUserId" class="form-label fw-bold">مسؤول المبيعات</label>
+                            <select asp-for="SalesUserId" class="form-select" asp-items="ViewBag.SalesUserId">
+                                <option value="">-- اختر مسئول المبيعات --</option>
+                            </select>
+                            <span asp-validation-for="SalesUserId" class="text-danger small"></span>
+                        </div>
+                        <div class="col-12 col-md-4">
+                            <label asp-for="EngineerUserId" class="form-label fw-bold">المهندس المسؤول</label>
+                            <select asp-for="EngineerUserId" class="form-select" asp-items="ViewBag.EngineerUserId">
+                                <option value="">-- اختر المهندس --</option>
+                            </select>
+                            <span asp-validation-for="EngineerUserId" class="text-danger small"></span>
+                        </div>
+                        <div class="col-12 col-md-4">
+                            <label asp-for="DesignerUserId" class="form-label fw-bold">المصمم المسؤول</label>
+                            <select asp-for="DesignerUserId" class="form-select" asp-items="ViewBag.DesignerUserId">
+                                <option value="">-- اختر المصمم --</option>
+                            </select>
+                            <span asp-validation-for="DesignerUserId" class="text-danger small"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section 3: Financials & Dates -->
+                <div class="border-bottom pb-3 mb-4">
+                    <h5 class="fw-bold text-primary mb-3">
+                        <i class="fa-solid fa-calendar-dollar me-2"></i> القيمة والتواريخ
+                    </h5>
+                    <div class="row g-3">
+                        <div class="col-12 col-md-6 col-lg-3">
+                            <label asp-for="EstimatedAmount" class="form-label fw-bold">القيمة التقديرية (د.ل)</label>
+                            <input asp-for="EstimatedAmount" type="number" step="0.01" class="form-control" />
+                            <span asp-validation-for="EstimatedAmount" class="text-danger small"></span>
+                        </div>
+                        <div class="col-12 col-md-6 col-lg-3">
+                            <label asp-for="FinalAmount" class="form-label fw-bold">القيمة النهائية (د.ل)</label>
+                            <input asp-for="FinalAmount" type="number" step="0.01" class="form-control" />
+                            <span asp-validation-for="FinalAmount" class="text-danger small"></span>
+                        </div>
+                        <div class="col-12 col-md-6 col-lg-3">
+                            <label asp-for="StartDate" class="form-label fw-bold">تاريخ البدء</label>
+                            <input asp-for="StartDate" type="date" class="form-control" value="@Model.StartDate?.ToString("yyyy-MM-dd")" />
+                            <span asp-validation-for="StartDate" class="text-danger small"></span>
+                        </div>
+                        <div class="col-12 col-md-6 col-lg-3">
+                            <label asp-for="ExpectedDeliveryDate" class="form-label fw-bold">التسليم المتوقع</label>
+                            <input asp-for="ExpectedDeliveryDate" type="date" class="form-control" value="@Model.ExpectedDeliveryDate?.ToString("yyyy-MM-dd")" />
+                            <span asp-validation-for="ExpectedDeliveryDate" class="text-danger small"></span>
+                        </div>
+                        <div class="col-12 col-md-6 col-lg-3">
+                            <label asp-for="DeliveredAt" class="form-label fw-bold">تاريخ التسليم الفعلي</label>
+                            <input asp-for="DeliveredAt" type="date" class="form-control" value="@Model.DeliveredAt?.ToString("yyyy-MM-dd")" />
+                            <span asp-validation-for="DeliveredAt" class="text-danger small"></span>
+                        </div>
+                        <div class="col-12 col-md-6 col-lg-3">
+                            <label asp-for="ClosedAt" class="form-label fw-bold">تاريخ إغلاق المشروع</label>
+                            <input asp-for="ClosedAt" type="date" class="form-control" value="@Model.ClosedAt?.ToString("yyyy-MM-dd")" />
+                            <span asp-validation-for="ClosedAt" class="text-danger small"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section 4: Notes -->
+                <div class="mb-4">
+                    <label asp-for="Notes" class="form-label fw-bold">ملاحظات إضافية</label>
+                    <textarea asp-for="Notes" class="form-control" rows="3"></textarea>
+                    <span asp-validation-for="Notes" class="text-danger small"></span>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="d-flex justify-content-end gap-2">
+                    <a asp-action="Index" class="btn btn-light border fw-bold px-4">إلغاء</a>
+                    <button type="submit" class="btn btn-primary-custom px-5">
+                        <i class="fa-solid fa-save me-2"></i> حفظ التعديلات
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

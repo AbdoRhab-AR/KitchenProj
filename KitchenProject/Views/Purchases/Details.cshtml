@@ -1,0 +1,214 @@
+@model KitchenProject.Models.Entities.Purchase
+@{
+    ViewData["Title"] = $"أمر الشراء: {Model.InvoiceNo}";
+    Layout = "_DashboardLayout";
+    string statusAr = Model.Status switch { "Draft" => "مسودة", "Ordered" => "مُصدَر", "Received" => "مُستلَم", "Cancelled" => "ملغي", _ => Model.Status };
+    string statusClass = Model.Status switch { "Received" => "bg-success", "Ordered" => "bg-info text-dark", "Cancelled" => "bg-danger", _ => "bg-secondary" };
+}
+
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+    <div>
+        <h2 class="page-header-title mb-1">
+            <i class="fa-solid fa-file-lines text-primary me-2"></i> أمر الشراء: @Model.InvoiceNo
+        </h2>
+        <p class="text-muted mb-0">
+            <span class="badge @statusClass me-2">@statusAr</span>
+            تاريخ الإنشاء: @Model.Created.ToString("dd/MM/yyyy HH:mm")
+        </p>
+    </div>
+    <div class="d-flex gap-2">
+        @if (Model.Status != "Received" && Model.Status != "Cancelled")
+        {
+            <form asp-action="MarkReceived" asp-route-id="@Model.Id" method="post" onsubmit="return confirm('تأكيد استلام البضاعة؟ سيتم تحديث المخزن تلقائياً.');">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="btn btn-success d-inline-flex align-items-center gap-2">
+                    <i class="fa-solid fa-boxes-stacked"></i><span>تأكيد الاستلام وتحديث المخزن</span>
+                </button>
+            </form>
+            <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-outline-primary d-inline-flex align-items-center gap-2">
+                <i class="fa-solid fa-pen"></i><span>تعديل</span>
+            </a>
+        }
+        <a asp-action="Index" class="btn btn-outline-secondary d-inline-flex align-items-center gap-2">
+            <i class="fa-solid fa-arrow-right"></i><span>العودة</span>
+        </a>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Header Info -->
+    <div class="col-12 col-lg-8">
+        <div class="custom-card p-4">
+            <div class="row g-3">
+                <div class="col-sm-6">
+                    <p class="text-muted mb-1 small">المورد</p>
+                    <h6 class="fw-bold">@Model.Suppliers?.Name</h6>
+                    <small class="text-muted">@Model.Suppliers?.Phone</small>
+                </div>
+                <div class="col-sm-6">
+                    <p class="text-muted mb-1 small">المخزن المستلم</p>
+                    <h6 class="fw-bold">@Model.Warehouses?.Name</h6>
+                    <small class="text-muted">@Model.Warehouses?.Location</small>
+                </div>
+                @if (Model.Projects != null)
+                {
+                    <div class="col-sm-6">
+                        <p class="text-muted mb-1 small">المشروع المرتبط</p>
+                        <span class="badge bg-primary">@Model.Projects.ProjectNo - @Model.Projects.ProjectName</span>
+                    </div>
+                }
+                @if (!string.IsNullOrEmpty(Model.Notes))
+                {
+                    <div class="col-12">
+                        <p class="text-muted mb-1 small">ملاحظات</p>
+                        <p class="mb-0">@Model.Notes</p>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- Financial Summary -->
+    <div class="col-12 col-lg-4">
+        <div class="custom-card p-4 border-start border-4 border-primary">
+            <h6 class="fw-bold text-muted mb-3">الملخص المالي</h6>
+            <div class="d-flex justify-content-between mb-2">
+                <span class="text-muted">المجموع الفرعي</span>
+                <span>@Model.Subtotal.ToString("N2") د.ل</span>
+            </div>
+            <div class="d-flex justify-content-between mb-2">
+                <span class="text-muted">الخصم</span>
+                <span class="text-danger">- @Model.Discount.ToString("N2") د.ل</span>
+            </div>
+            <div class="d-flex justify-content-between mb-3">
+                <span class="text-muted">الضريبة</span>
+                <span>@Model.Tax.ToString("N2") د.ل</span>
+            </div>
+            <div class="d-flex justify-content-between border-top pt-3 mb-2">
+                <span class="fw-bold">الإجمالي</span>
+                <span class="fw-bold text-primary fs-5">@Model.Total.ToString("N2") د.ل</span>
+            </div>
+            <div class="d-flex justify-content-between mb-2">
+                <span class="text-muted">المدفوع</span>
+                <span class="text-success">@Model.PaidAmount.ToString("N2") د.ل</span>
+            </div>
+            <div class="d-flex justify-content-between">
+                <span class="text-muted">المتبقي</span>
+                <strong class="@(Model.RemainingAmount > 0 ? "text-danger" : "text-success")">
+                    @Model.RemainingAmount.ToString("N2") د.ل
+                </strong>
+            </div>
+        </div>
+    </div>
+
+    <!-- Items Table -->
+    <div class="col-12">
+        <div class="custom-card p-4">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="fw-bold mb-0"><i class="fa-solid fa-list-check me-2 text-primary"></i> أصناف أمر الشراء</h5>
+                @if (Model.Status != "Received" && Model.Status != "Cancelled")
+                {
+                    <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#addItemModal">
+                        <i class="fa-solid fa-plus me-1"></i> إضافة صنف
+                    </button>
+                }
+            </div>
+            <div class="table-responsive">
+                <table class="table table-sm align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>#</th>
+                            <th>الصنف</th>
+                            <th>الوحدة</th>
+                            <th>الكمية</th>
+                            <th>سعر الوحدة</th>
+                            <th>الإجمالي</th>
+                            @if (Model.Status != "Received" && Model.Status != "Cancelled")
+                            {
+                                <th></th>
+                            }
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @{int rowNum = 1;}
+                        @foreach (var lineItem in Model.Items)
+                        {
+                            <tr>
+                                <td class="text-muted">@rowNum</td>
+                                <td>
+                                    <div class="fw-bold">@lineItem.Items?.Name</div>
+                                    <small class="text-muted">@lineItem.Items?.Code</small>
+                                </td>
+                                <td>@lineItem.Items?.Unit</td>
+                                <td>@lineItem.Quantity</td>
+                                <td>@lineItem.UnitPrice.ToString("N2")</td>
+                                <td class="fw-bold">@lineItem.Total.ToString("N2") د.ل</td>
+                                @if (Model.Status != "Received" && Model.Status != "Cancelled")
+                                {
+                                    <td>
+                                        <form asp-action="RemoveItem" method="post" class="d-inline" onsubmit="return confirm('حذف هذا الصنف؟');">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="id" value="@lineItem.Id" />
+                                            <input type="hidden" name="purchaseId" value="@Model.Id" />
+                                            <button type="submit" class="btn btn-sm btn-outline-danger"><i class="fa-solid fa-times"></i></button>
+                                        </form>
+                                    </td>
+                                }
+                            </tr>
+                            rowNum++;
+                        }
+                        @if (!Model.Items.Any())
+                        {
+                            <tr><td colspan="7" class="text-center py-4 text-muted">لا توجد أصناف مضافة بعد</td></tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Item Modal -->
+@if (Model.Status != "Received" && Model.Status != "Cancelled")
+{
+    <div class="modal fade" id="addItemModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold">إضافة صنف لأمر الشراء</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form asp-action="AddItem" method="post">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="PurchaseId" value="@Model.Id" />
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">الصنف <span class="text-danger">*</span></label>
+                            <select name="ItemId" class="form-select" required>
+                                <option value="">-- اختر الصنف --</option>
+                                @foreach (var it in ViewBag.ItemsList as SelectList ?? new SelectList(new List<object>()))
+                                {
+                                    <option value="@it.Value">@it.Text</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="row g-3">
+                            <div class="col-6">
+                                <label class="form-label fw-bold">الكمية <span class="text-danger">*</span></label>
+                                <input type="number" name="Quantity" step="0.01" min="0.01" class="form-control" required placeholder="0" />
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label fw-bold">سعر الوحدة</label>
+                                <input type="number" name="UnitPrice" step="0.01" min="0" class="form-control" placeholder="0.00" />
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-light" data-bs-dismiss="modal">إلغاء</button>
+                        <button type="submit" class="btn btn-primary-custom">إضافة الصنف</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+}

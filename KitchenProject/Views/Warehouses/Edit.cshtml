@@ -1,0 +1,12 @@
+@model KitchenProject.Models.Entities.Warehouse
+@{ ViewData["Title"] = "تعديل مخزن"; Layout = "_DashboardLayout"; }
+<div class="d-flex justify-content-between mb-4"><h2 class="page-header-title">تعديل المخزن: @Model.Name</h2><a asp-action="Index" class="btn btn-secondary">عودة</a></div>
+<div class="custom-card p-4 col-md-6">
+    <form asp-action="Edit" method="post">
+        <input type="hidden" asp-for="Id" /><input type="hidden" asp-for="Created" />
+        <div class="mb-3"><label asp-for="Name" class="form-label fw-bold">الاسم *</label><input asp-for="Name" class="form-control" required /></div>
+        <div class="mb-3"><label asp-for="Location" class="form-label fw-bold">الموقع</label><input asp-for="Location" class="form-control" /></div>
+        <div class="mb-3 form-check"><input asp-for="IsActive" class="form-check-input" /><label asp-for="IsActive" class="form-check-label fw-bold">نشط</label></div>
+        <button type="submit" class="btn btn-primary w-100">تحديث</button>
+    </form>
+</div>

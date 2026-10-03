@@ -1,0 +1,280 @@
+@model IEnumerable<KitchenProject.Models.Entities.Project>
+@using KitchenProject.Models.Enums
+@{
+    ViewData["Title"] = "إدارة المشاريع والأوامر";
+    Layout = "_DashboardLayout";
+}
+
+<!-- Page Header & Title Bar -->
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+    <div>
+        <h2 class="page-header-title mb-1">
+            <i class="fa-solid fa-diagram-project text-primary me-2"></i> إدارة المشاريع والأوامر
+        </h2>
+        <p class="text-muted mb-0">متابعة وإدارة دورة حياة المشاريع والتصاميم والتنفيذ والتسليم</p>
+    </div>
+    <div>
+        <a asp-action="Create" class="btn btn-primary-custom d-inline-flex align-items-center gap-2">
+            <i class="fa-solid fa-plus"></i>
+            <span>إضافة مشروع جديد</span>
+        </a>
+    </div>
+</div>
+
+
+
+<!-- KPI Stats Cards -->
+<div class="row g-3 mb-4">
+    <div class="col-12 col-sm-6 col-xl-3">
+        <div class="custom-card p-3 d-flex align-items-center justify-content-between">
+            <div>
+                <span class="text-muted fw-bold d-block mb-1" style="font-size:0.85rem;">إجمالي المشاريع</span>
+                <h3 class="fw-extrabold mb-0 text-dark">@ViewBag.TotalProjectsCount</h3>
+            </div>
+            <div class="bg-primary-subtle text-primary rounded-3 p-3">
+                <i class="fa-solid fa-diagram-project fs-3"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-12 col-sm-6 col-xl-3">
+        <div class="custom-card p-3 d-flex align-items-center justify-content-between">
+            <div>
+                <span class="text-muted fw-bold d-block mb-1" style="font-size:0.85rem;">قيد العمل والتنفيذ</span>
+                <h3 class="fw-extrabold mb-0 text-warning">@ViewBag.InProgressCount</h3>
+            </div>
+            <div class="bg-warning-subtle text-warning rounded-3 p-3">
+                <i class="fa-solid fa-spinner fs-3"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-12 col-sm-6 col-xl-3">
+        <div class="custom-card p-3 d-flex align-items-center justify-content-between">
+            <div>
+                <span class="text-muted fw-bold d-block mb-1" style="font-size:0.85rem;">المشاريع المكتملة</span>
+                <h3 class="fw-extrabold mb-0 text-success">@ViewBag.CompletedCount</h3>
+            </div>
+            <div class="bg-success-subtle text-success rounded-3 p-3">
+                <i class="fa-solid fa-circle-check fs-3"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-12 col-sm-6 col-xl-3">
+        <div class="custom-card p-3 d-flex align-items-center justify-content-between">
+            <div>
+                <span class="text-muted fw-bold d-block mb-1" style="font-size:0.85rem;">إجمالي القيمة المقدرة</span>
+                <h4 class="fw-extrabold mb-0 text-info">@ViewBag.TotalEstimatedAmount.ToString("N0") <small class="fs-6 text-muted">د.ل</small></h4>
+            </div>
+            <div class="bg-info-subtle text-info rounded-3 p-3">
+                <i class="fa-solid fa-money-bill-wave fs-3"></i>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Search & Filter Card -->
+<div class="custom-card mb-4 p-3">
+    <form method="get" asp-action="Index" class="row g-3 align-items-center">
+        <div class="col-12 col-md-5">
+            <div class="input-group">
+                <span class="input-group-text bg-white border-end-0"><i class="fa-solid fa-magnifying-glass text-muted"></i></span>
+                <input type="text" name="searchString" class="form-control border-start-0 ps-0" placeholder="بحث برقم المشروع، اسم المشروع، أو بيانات العميل..." value="@ViewBag.SearchString">
+            </div>
+        </div>
+        <div class="col-12 col-md-3">
+            <select name="statusFilter" class="form-select" asp-items="Html.GetEnumSelectList<ProjectStatus>()">
+                <option value="">-- كل الحالات --</option>
+            </select>
+        </div>
+        <div class="col-12 col-md-4 d-flex gap-2">
+            <button type="submit" class="btn btn-primary fw-bold px-4 rounded-3 flex-grow-1">
+                <i class="fa-solid fa-search me-1"></i> بحث وتصفية
+            </button>
+            @if (!string.IsNullOrEmpty(ViewBag.SearchString) || ViewBag.StatusFilter != null || ViewBag.CustomerFilter != null)
+            {
+                <a asp-action="Index" class="btn btn-light border fw-bold text-muted" title="إلغاء البحث">
+                    <i class="fa-solid fa-xmark"></i>
+                </a>
+            }
+        </div>
+    </form>
+</div>
+
+<!-- Projects Data Table Card -->
+<div class="custom-card">
+    <div class="card-header-custom">
+        <h5 class="fw-bold mb-0 text-dark">
+            <i class="fa-solid fa-list text-secondary me-2"></i> قائمة المشاريع
+        </h5>
+        <span class="badge bg-light text-dark border">عدد النتائج: @ViewBag.TotalCount</span>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="bg-light text-muted" style="font-size:0.85rem; text-transform:uppercase;">
+                <tr>
+                    <th class="ps-4">رقم المشروع</th>
+                    <th>اسم المشروع</th>
+                    <th>العميل</th>
+                    <th>الحالة</th>
+                    <th>المبيعات / المهندس</th>
+                    <th>القيمة المقدرة</th>
+                    <th>تاريخ البدء</th>
+                    <th class="text-center pe-4">الإجراءات</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (!Model.Any())
+                {
+                    <tr>
+                        <td colspan="8" class="text-center py-5 text-muted">
+                            <i class="fa-solid fa-folder-open fs-1 d-block mb-3 opacity-50"></i>
+                            لم يتم العثور على أي مشاريع مطابقة للبحث
+                        </td>
+                    </tr>
+                }
+                else
+                {
+                    @foreach (var item in Model)
+                    {
+                        <tr>
+                            <td class="ps-4 fw-bold text-primary">
+                                <a asp-action="Details" asp-route-id="@item.Id" class="text-decoration-none">
+                                    <i class="fa-solid fa-hashtag me-1 opacity-75"></i>@item.ProjectNo
+                                </a>
+                            </td>
+                            <td>
+                                <div class="fw-bold text-dark">@item.ProjectName</div>
+                                @if (!string.IsNullOrEmpty(item.KitchenType))
+                                {
+                                    <small class="text-muted d-block"><i class="fa-solid fa-cubes me-1"></i>@item.KitchenType</small>
+                                }
+                            </td>
+                            <td>
+                                @if (item.Customer != null)
+                                {
+                                    <div class="fw-semibold">@item.Customer.Name</div>
+                                    <small class="text-muted"><i class="fa-solid fa-phone me-1"></i>@item.Customer.Phone</small>
+                                }
+                                else
+                                {
+                                    <span class="text-muted">غير محدد</span>
+                                }
+                            </td>
+                            <td>
+                                @switch (item.Status)
+                                {
+                                    case ProjectStatus.New:
+                                        <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-3 py-2">جديد</span>
+                                        break;
+                                    case ProjectStatus.SiteVisit:
+                                        <span class="badge bg-info-subtle text-info border border-info-subtle rounded-pill px-3 py-2">معاينة</span>
+                                        break;
+                                    case ProjectStatus.Design:
+                                        <span class="badge bg-warning-subtle text-warning border border-warning-subtle rounded-pill px-3 py-2">تصميم</span>
+                                        break;
+                                    case ProjectStatus.Quote:
+                                        <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle rounded-pill px-3 py-2">عرض سعر</span>
+                                        break;
+                                    case ProjectStatus.Contracted:
+                                        <span class="badge bg-primary border border-primary rounded-pill px-3 py-2">تم التعاقد</span>
+                                        break;
+                                    case ProjectStatus.InProgress:
+                                        <span class="badge bg-warning text-dark rounded-pill px-3 py-2"><i class="fa-solid fa-spinner fa-spin me-1"></i>قيد التنفيذ</span>
+                                        break;
+                                    case ProjectStatus.Delivered:
+                                        <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-3 py-2">تم التسليم</span>
+                                        break;
+                                    case ProjectStatus.Closed:
+                                        <span class="badge bg-dark-subtle text-dark border border-dark-subtle rounded-pill px-3 py-2">مغلق</span>
+                                        break;
+                                    case ProjectStatus.Cancelled:
+                                        <span class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill px-3 py-2">ملغى</span>
+                                        break;
+                                    default:
+                                        <span class="badge bg-light text-dark border rounded-pill px-3 py-2">@item.Status</span>
+                                        break;
+                                }
+                            </td>
+                            <td>
+                                <div style="font-size:0.85rem;">
+                                    <span class="d-block text-truncate" style="max-width:140px;">
+                                        <i class="fa-solid fa-user-tie me-1 text-secondary"></i>
+                                        @(item.SalesUser?.UserProfile?.DisplayName ?? item.SalesUser?.UserName ?? "المبيعات غير محدد")
+                                    </span>
+                                    <span class="d-block text-muted text-truncate" style="max-width:140px;">
+                                        <i class="fa-solid fa-compass me-1"></i>
+                                        @(item.EngineerUser?.UserProfile?.DisplayName ?? item.EngineerUser?.UserName ?? "المهندس غير محدد")
+                                    </span>
+                                </div>
+                            </td>
+                            <td class="fw-bold text-dark">
+                                @item.EstimatedAmount.ToString("N0") <small class="text-muted">د.ل</small>
+                            </td>
+                            <td class="text-muted" style="font-size:0.85rem;">
+                                @(item.StartDate?.ToString("yyyy/MM/dd") ?? "-")
+                            </td>
+                            <td class="text-center pe-4">
+                                <div class="btn-group btn-group-sm">
+                                    <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-outline-info" title="التفاصيل">
+                                        <i class="fa-solid fa-eye"></i>
+                                    </a>
+                                    <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-outline-warning" title="تعديل">
+                                        <i class="fa-solid fa-pen"></i>
+                                    </a>
+                                    <button type="button" class="btn btn-outline-danger" title="حذف" data-bs-toggle="modal" data-bs-target="#deleteModal-@item.Id">
+                                        <i class="fa-solid fa-trash"></i>
+                                    </button>
+                                </div>
+
+                                <!-- Delete Confirmation Modal -->
+                                <div class="modal fade" id="deleteModal-@item.Id" tabindex="-1" aria-hidden="true">
+                                    <div class="modal-dialog modal-dialog-centered">
+                                        <div class="modal-content">
+                                            <div class="modal-header bg-danger text-white">
+                                                <h5 class="modal-header-title mb-0">تأكيد حذف المشروع</h5>
+                                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                                            </div>
+                                            <div class="modal-body text-start py-4">
+                                                <p class="mb-2 fs-6">هل أنت تأكد من أنك تريد حذف المشروع رقم <strong>@item.ProjectNo</strong> (<strong>@item.ProjectName</strong>)؟</p>
+                                                <p class="text-muted small mb-0"><i class="fa-solid fa-triangle-exclamation text-warning me-1"></i> لا يمكن التراجع عن هذه العملية بعد التأكيد.</p>
+                                            </div>
+                                            <div class="modal-footer bg-light">
+                                                <button type="button" class="btn btn-secondary px-4" data-bs-dismiss="modal">إلغاء</button>
+                                                <form asp-action="Delete" asp-route-id="@item.Id" method="post" class="d-inline">
+                                                    @Html.AntiForgeryToken()
+                                                    <button type="submit" class="btn btn-danger px-4 fw-bold">تأكيد الحذف</button>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Pagination Footer -->
+    @if (ViewBag.TotalPages > 1)
+    {
+        <div class="card-footer bg-white border-top-0 py-3">
+            <nav>
+                <ul class="pagination justify-content-center mb-0">
+                    <li class="page-item @(ViewBag.CurrentPage == 1 ? "disabled" : "")">
+                        <a class="page-link" asp-action="Index" asp-route-page="@(ViewBag.CurrentPage - 1)" asp-route-searchString="@ViewBag.SearchString" asp-route-statusFilter="@ViewBag.StatusFilter" asp-route-customerFilter="@ViewBag.CustomerFilter">السابق</a>
+                    </li>
+                    @for (int i = 1; i <= ViewBag.TotalPages; i++)
+                    {
+                        <li class="page-item @(i == ViewBag.CurrentPage ? "active" : "")">
+                            <a class="page-link" asp-action="Index" asp-route-page="@i" asp-route-searchString="@ViewBag.SearchString" asp-route-statusFilter="@ViewBag.StatusFilter" asp-route-customerFilter="@ViewBag.CustomerFilter">@i</a>
+                        </li>
+                    }
+                    <li class="page-item @(ViewBag.CurrentPage == ViewBag.TotalPages ? "disabled" : "")">
+                        <a class="page-link" asp-action="Index" asp-route-page="@(ViewBag.CurrentPage + 1)" asp-route-searchString="@ViewBag.SearchString" asp-route-statusFilter="@ViewBag.StatusFilter" asp-route-customerFilter="@ViewBag.CustomerFilter">التالي</a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+    }
+</div>

@@ -20,6 +20,7 @@ namespace KitchenProject.Controllers
 						  IUnitOfWork<Customer> customer,
 						  IWebHostEnvironment host)
 		{
+			_context = context;
 			_customer = customer;
 		}
 
@@ -186,6 +187,13 @@ namespace KitchenProject.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Delete(Guid id)
         {
+            var hasProjects = await _context.Projects.AnyAsync(p => p.CustomerId == id);
+            if (hasProjects)
+            {
+                TempData["Error"] = "لا يمكن حذف العميل لوجود مشاريع أو دفعات مالية مسجلة باسمه.";
+                return RedirectToAction(nameof(Index));
+            }
+
             var customer = await _customer.Entity.GetByIdAsync(id);
             if (customer != null)
             {

@@ -1,0 +1,127 @@
+@model KitchenProject.Models.Entities.SiteVisit
+@using KitchenProject.Models.Enums
+@{
+    ViewData["Title"] = "تعديل بيانات المعاينة";
+    Layout = "_DashboardLayout";
+}
+
+<!-- Page Header -->
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+    <div>
+        <h2 class="page-header-title mb-1">
+            <i class="fa-solid fa-pen-to-square text-primary me-2"></i> تعديل بيانات المعاينة
+        </h2>
+        <p class="text-muted mb-0">تحديث حالة وبيانات ومقاسات المعاينة الميدانية</p>
+    </div>
+    <div>
+        <a asp-action="Index" class="btn btn-outline-secondary d-inline-flex align-items-center gap-2">
+            <i class="fa-solid fa-arrow-right"></i>
+            <span>العودة للمعاينات</span>
+        </a>
+    </div>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-12 col-lg-9">
+        <div class="custom-card p-4">
+            <form asp-action="Edit" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" asp-for="Id" />
+                <input type="hidden" asp-for="Created" />
+                <div asp-validation-summary="ModelOnly" class="alert alert-danger mb-4 rounded-3" role="alert"></div>
+
+                <!-- Section 1: Project & Engineer -->
+                <div class="border-bottom pb-3 mb-4">
+                    <h5 class="fw-bold text-primary mb-3">
+                        <i class="fa-solid fa-link me-2"></i> ربط المعاينة بالمشروع والمهندس
+                    </h5>
+                    <div class="row g-3">
+                        <div class="col-12 col-md-7">
+                            <label asp-for="ProjectId" class="form-label fw-bold">المشروع <span class="text-danger">*</span></label>
+                            <select asp-for="ProjectId" class="form-select" asp-items="ViewBag.ProjectId"></select>
+                            <span asp-validation-for="ProjectId" class="text-danger small"></span>
+                        </div>
+                        <div class="col-12 col-md-5">
+                            <label asp-for="EngineerId" class="form-label fw-bold">المهندس المعاين <span class="text-danger">*</span></label>
+                            <select asp-for="EngineerId" class="form-select" asp-items="ViewBag.EngineerId"></select>
+                            <span asp-validation-for="EngineerId" class="text-danger small"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section 2: Date, Time & Status -->
+                <div class="border-bottom pb-3 mb-4">
+                    <h5 class="fw-bold text-primary mb-3">
+                        <i class="fa-solid fa-calendar-check me-2"></i> التاريخ والحالة
+                    </h5>
+                    <div class="row g-3">
+                        <div class="col-12 col-md-6">
+                            <label asp-for="VisitDate" class="form-label fw-bold">تاريخ ووقت المعاينة <span class="text-danger">*</span></label>
+                            <input asp-for="VisitDate" type="datetime-local" class="form-control"
+                                   value="@Model.VisitDate.ToString("yyyy-MM-ddTHH:mm")" />
+                            <span asp-validation-for="VisitDate" class="text-danger small"></span>
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <label asp-for="Status" class="form-label fw-bold">حالة المعاينة <span class="text-danger">*</span></label>
+                            <select asp-for="Status" class="form-select" asp-items="Html.GetEnumSelectList<SiteVisitStatus>()"></select>
+                            <span asp-validation-for="Status" class="text-danger small"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section 3: Measurements -->
+                <div class="border-bottom pb-3 mb-4">
+                    <h5 class="fw-bold text-primary mb-3">
+                        <i class="fa-solid fa-ruler me-2"></i> بيانات المقاسات
+                    </h5>
+                    <div class="row g-3 mb-3">
+                        <div class="col-12 col-md-4">
+                            <label asp-for="Length" class="form-label fw-bold">الطول (م)</label>
+                            <div class="input-group">
+                                <input asp-for="Length" type="number" step="0.01" class="form-control" />
+                                <span class="input-group-text text-muted">م</span>
+                            </div>
+                            <span asp-validation-for="Length" class="text-danger small"></span>
+                        </div>
+                        <div class="col-12 col-md-4">
+                            <label asp-for="Width" class="form-label fw-bold">العرض (م)</label>
+                            <div class="input-group">
+                                <input asp-for="Width" type="number" step="0.01" class="form-control" />
+                                <span class="input-group-text text-muted">م</span>
+                            </div>
+                            <span asp-validation-for="Width" class="text-danger small"></span>
+                        </div>
+                        <div class="col-12 col-md-4">
+                            <label asp-for="Height" class="form-label fw-bold">الارتفاع (م)</label>
+                            <div class="input-group">
+                                <input asp-for="Height" type="number" step="0.01" class="form-control" />
+                                <span class="input-group-text text-muted">م</span>
+                            </div>
+                            <span asp-validation-for="Height" class="text-danger small"></span>
+                        </div>
+                    </div>
+                    <div>
+                        <label asp-for="MeasurementsText" class="form-label fw-bold">وصف المقاسات والتفاصيل الإضافية</label>
+                        <textarea asp-for="MeasurementsText" class="form-control" rows="3"></textarea>
+                        <span asp-validation-for="MeasurementsText" class="text-danger small"></span>
+                    </div>
+                </div>
+
+                <!-- Section 4: Notes -->
+                <div class="mb-4">
+                    <label asp-for="Notes" class="form-label fw-bold">ملاحظات المعاينة</label>
+                    <textarea asp-for="Notes" class="form-control" rows="3"></textarea>
+                    <span asp-validation-for="Notes" class="text-danger small"></span>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="d-flex justify-content-end gap-2">
+                    <a asp-action="Index" class="btn btn-light border fw-bold px-4">إلغاء</a>
+                    <button type="submit" class="btn btn-primary-custom px-5">
+                        <i class="fa-solid fa-save me-2"></i> حفظ التعديلات
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

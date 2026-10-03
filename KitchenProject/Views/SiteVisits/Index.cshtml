@@ -1,0 +1,276 @@
+@model IEnumerable<KitchenProject.Models.Entities.SiteVisit>
+@using KitchenProject.Models.Enums
+@{
+    ViewData["Title"] = "إدارة المعاينات والمقاسات";
+    Layout = "_DashboardLayout";
+}
+
+<!-- Page Header -->
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+    <div>
+        <h2 class="page-header-title mb-1">
+            <i class="fa-solid fa-ruler-combined text-primary me-2"></i> إدارة المعاينات والمقاسات
+        </h2>
+        <p class="text-muted mb-0">تسجيل ومتابعة المعاينات الميدانية وبيانات المقاسات للمشاريع</p>
+    </div>
+    <div>
+        <a asp-action="Create" class="btn btn-primary-custom d-inline-flex align-items-center gap-2">
+            <i class="fa-solid fa-plus"></i>
+            <span>إضافة معاينة جديدة</span>
+        </a>
+    </div>
+</div>
+
+
+
+<!-- KPI Stats Cards -->
+<div class="row g-3 mb-4">
+    <div class="col-12 col-sm-4">
+        <div class="custom-card p-3 d-flex align-items-center justify-content-between">
+            <div>
+                <span class="text-muted fw-bold d-block mb-1" style="font-size:0.85rem;">إجمالي المعاينات</span>
+                <h3 class="fw-extrabold mb-0 text-dark">@ViewBag.TotalVisitsCount</h3>
+            </div>
+            <div class="bg-primary-subtle text-primary rounded-3 p-3">
+                <i class="fa-solid fa-ruler-combined fs-3"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-12 col-sm-4">
+        <div class="custom-card p-3 d-flex align-items-center justify-content-between">
+            <div>
+                <span class="text-muted fw-bold d-block mb-1" style="font-size:0.85rem;">معاينات مجدولة</span>
+                <h3 class="fw-extrabold mb-0 text-warning">@ViewBag.ScheduledCount</h3>
+            </div>
+            <div class="bg-warning-subtle text-warning rounded-3 p-3">
+                <i class="fa-solid fa-clock fs-3"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-12 col-sm-4">
+        <div class="custom-card p-3 d-flex align-items-center justify-content-between">
+            <div>
+                <span class="text-muted fw-bold d-block mb-1" style="font-size:0.85rem;">معاينات مكتملة / موافق عليها</span>
+                <h3 class="fw-extrabold mb-0 text-success">@ViewBag.CompletedCount</h3>
+            </div>
+            <div class="bg-success-subtle text-success rounded-3 p-3">
+                <i class="fa-solid fa-circle-check fs-3"></i>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Search & Filter -->
+<div class="custom-card mb-4 p-3">
+    <form method="get" asp-action="Index" class="row g-3 align-items-center">
+        <div class="col-12 col-md-4">
+            <div class="input-group">
+                <span class="input-group-text bg-white border-end-0"><i class="fa-solid fa-magnifying-glass text-muted"></i></span>
+                <input type="text" name="searchString" class="form-control border-start-0 ps-0"
+                       placeholder="بحث بالمشروع أو العميل أو المهندس..." value="@ViewBag.SearchString">
+            </div>
+        </div>
+        <div class="col-12 col-md-3">
+            <select name="statusFilter" class="form-select" asp-items="Html.GetEnumSelectList<SiteVisitStatus>()">
+                <option value="">-- كل الحالات --</option>
+            </select>
+        </div>
+        <div class="col-12 col-md-3">
+            <select name="projectFilter" class="form-select" asp-items="ViewBag.ProjectsList">
+                <option value="">-- كل المشاريع --</option>
+            </select>
+        </div>
+        <div class="col-12 col-md-2 d-flex gap-2">
+            <button type="submit" class="btn btn-primary fw-bold rounded-3 flex-grow-1">
+                <i class="fa-solid fa-search me-1"></i> بحث
+            </button>
+            @if (!string.IsNullOrEmpty(ViewBag.SearchString) || ViewBag.StatusFilter != null || ViewBag.ProjectFilter != null)
+            {
+                <a asp-action="Index" class="btn btn-light border fw-bold text-muted" title="إلغاء البحث">
+                    <i class="fa-solid fa-xmark"></i>
+                </a>
+            }
+        </div>
+    </form>
+</div>
+
+<!-- Data Table -->
+<div class="custom-card">
+    <div class="card-header-custom">
+        <h5 class="fw-bold mb-0 text-dark">
+            <i class="fa-solid fa-list text-secondary me-2"></i> قائمة المعاينات
+        </h5>
+        <span class="badge bg-light text-dark border">عدد النتائج: @ViewBag.TotalCount</span>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="bg-light text-muted" style="font-size:0.85rem; text-transform:uppercase;">
+                <tr>
+                    <th class="ps-4">المشروع</th>
+                    <th>العميل</th>
+                    <th>المهندس المعاين</th>
+                    <th>تاريخ المعاينة</th>
+                    <th>المقاسات (ط × ع × ار)</th>
+                    <th>الحالة</th>
+                    <th class="text-center pe-4">الإجراءات</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (!Model.Any())
+                {
+                    <tr>
+                        <td colspan="7" class="text-center py-5 text-muted">
+                            <i class="fa-solid fa-folder-open fs-1 d-block mb-3 opacity-50"></i>
+                            لم يتم العثور على أي معاينات مطابقة للبحث
+                        </td>
+                    </tr>
+                }
+                else
+                {
+                    @foreach (var item in Model)
+                    {
+                        <tr>
+                            <td class="ps-4">
+                                <a asp-controller="Projects" asp-action="Details" asp-route-id="@item.ProjectId"
+                                   class="fw-bold text-primary text-decoration-none">
+                                    <i class="fa-solid fa-hashtag me-1 opacity-75"></i>@item.Project?.ProjectNo
+                                </a>
+                                <small class="d-block text-muted text-truncate" style="max-width:160px;">@item.Project?.ProjectName</small>
+                            </td>
+                            <td>
+                                <span class="fw-semibold">@(item.Project?.Customer?.Name ?? "-")</span>
+                            </td>
+                            <td>
+                                <span><i class="fa-solid fa-hard-hat me-1 text-secondary"></i>
+                                @(item.Engineer?.UserProfile?.DisplayName ?? item.Engineer?.UserName ?? "غير مكلف")</span>
+                            </td>
+                            <td class="text-muted" style="font-size:0.9rem;">
+                                <i class="fa-regular fa-calendar me-1"></i>
+                                @item.VisitDate.ToString("yyyy/MM/dd")
+                                <small class="d-block">@item.VisitDate.ToString("hh:mm tt")</small>
+                            </td>
+                            <td style="font-size:0.88rem;">
+                                @if (item.Length.HasValue || item.Width.HasValue || item.Height.HasValue)
+                                {
+                                    <span class="badge bg-light text-dark border rounded-pill px-2">
+                                        @(item.Length?.ToString("N2") ?? "-") ×
+                                        @(item.Width?.ToString("N2") ?? "-") ×
+                                        @(item.Height?.ToString("N2") ?? "-")
+                                        <small class="text-muted ms-1">م</small>
+                                    </span>
+                                }
+                                else if (!string.IsNullOrEmpty(item.MeasurementsText))
+                                {
+                                    <span class="text-muted text-truncate d-block" style="max-width:140px;" title="@item.MeasurementsText">
+                                        @item.MeasurementsText
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="text-muted">-</span>
+                                }
+                            </td>
+                            <td>
+                                @switch (item.Status)
+                                {
+                                    case SiteVisitStatus.Scheduled:
+                                        <span class="badge bg-warning-subtle text-warning border border-warning-subtle rounded-pill px-3 py-2">
+                                            <i class="fa-solid fa-clock me-1"></i>مجدولة
+                                        </span>
+                                        break;
+                                    case SiteVisitStatus.Completed:
+                                        <span class="badge bg-info-subtle text-info border border-info-subtle rounded-pill px-3 py-2">
+                                            <i class="fa-solid fa-check me-1"></i>اكتملت
+                                        </span>
+                                        break;
+                                    case SiteVisitStatus.Approved:
+                                        <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-3 py-2">
+                                            <i class="fa-solid fa-thumbs-up me-1"></i>تمت الموافقة
+                                        </span>
+                                        break;
+                                    case SiteVisitStatus.Cancelled:
+                                        <span class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill px-3 py-2">
+                                            <i class="fa-solid fa-ban me-1"></i>ملغاة
+                                        </span>
+                                        break;
+                                }
+                            </td>
+                            <td class="text-center pe-4">
+                                <div class="btn-group btn-group-sm">
+                                    <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-outline-info" title="التفاصيل">
+                                        <i class="fa-solid fa-eye"></i>
+                                    </a>
+                                    <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-outline-warning" title="تعديل">
+                                        <i class="fa-solid fa-pen"></i>
+                                    </a>
+                                    <button type="button" class="btn btn-outline-danger" title="حذف"
+                                            data-bs-toggle="modal" data-bs-target="#deleteModal-@item.Id">
+                                        <i class="fa-solid fa-trash"></i>
+                                    </button>
+                                </div>
+
+                                <!-- Delete Modal -->
+                                <div class="modal fade" id="deleteModal-@item.Id" tabindex="-1" aria-hidden="true">
+                                    <div class="modal-dialog modal-dialog-centered">
+                                        <div class="modal-content">
+                                            <div class="modal-header bg-danger text-white">
+                                                <h5 class="modal-header-title mb-0">تأكيد حذف المعاينة</h5>
+                                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                                            </div>
+                                            <div class="modal-body py-4">
+                                                <p class="mb-2">هل أنت متأكد من حذف معاينة مشروع <strong>@item.Project?.ProjectNo</strong> بتاريخ <strong>@item.VisitDate.ToString("yyyy/MM/dd")</strong>؟</p>
+                                                <p class="text-muted small mb-0"><i class="fa-solid fa-triangle-exclamation text-warning me-1"></i> لا يمكن التراجع عن هذه العملية.</p>
+                                            </div>
+                                            <div class="modal-footer bg-light">
+                                                <button type="button" class="btn btn-secondary px-4" data-bs-dismiss="modal">إلغاء</button>
+                                                <form asp-action="Delete" asp-route-id="@item.Id" method="post" class="d-inline">
+                                                    @Html.AntiForgeryToken()
+                                                    <button type="submit" class="btn btn-danger px-4 fw-bold">تأكيد الحذف</button>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Pagination -->
+    @if (ViewBag.TotalPages > 1)
+    {
+        <div class="card-footer bg-white border-top-0 py-3">
+            <nav>
+                <ul class="pagination justify-content-center mb-0">
+                    <li class="page-item @(ViewBag.CurrentPage == 1 ? "disabled" : "")">
+                        <a class="page-link" asp-action="Index"
+                           asp-route-page="@(ViewBag.CurrentPage - 1)"
+                           asp-route-searchString="@ViewBag.SearchString"
+                           asp-route-statusFilter="@ViewBag.StatusFilter"
+                           asp-route-projectFilter="@ViewBag.ProjectFilter">السابق</a>
+                    </li>
+                    @for (int i = 1; i <= ViewBag.TotalPages; i++)
+                    {
+                        <li class="page-item @(i == ViewBag.CurrentPage ? "active" : "")">
+                            <a class="page-link" asp-action="Index"
+                               asp-route-page="@i"
+                               asp-route-searchString="@ViewBag.SearchString"
+                               asp-route-statusFilter="@ViewBag.StatusFilter"
+                               asp-route-projectFilter="@ViewBag.ProjectFilter">@i</a>
+                        </li>
+                    }
+                    <li class="page-item @(ViewBag.CurrentPage == ViewBag.TotalPages ? "disabled" : "")">
+                        <a class="page-link" asp-action="Index"
+                           asp-route-page="@(ViewBag.CurrentPage + 1)"
+                           asp-route-searchString="@ViewBag.SearchString"
+                           asp-route-statusFilter="@ViewBag.StatusFilter"
+                           asp-route-projectFilter="@ViewBag.ProjectFilter">التالي</a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+    }
+</div>

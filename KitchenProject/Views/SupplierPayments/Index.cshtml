@@ -1,0 +1,38 @@
+@model IEnumerable<KitchenProject.Models.Entities.SupplierPayment>
+@{ ViewData["Title"] = "مدفوعات الموردين"; Layout = "_DashboardLayout"; }
+<div class="d-flex justify-content-between mb-4"><h2 class="page-header-title"><i class="fa-solid fa-hand-holding-dollar text-primary me-2"></i> مدفوعات الموردين</h2><a asp-action="Create" class="btn btn-primary-custom"><i class="fa-solid fa-plus me-1"></i> تسجيل دفعة</a></div>
+<div class="custom-card p-3 border-start border-4 border-success mb-4 d-inline-block">
+    <h5 class="mb-0">إجمالي المدفوعات: @ViewBag.TotalPaidToSuppliers?.ToString("N2") <span class="text-muted fs-6">د.ل</span></h5>
+</div>
+<div class="custom-card p-4">
+    <form method="get" class="d-flex gap-2 mb-4">
+        <input type="text" name="searchString" value="@ViewBag.SearchString" class="form-control w-25" placeholder="بحث..." />
+        <select name="supplierFilter" class="form-select w-25" asp-items="ViewBag.SuppliersList"><option value="">-- كل الموردين --</option></select>
+        <button type="submit" class="btn btn-secondary">تصفية</button>
+    </form>
+    <div class="table-responsive">
+        <table class="table table-hover custom-table align-middle">
+            <thead class="table-light"><tr><th>المورد</th><th>الدفعة</th><th>طريقة الدفع</th><th>الفاتورة المرتبطة</th><th>التاريخ</th><th></th></tr></thead>
+            <tbody>
+                @foreach(var item in Model) {
+                    <tr>
+                        <td class="fw-bold">@item.supplier?.Name</td>
+                        <td class="text-success fw-bold">@item.Amount.ToString("N2")</td>
+                        <td><span class="badge bg-light text-dark border">@item.PaymentMethod</span></td>
+                        <td>@(item.PurchaseId.HasValue ? "مرتبطة بأمر شراء" : "عامة")</td>
+                        <td>@item.Created.ToString("yyyy-MM-dd")</td>
+                        <td>
+                            <div class="d-flex gap-1 justify-content-end">
+                                <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-sm btn-info text-white"><i class="fa-solid fa-print"></i></a>
+                                <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-primary"><i class="fa-solid fa-pen"></i></a>
+                                <form asp-action="Delete" asp-route-id="@item.Id" method="post" onsubmit="return confirm('تأكيد الحذف؟ سيتم خصمها من رصيد المورد.');">
+                                    <button type="submit" class="btn btn-sm btn-danger"><i class="fa-solid fa-trash"></i></button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

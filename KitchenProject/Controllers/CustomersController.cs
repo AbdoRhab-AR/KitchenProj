@@ -95,7 +95,10 @@ namespace KitchenProject.Controllers
             {
                 CustomerNo = nextNo,
                 Name = "",
-                Phone = ""
+                Phone = "",
+                Address = "",
+                City = "",
+                Notes = ""
             };
 
             return View(model);
@@ -187,7 +190,12 @@ namespace KitchenProject.Controllers
         public async Task<IActionResult> Delete(Guid id)
         {
             var customer = await _customer.Entity.GetByIdAsync(id);
-            if (customer != null)
+            if (customer != null && await _customer.Entity.GetAll().AnyAsync(c => c.Id == id && c.Projects.Any()))
+            {
+                // المشاريع مربوطة بـ Restrict، فالحذف سيفشل من قاعدة البيانات
+                TempData["Error"] = $"لا يمكن حذف العميل \"{customer.Name}\" لوجود مشاريع مسجلة باسمه";
+            }
+            else if (customer != null)
             {
                 _customer.Entity.Delete(customer);
                 await _customer.SaveAsync();

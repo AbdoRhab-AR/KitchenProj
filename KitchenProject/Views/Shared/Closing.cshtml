@@ -1,1 +1,17 @@
-﻿
+﻿@model SiteState
+@{
+    ViewData["Title"] = "الموقع مغلق مؤقتاً";
+    Layout = "_Layout";
+}
+
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-12 col-md-8 col-lg-6 text-center">
+            <div class="bg-white rounded-4 shadow-sm p-5">
+                <i class="fa-solid fa-screwdriver-wrench text-warning mb-4" style="font-size:3.5rem;"></i>
+                <h2 class="fw-bold mb-3">الموقع مغلق مؤقتاً</h2>
+                <p class="text-muted fs-5 mb-0">@Model.ClosingMessage</p>
+            </div>
+        </div>
+    </div>
+</div>

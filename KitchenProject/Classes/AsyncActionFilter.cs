@@ -3,6 +3,7 @@ using KitchenProject.Models.Interfaces;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
+using Microsoft.EntityFrameworkCore;
 
 namespace KitchenProject.Classes
 {
@@ -34,64 +35,23 @@ namespace KitchenProject.Classes
 
 
 
-			var controllerName = ((ControllerBase)context.Controller).ControllerContext.ActionDescriptor.ControllerName;
 			var actionName = ((ControllerBase)context.Controller).ControllerContext.ActionDescriptor.ActionName;
 
-
-
-
 			var user = _httpContextAccessor.HttpContext?.User;
-			if (user != null)
+
+			//-----الموقع مغلق: تحويل الجميع لصفحة الإغلاق ما عدا المبرمج--
+			var siteState = await _siteState.Entity.GetAll().FirstOrDefaultAsync();
+			if (siteState != null && !siteState.State
+				 && actionName != "Login" && actionName != "Closing"
+				 && !(user != null && _signInManager.IsSignedIn(user) && user.IsInRole("Prog")))
 			{
-				//-----ApplicationUser المستخدم--
-				{
-					var currentUser = await _userManager.GetUserAsync(user);
-					if (currentUser != null)
-					{
-						TimeSpan startTs = new TimeSpan(00, 00, 00);
-						TimeSpan endTs = new TimeSpan(23, 59, 59);
-
-						if (DateTime.Now.TimeOfDay < startTs | DateTime.Now.TimeOfDay > endTs)
-						{
-							await _signInManager.SignOutAsync();
-						}
-					}
-				}
-				//---------------------------------------------
-
-
-				var siteState = _siteState.Entity.GetAll().FirstOrDefault();
-				if (siteState != null)
-				{
-					if (!siteState.State
-						 && actionName != "Login" && actionName != "Closing"
-						 && ((_signInManager.IsSignedIn(user) && !user.IsInRole("Prog"))
-							 || !_signInManager.IsSignedIn(user))
-						)
-					{
-						context.Result = new RedirectToRouteResult(
-							  new RouteValueDictionary {{ "Controller", "Home" },
-												  { "Action", "Closing" } });
-
-						await next();
-
-						//await _signInManager.SignOutAsync();
-					}
-					else
-					{
-						context.Result = null;
-						await next();
-						//// execute any code after the action executes
-					}
-				}
-				else
-				{
-					context.Result = null;
-					await next();
-					//// execute any code after the action executes
-				}
+				// short-circuit: don't call next() so the action never runs
+				context.Result = new RedirectToActionResult("Closing", "Home", null);
+				return;
 			}
 
+			await next();
+			//// execute any code after the action executes
 		}
 
 

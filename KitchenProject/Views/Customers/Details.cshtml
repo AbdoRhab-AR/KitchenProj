@@ -102,7 +102,7 @@
             </h5>
             <div class="row g-3">
                 <div class="col-12 col-sm-6">
-                    <button type="button" class="btn btn-light border p-3 w-100 text-start d-flex align-items-center gap-3 rounded-3 shadow-sm hover-lift">
+                    <a asp-controller="Projects" asp-action="Create" asp-route-customerId="@Model.Id" class="btn btn-light border p-3 w-100 text-start d-flex align-items-center gap-3 rounded-3 shadow-sm hover-lift">
                         <div class="bg-primary-subtle text-primary rounded-circle p-3">
                             <i class="fa-solid fa-diagram-project fs-4"></i>
                         </div>
@@ -110,7 +110,7 @@
                             <span class="fw-bold d-block text-dark">إنشاء مشروع جديد</span>
                             <small class="text-muted">بدء ملف مطبخ جديد للعميل</small>
                         </div>
-                    </button>
+                    </a>
                 </div>
                 <div class="col-12 col-sm-6">
                     <button type="button" class="btn btn-light border p-3 w-100 text-start d-flex align-items-center gap-3 rounded-3 shadow-sm hover-lift">
@@ -147,8 +147,8 @@
                                     <span class="text-muted small">نوع المطبخ: @(string.IsNullOrEmpty(proj.KitchenType) ? "غير محدد" : proj.KitchenType)</span>
                                 </div>
                                 <div>
-                                    <span class="badge bg-info-subtle text-info px-3 py-2 rounded-pill fw-bold me-2">@proj.Status</span>
-                                    <a href="#" class="btn btn-sm btn-light border text-primary fw-bold">عرض</a>
+                                    <span class="me-2"><partial name="~/Views/Projects/_StatusBadge.cshtml" model="proj.Status" /></span>
+                                    <a asp-controller="Projects" asp-action="Details" asp-route-id="@proj.Id" class="btn btn-sm btn-light border text-primary fw-bold">عرض</a>
                                 </div>
                             </div>
                         }

@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace KitchenProject.Models
 {
-	public class ApplicationDbContext : IdentityDbContext<IdentityUser>
+	public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
 	{
 		private readonly IServiceProvider _serviceProvider;
 
@@ -45,7 +45,7 @@ namespace KitchenProject.Models
 			modelBuilder.Entity<SiteInfo>().Property(x => x.Id).HasDefaultValueSql("NEWID()");
 			modelBuilder.Entity<SiteState>().Property(x => x.Id).HasDefaultValueSql("NEWID()");
 			modelBuilder.Entity<Quote>().Property(x => x.Id).HasDefaultValueSql("NEWID()");
-			modelBuilder.Entity<Contact>().Property(x => x.Id).HasDefaultValueSql("NEWID()");
+			modelBuilder.Entity<Contract>().Property(x => x.Id).HasDefaultValueSql("NEWID()");
 			modelBuilder.Entity<CustomerPayment>().Property(x => x.Id).HasDefaultValueSql("NEWID()");
 			modelBuilder.Entity<Expense>().Property(x => x.Id).HasDefaultValueSql("NEWID()");
 			modelBuilder.Entity<Supplier>().Property(x => x.Id).HasDefaultValueSql("NEWID()");

@@ -22,6 +22,106 @@ namespace KitchenProject.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
+            modelBuilder.Entity("KitchenProject.Models.Entities.ApplicationUser", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<int>("AccessFailedCount")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Age")
+                        .HasColumnType("int");
+
+                    b.Property<bool?>("Approval")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("ConcurrencyStamp")
+                        .IsConcurrencyToken()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreatedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Email")
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.Property<bool>("EmailConfirmed")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime?>("LastAccessTime")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("LockoutEnabled")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTimeOffset?>("LockoutEnd")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<DateTime?>("ModifiedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("NormalizedEmail")
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.Property<string>("NormalizedUserName")
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.Property<string>("PasswordHash")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("PhoneNumber")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("PhoneNumberConfirmed")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("SecurityStamp")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("TwoFactorEnabled")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("UserName")
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("NormalizedEmail")
+                        .HasDatabaseName("EmailIndex");
+
+                    b.HasIndex("NormalizedUserName")
+                        .IsUnique()
+                        .HasDatabaseName("UserNameIndex")
+                        .HasFilter("[NormalizedUserName] IS NOT NULL");
+
+                    b.ToTable("AspNetUsers", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            Id = "6068e8a9-d170-4fa6-abba-bed99e9ef5da",
+                            AccessFailedCount = 0,
+                            Age = 0,
+                            ConcurrencyStamp = "50286ee0-8cab-4fd9-b86d-4c9e7d81d85b",
+                            CreatedDate = new DateTime(2026, 9, 5, 13, 1, 21, 0, DateTimeKind.Utc),
+                            Email = "Programmer@Gmail.com",
+                            EmailConfirmed = true,
+                            LockoutEnabled = true,
+                            NormalizedEmail = "PROGRAMMER@GMAIL.COM",
+                            NormalizedUserName = "PROGRAMMER@GMAIL.COM",
+                            PasswordHash = "AQAAAAIAAYagAAAAEOiMVW5LwaXnP8KCeBDAECPBrxqGZdZDi2qpMwjKPFc0X+YlPL+CABdS42ebB7WrSw==",
+                            PhoneNumberConfirmed = true,
+                            SecurityStamp = "04500de6-96fe-4ad7-96dd-fcca96e369d7",
+                            TwoFactorEnabled = false,
+                            UserName = "Programmer@Gmail.com"
+                        });
+                });
+
             modelBuilder.Entity("KitchenProject.Models.Entities.Contact", b =>
                 {
                     b.Property<Guid>("Id")
@@ -63,7 +163,7 @@ namespace KitchenProject.Migrations
                         new
                         {
                             Id = new Guid("4a749a24-16a2-4e83-9b41-eafbb66aacec"),
-                            Created = new DateTime(2026, 9, 5, 15, 1, 21, 489, DateTimeKind.Local).AddTicks(4887),
+                            Created = new DateTime(2026, 9, 5, 13, 1, 21, 0, DateTimeKind.Utc),
                             Email = "W.Wide@Gmail.com",
                             Facebook = "Worldwide Facebook",
                             Instagram = "Worldwide Instagram",
@@ -76,7 +176,8 @@ namespace KitchenProject.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("uniqueidentifier")
+                        .HasDefaultValueSql("NEWID()");
 
                     b.Property<string>("ContractFilePath")
                         .HasMaxLength(250)
@@ -131,10 +232,12 @@ namespace KitchenProject.Migrations
                         .HasDefaultValueSql("NEWID()");
 
                     b.Property<string>("Address")
+                        .IsRequired()
                         .HasMaxLength(250)
                         .HasColumnType("nvarchar(250)");
 
                     b.Property<string>("City")
+                        .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
@@ -159,6 +262,7 @@ namespace KitchenProject.Migrations
                         .HasColumnType("nvarchar(30)");
 
                     b.Property<string>("Notes")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Phone")
@@ -579,7 +683,7 @@ namespace KitchenProject.Migrations
                             Id = new Guid("44b47e21-a6b8-48d3-b84c-8473ad5806e8"),
                             About = "We are a specialized news website covering political, sports, and economic events, along with various other sections of general interest to readers. We always strive to provide distinguished and reliable content that reflects the ongoing developments on both the local and global stages.",
                             Activity = "News site",
-                            Created = new DateTime(2026, 9, 5, 15, 1, 21, 489, DateTimeKind.Local).AddTicks(4589),
+                            Created = new DateTime(2026, 9, 5, 13, 1, 21, 0, DateTimeKind.Utc),
                             Name = "بن قسومة للمطابخ"
                         });
                 });
@@ -613,7 +717,7 @@ namespace KitchenProject.Migrations
                         {
                             Id = new Guid("7b2c5bf8-20f1-4956-abb6-e8821e8ce725"),
                             ClosingMessage = "The site is temporarily closed for development",
-                            Created = new DateTime(2026, 9, 5, 15, 1, 21, 489, DateTimeKind.Local).AddTicks(4910),
+                            Created = new DateTime(2026, 9, 5, 13, 1, 21, 0, DateTimeKind.Utc),
                             State = true
                         });
                 });
@@ -931,80 +1035,6 @@ namespace KitchenProject.Migrations
                     b.ToTable("AspNetRoleClaims", (string)null);
                 });
 
-            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUser", b =>
-                {
-                    b.Property<string>("Id")
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<int>("AccessFailedCount")
-                        .HasColumnType("int");
-
-                    b.Property<string>("ConcurrencyStamp")
-                        .IsConcurrencyToken()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Discriminator")
-                        .IsRequired()
-                        .HasMaxLength(21)
-                        .HasColumnType("nvarchar(21)");
-
-                    b.Property<string>("Email")
-                        .HasMaxLength(256)
-                        .HasColumnType("nvarchar(256)");
-
-                    b.Property<bool>("EmailConfirmed")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("LockoutEnabled")
-                        .HasColumnType("bit");
-
-                    b.Property<DateTimeOffset?>("LockoutEnd")
-                        .HasColumnType("datetimeoffset");
-
-                    b.Property<string>("NormalizedEmail")
-                        .HasMaxLength(256)
-                        .HasColumnType("nvarchar(256)");
-
-                    b.Property<string>("NormalizedUserName")
-                        .HasMaxLength(256)
-                        .HasColumnType("nvarchar(256)");
-
-                    b.Property<string>("PasswordHash")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("PhoneNumber")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<bool>("PhoneNumberConfirmed")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("SecurityStamp")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<bool>("TwoFactorEnabled")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("UserName")
-                        .HasMaxLength(256)
-                        .HasColumnType("nvarchar(256)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("NormalizedEmail")
-                        .HasDatabaseName("EmailIndex");
-
-                    b.HasIndex("NormalizedUserName")
-                        .IsUnique()
-                        .HasDatabaseName("UserNameIndex")
-                        .HasFilter("[NormalizedUserName] IS NOT NULL");
-
-                    b.ToTable("AspNetUsers", (string)null);
-
-                    b.HasDiscriminator().HasValue("IdentityUser");
-
-                    b.UseTphMappingStrategy();
-                });
-
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserClaim<string>", b =>
                 {
                     b.Property<int>("Id")
@@ -1091,48 +1121,6 @@ namespace KitchenProject.Migrations
                     b.HasKey("UserId", "LoginProvider", "Name");
 
                     b.ToTable("AspNetUserTokens", (string)null);
-                });
-
-            modelBuilder.Entity("KitchenProject.Models.Entities.ApplicationUser", b =>
-                {
-                    b.HasBaseType("Microsoft.AspNetCore.Identity.IdentityUser");
-
-                    b.Property<int>("Age")
-                        .HasColumnType("int");
-
-                    b.Property<bool?>("Approval")
-                        .HasColumnType("bit");
-
-                    b.Property<DateTime>("CreatedDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<DateTime?>("LastAccessTime")
-                        .HasColumnType("datetime2");
-
-                    b.Property<DateTime?>("ModifiedDate")
-                        .HasColumnType("datetime2");
-
-                    b.HasDiscriminator().HasValue("ApplicationUser");
-
-                    b.HasData(
-                        new
-                        {
-                            Id = "6068e8a9-d170-4fa6-abba-bed99e9ef5da",
-                            AccessFailedCount = 0,
-                            ConcurrencyStamp = "50286ee0-8cab-4fd9-b86d-4c9e7d81d85b",
-                            Email = "Programmer@Gmail.com",
-                            EmailConfirmed = true,
-                            LockoutEnabled = true,
-                            NormalizedEmail = "PROGRAMMER@GMAIL.COM",
-                            NormalizedUserName = "PROGRAMMER@GMAIL.COM",
-                            PasswordHash = "AQAAAAIAAYagAAAAEOiMVW5LwaXnP8KCeBDAECPBrxqGZdZDi2qpMwjKPFc0X+YlPL+CABdS42ebB7WrSw==",
-                            PhoneNumberConfirmed = true,
-                            SecurityStamp = "04500de6-96fe-4ad7-96dd-fcca96e369d7",
-                            TwoFactorEnabled = false,
-                            UserName = "Programmer@Gmail.com",
-                            Age = 0,
-                            CreatedDate = new DateTime(2026, 9, 5, 13, 1, 21, 489, DateTimeKind.Utc).AddTicks(5206)
-                        });
                 });
 
             modelBuilder.Entity("KitchenProject.Models.Entities.Contract", b =>
@@ -1337,7 +1325,7 @@ namespace KitchenProject.Migrations
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserClaim<string>", b =>
                 {
-                    b.HasOne("Microsoft.AspNetCore.Identity.IdentityUser", null)
+                    b.HasOne("KitchenProject.Models.Entities.ApplicationUser", null)
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -1346,7 +1334,7 @@ namespace KitchenProject.Migrations
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserLogin<string>", b =>
                 {
-                    b.HasOne("Microsoft.AspNetCore.Identity.IdentityUser", null)
+                    b.HasOne("KitchenProject.Models.Entities.ApplicationUser", null)
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -1361,7 +1349,7 @@ namespace KitchenProject.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("Microsoft.AspNetCore.Identity.IdentityUser", null)
+                    b.HasOne("KitchenProject.Models.Entities.ApplicationUser", null)
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -1370,10 +1358,22 @@ namespace KitchenProject.Migrations
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserToken<string>", b =>
                 {
-                    b.HasOne("Microsoft.AspNetCore.Identity.IdentityUser", null)
+                    b.HasOne("KitchenProject.Models.Entities.ApplicationUser", null)
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("KitchenProject.Models.Entities.ApplicationUser", b =>
+                {
+                    b.Navigation("DesignerProjects");
+
+                    b.Navigation("EngineerProjects");
+
+                    b.Navigation("SalesProjects");
+
+                    b.Navigation("UserProfile")
                         .IsRequired();
                 });
 
@@ -1422,18 +1422,6 @@ namespace KitchenProject.Migrations
             modelBuilder.Entity("KitchenProject.Models.Entities.Warehouse", b =>
                 {
                     b.Navigation("StockTransactions");
-                });
-
-            modelBuilder.Entity("KitchenProject.Models.Entities.ApplicationUser", b =>
-                {
-                    b.Navigation("DesignerProjects");
-
-                    b.Navigation("EngineerProjects");
-
-                    b.Navigation("SalesProjects");
-
-                    b.Navigation("UserProfile")
-                        .IsRequired();
                 });
 #pragma warning restore 612, 618
         }

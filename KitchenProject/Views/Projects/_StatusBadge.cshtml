@@ -1,0 +1,19 @@
+@model KitchenProject.Models.Enums.ProjectStatus
+@{
+    var (css, icon) = Model switch
+    {
+        ProjectStatus.New        => ("bg-secondary-subtle text-secondary", "fa-star"),
+        ProjectStatus.SiteVisit  => ("bg-info-subtle text-info", "fa-ruler-combined"),
+        ProjectStatus.Design     => ("bg-primary-subtle text-primary", "fa-pen-ruler"),
+        ProjectStatus.Quote      => ("bg-warning-subtle text-warning-emphasis", "fa-file-invoice-dollar"),
+        ProjectStatus.Contracted => ("bg-success-subtle text-success", "fa-file-signature"),
+        ProjectStatus.InProgress => ("bg-primary text-white", "fa-gears"),
+        ProjectStatus.Delivered  => ("bg-success text-white", "fa-truck-ramp-box"),
+        ProjectStatus.Closed     => ("bg-dark text-white", "fa-lock"),
+        ProjectStatus.Cancelled  => ("bg-danger-subtle text-danger", "fa-ban"),
+        _                        => ("bg-light text-dark", "fa-circle")
+    };
+}
+<span class="badge @css rounded-pill px-3 py-2 fw-bold">
+    <i class="fa-solid @icon me-1"></i> @Model.GetDisplayName()
+</span>

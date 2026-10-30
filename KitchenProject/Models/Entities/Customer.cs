@@ -20,13 +20,16 @@ namespace KitchenProject.Models.Entities
 		[MaxLength(30), EmailAddress]
 		public string? Email { get; set; }
 
+		[Required(ErrorMessage = "العنوان مطلوب")]
 		[MaxLength(250)]
-		public string? Address { get; set; }
+		public required string Address { get; set; }
 
+		[Required(ErrorMessage = "المدينة مطلوبة")]
 		[MaxLength(100)]
-		public string? City { get; set; }
+		public required string City { get; set; }
 
-		public string? Notes { get; set; }		
+		[Required(ErrorMessage = "الملاحظات مطلوبة")]
+		public required string Notes { get; set; }
 
 		public ICollection<Project> Projects { get; set; } = new List<Project>();
 	}

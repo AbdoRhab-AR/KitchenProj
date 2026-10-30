@@ -1,0 +1,267 @@
+@model KitchenProject.Models.Entities.Project
+@{
+    ViewData["Title"] = "تفاصيل المشروع - " + Model.ProjectName;
+    Layout = "_DashboardLayout";
+
+    var stages = new[]
+    {
+        ProjectStatus.New, ProjectStatus.SiteVisit, ProjectStatus.Design, ProjectStatus.Quote,
+        ProjectStatus.Contracted, ProjectStatus.InProgress, ProjectStatus.Delivered, ProjectStatus.Closed
+    };
+    var currentStage = Array.IndexOf(stages, Model.Status);
+
+    var contractsTotal = Model.Contracts.Sum(c => c.TotalAmount);
+    var paidTotal = Model.CustomerPayments.Sum(p => p.Amount);
+    var expensesTotal = Model.Expenses.Sum(e => e.Amount);
+    var saleValue = contractsTotal > 0 ? contractsTotal : (Model.FinalAmount > 0 ? Model.FinalAmount : Model.EstimatedAmount);
+    var remaining = saleValue - paidTotal;
+    var paidPercent = saleValue > 0 ? (int)Math.Min(100, Math.Round(paidTotal / saleValue * 100)) : 0;
+}
+
+<!-- Page Header Bar -->
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+    <div>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-1 small text-muted">
+                <li class="breadcrumb-item"><a asp-action="Index" class="text-decoration-none">المشاريع والأوامر</a></li>
+                <li class="breadcrumb-item active" aria-current="page">تفاصيل المشروع</li>
+            </ol>
+        </nav>
+        <h2 class="page-header-title mb-0 d-flex flex-wrap align-items-center gap-2">
+            <i class="fa-solid fa-kitchen-set text-primary"></i>
+            <span>@Model.ProjectName</span>
+            <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-1 rounded-pill" style="font-size:0.8rem;">
+                @Model.ProjectNo
+            </span>
+            <partial name="_StatusBadge" model="Model.Status" />
+        </h2>
+    </div>
+    <div class="d-flex gap-2">
+        <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-primary-custom d-inline-flex align-items-center gap-2">
+            <i class="fa-solid fa-pen-to-square"></i>
+            <span>تعديل</span>
+        </a>
+        <button type="button" class="btn btn-outline-danger fw-bold rounded-3" data-bs-toggle="modal" data-bs-target="#deleteModal">
+            <i class="fa-solid fa-trash-can"></i>
+        </button>
+        <a asp-action="Index" class="btn btn-outline-secondary fw-bold rounded-3">
+            <i class="fa-solid fa-arrow-right me-1"></i> القائمة
+        </a>
+    </div>
+</div>
+
+<!-- Workflow Stepper -->
+<div class="custom-card p-4 mb-4">
+    @if (Model.Status == ProjectStatus.Cancelled)
+    {
+        <div class="alert alert-danger border-0 rounded-3 mb-0 d-flex align-items-center gap-2">
+            <i class="fa-solid fa-ban fs-4"></i>
+            <span class="fw-bold">هذا المشروع ملغى</span>
+        </div>
+    }
+    else
+    {
+        <div class="d-flex justify-content-between align-items-start text-center overflow-auto gap-2">
+            @for (int i = 0; i < stages.Length; i++)
+            {
+                var done = i < currentStage;
+                var active = i == currentStage;
+                <div class="flex-fill" style="min-width:80px;">
+                    <div class="rounded-circle d-inline-flex align-items-center justify-content-center mb-2 fw-bold
+                                @(done ? "bg-success text-white" : active ? "bg-primary text-white shadow" : "bg-light text-muted border")"
+                         style="width:38px; height:38px;">
+                        @if (done)
+                        {
+                            <i class="fa-solid fa-check"></i>
+                        }
+                        else
+                        {
+                            @(i + 1)
+                        }
+                    </div>
+                    <div class="small @(active ? "fw-bold text-primary" : done ? "text-success" : "text-muted")">
+                        @stages[i].GetDisplayName()
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+<div class="row g-4">
+    <!-- Project Info Card -->
+    <div class="col-12 col-lg-5 col-xl-4">
+        <div class="custom-card p-4 h-100">
+            <h5 class="fw-bold mb-3 text-dark"><i class="fa-solid fa-circle-info text-primary me-2"></i> بيانات المشروع</h5>
+
+            <div class="d-flex flex-column gap-3 fs-6">
+                <div>
+                    <span class="text-muted d-block small fw-bold">العميل</span>
+                    <a asp-controller="Customers" asp-action="Details" asp-route-id="@Model.CustomerId" class="fw-bold text-dark text-decoration-none">
+                        <i class="fa-solid fa-user me-2 text-primary"></i>@Model.Customer?.Name
+                    </a>
+                    <small class="d-block text-muted ms-4">@Model.Customer?.Phone</small>
+                </div>
+
+                <div>
+                    <span class="text-muted d-block small fw-bold">نوع المطبخ</span>
+                    <span class="fw-semibold text-dark">
+                        <i class="fa-solid fa-layer-group me-2 text-info"></i>
+                        @(string.IsNullOrEmpty(Model.KitchenType) ? "غير محدد" : Model.KitchenType)
+                    </span>
+                </div>
+
+                <div>
+                    <span class="text-muted d-block small fw-bold">عنوان التركيب</span>
+                    <span class="fw-semibold text-dark">
+                        <i class="fa-solid fa-location-dot me-2 text-danger"></i>
+                        @(string.IsNullOrEmpty(Model.Address) ? "غير مسجل" : Model.Address)
+                    </span>
+                </div>
+
+                <div class="pt-3 border-top">
+                    <span class="text-muted d-block small fw-bold mb-2">فريق العمل</span>
+                    <div class="d-flex flex-column gap-2 small">
+                        <span><i class="fa-solid fa-handshake me-2 text-warning"></i> المبيعات: <strong>@(Model.SalesUser?.UserName ?? "غير محدد")</strong></span>
+                        <span><i class="fa-solid fa-helmet-safety me-2 text-success"></i> المهندس: <strong>@(Model.EngineerUser?.UserName ?? "غير محدد")</strong></span>
+                        <span><i class="fa-solid fa-pen-ruler me-2 text-primary"></i> المصمم: <strong>@(Model.DesignerUser?.UserName ?? "غير محدد")</strong></span>
+                    </div>
+                </div>
+
+                <div class="pt-3 border-top">
+                    <span class="text-muted d-block small fw-bold mb-2">المواعيد</span>
+                    <div class="d-flex flex-column gap-2 small">
+                        <span><i class="fa-solid fa-calendar-plus me-2 text-muted"></i> الإنشاء: <strong>@Model.Created.ToLocalTime().ToString("yyyy/MM/dd")</strong></span>
+                        <span><i class="fa-solid fa-play me-2 text-muted"></i> البدء: <strong>@(Model.StartDate?.ToString("yyyy/MM/dd") ?? "-")</strong></span>
+                        <span><i class="fa-solid fa-flag-checkered me-2 text-muted"></i> التسليم المتوقع: <strong>@(Model.ExpectedDeliveryDate?.ToString("yyyy/MM/dd") ?? "-")</strong></span>
+                        @if (Model.DeliveredAt.HasValue)
+                        {
+                            <span><i class="fa-solid fa-truck-ramp-box me-2 text-success"></i> تم التسليم: <strong>@Model.DeliveredAt.Value.ToString("yyyy/MM/dd")</strong></span>
+                        }
+                        @if (Model.ClosedAt.HasValue)
+                        {
+                            <span><i class="fa-solid fa-lock me-2 text-dark"></i> الإغلاق: <strong>@Model.ClosedAt.Value.ToString("yyyy/MM/dd")</strong></span>
+                        }
+                    </div>
+                </div>
+
+                @if (!string.IsNullOrEmpty(Model.Notes))
+                {
+                    <div class="pt-3 border-top">
+                        <span class="text-muted d-block small fw-bold mb-1">ملاحظات</span>
+                        <p class="bg-light p-3 rounded-3 text-secondary small mb-0" style="white-space:pre-line;">@Model.Notes</p>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- Right Side: Financials & Related Records -->
+    <div class="col-12 col-lg-7 col-xl-8">
+        <!-- Financial Summary -->
+        <div class="custom-card p-4 mb-4">
+            <h5 class="fw-bold mb-3 text-dark"><i class="fa-solid fa-coins text-warning me-2"></i> الملخص المالي</h5>
+            <div class="row g-3 mb-3">
+                <div class="col-6 col-md-3">
+                    <div class="bg-light rounded-3 p-3 h-100">
+                        <span class="text-muted d-block small fw-bold">قيمة المشروع</span>
+                        <span class="fw-bold fs-5 text-dark">@saleValue.ToString("N2")</span>
+                        <small class="d-block text-muted" style="font-size:0.72rem;">
+                            @(contractsTotal > 0 ? "من العقود" : Model.FinalAmount > 0 ? "القيمة النهائية" : "القيمة التقديرية")
+                        </small>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="bg-success-subtle rounded-3 p-3 h-100">
+                        <span class="text-muted d-block small fw-bold">المحصّل</span>
+                        <span class="fw-bold fs-5 text-success">@paidTotal.ToString("N2")</span>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="bg-danger-subtle rounded-3 p-3 h-100">
+                        <span class="text-muted d-block small fw-bold">المتبقي</span>
+                        <span class="fw-bold fs-5 text-danger">@remaining.ToString("N2")</span>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="bg-warning-subtle rounded-3 p-3 h-100">
+                        <span class="text-muted d-block small fw-bold">المصروفات</span>
+                        <span class="fw-bold fs-5 text-warning-emphasis">@expensesTotal.ToString("N2")</span>
+                    </div>
+                </div>
+            </div>
+            <div class="d-flex justify-content-between small text-muted mb-1">
+                <span>نسبة التحصيل</span>
+                <span class="fw-bold">@paidPercent%</span>
+            </div>
+            <div class="progress" style="height:8px;">
+                <div class="progress-bar bg-success" style="width:@paidPercent%"></div>
+            </div>
+        </div>
+
+        <!-- Related Records -->
+        <div class="custom-card">
+            <div class="card-header-custom">
+                <h5 class="fw-bold mb-0 text-dark">
+                    <i class="fa-solid fa-folder-tree text-primary me-2"></i> سجلات المشروع
+                </h5>
+            </div>
+            <div class="p-4">
+                <div class="row g-3">
+                    @{
+                        var related = new[]
+                        {
+                            (Title: "المعاينات", Icon: "fa-ruler-combined", Css: "info", Count: Model.SiteVisits.Count),
+                            (Title: "عروض الأسعار", Icon: "fa-file-invoice-dollar", Css: "warning", Count: Model.Quotes.Count),
+                            (Title: "العقود", Icon: "fa-file-contract", Css: "success", Count: Model.Contracts.Count),
+                            (Title: "الدفعات", Icon: "fa-wallet", Css: "primary", Count: Model.CustomerPayments.Count),
+                            (Title: "المصروفات", Icon: "fa-receipt", Css: "danger", Count: Model.Expenses.Count)
+                        };
+                    }
+                    @foreach (var r in related)
+                    {
+                        <div class="col-6 col-md-4">
+                            <div class="border rounded-3 p-3 d-flex align-items-center gap-3 h-100">
+                                <div class="bg-@(r.Css)-subtle text-@(r.Css) rounded-circle d-flex align-items-center justify-content-center" style="width:44px; height:44px;">
+                                    <i class="fa-solid @r.Icon"></i>
+                                </div>
+                                <div>
+                                    <span class="fw-bold d-block text-dark">@r.Title</span>
+                                    <small class="text-muted">@r.Count سجل</small>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+                <p class="text-muted small mb-0 mt-3">
+                    <i class="fa-solid fa-circle-info me-1"></i> شاشات المعاينات وعروض الأسعار والعقود ستُضاف في المرحلة القادمة.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4 text-start">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold text-danger">
+                    <i class="fa-solid fa-triangle-exclamation me-2"></i> تأكيد حذف المشروع
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body py-3">
+                هل أنت متأكد من رغبتك في حذف المشروع <strong>"(@Model.ProjectNo) @Model.ProjectName"</strong>؟
+                <p class="text-muted small mb-0 mt-2">ملاحظة: سيتم حذف المعاينات المرتبطة به، ولا يمكن حذف مشروع عليه عقود أو دفعات.</p>
+            </div>
+            <div class="modal-footer border-0 pt-0">
+                <button type="button" class="btn btn-light fw-bold" data-bs-dismiss="modal">إلغاء</button>
+                <form asp-action="Delete" asp-route-id="@Model.Id" method="post" class="d-inline">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="btn btn-danger fw-bold">حذف نهائي</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

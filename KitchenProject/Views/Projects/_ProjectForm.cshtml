@@ -1,0 +1,126 @@
+@model KitchenProject.Models.Entities.Project
+
+<div asp-validation-summary="ModelOnly" class="alert alert-danger rounded-3 mb-4" role="alert"></div>
+
+<!-- Basic Info -->
+<h6 class="fw-bold text-muted mb-3"><i class="fa-solid fa-circle-info me-2"></i> البيانات الأساسية</h6>
+<div class="row g-4 mb-4">
+    <!-- Project Code (Auto Generated) -->
+    <div class="col-12 col-md-4">
+        <label asp-for="ProjectNo" class="form-label fw-bold">كود المشروع <span class="text-danger">*</span></label>
+        <div class="input-group">
+            <span class="input-group-text bg-light border-end-0"><i class="fa-solid fa-hashtag text-muted"></i></span>
+            <input asp-for="ProjectNo" class="form-control bg-light border-start-0 fw-bold text-primary" readonly />
+        </div>
+        <span asp-validation-for="ProjectNo" class="text-danger small"></span>
+    </div>
+
+    <!-- Project Name -->
+    <div class="col-12 col-md-8">
+        <label asp-for="ProjectName" class="form-label fw-bold">اسم المشروع <span class="text-danger">*</span></label>
+        <div class="input-group">
+            <span class="input-group-text bg-white border-end-0"><i class="fa-solid fa-kitchen-set text-muted"></i></span>
+            <input asp-for="ProjectName" class="form-control border-start-0" placeholder="مثال: مطبخ شقة حي الأندلس - الدور الثاني" />
+        </div>
+        <span asp-validation-for="ProjectName" class="text-danger small"></span>
+    </div>
+
+    <!-- Customer -->
+    <div class="col-12 col-md-6">
+        <label asp-for="CustomerId" class="form-label fw-bold">العميل <span class="text-danger">*</span></label>
+        <select asp-for="CustomerId" asp-items="ViewBag.Customers" class="form-select">
+            <option value="">-- اختر العميل --</option>
+        </select>
+        <span asp-validation-for="CustomerId" class="text-danger small"></span>
+    </div>
+
+    <!-- Status -->
+    <div class="col-12 col-md-6">
+        <label asp-for="Status" class="form-label fw-bold">حالة المشروع <span class="text-danger">*</span></label>
+        <select asp-for="Status" asp-items="ViewBag.StatusList" class="form-select"></select>
+        <span asp-validation-for="Status" class="text-danger small"></span>
+    </div>
+
+    <!-- Kitchen Type -->
+    <div class="col-12 col-md-6">
+        <label asp-for="KitchenType" class="form-label fw-bold">نوع المطبخ</label>
+        <div class="input-group">
+            <span class="input-group-text bg-white border-end-0"><i class="fa-solid fa-layer-group text-muted"></i></span>
+            <input asp-for="KitchenType" class="form-control border-start-0" list="kitchenTypes" placeholder="اختر أو اكتب نوع المطبخ..." />
+        </div>
+        <datalist id="kitchenTypes">
+            <option value="خشب MDF"></option>
+            <option value="خشب طبيعي"></option>
+            <option value="ألمنيوم"></option>
+            <option value="أكريليك"></option>
+            <option value="هاي جلوس"></option>
+            <option value="بولي لاك"></option>
+        </datalist>
+        <span asp-validation-for="KitchenType" class="text-danger small"></span>
+    </div>
+
+    <!-- Address -->
+    <div class="col-12 col-md-6">
+        <label asp-for="Address" class="form-label fw-bold">عنوان التركيب</label>
+        <div class="input-group">
+            <span class="input-group-text bg-white border-end-0"><i class="fa-solid fa-location-dot text-muted"></i></span>
+            <input asp-for="Address" class="form-control border-start-0" placeholder="يُملأ تلقائياً من عنوان العميل..." />
+        </div>
+        <span asp-validation-for="Address" class="text-danger small"></span>
+    </div>
+</div>
+
+<!-- Team -->
+<h6 class="fw-bold text-muted mb-3"><i class="fa-solid fa-people-group me-2"></i> فريق العمل</h6>
+<div class="row g-4 mb-4">
+    <div class="col-12 col-md-4">
+        <label asp-for="SalesUserId" class="form-label fw-bold">موظف المبيعات</label>
+        <select asp-for="SalesUserId" asp-items="ViewBag.SalesUsers" class="form-select">
+            <option value="">-- غير محدد --</option>
+        </select>
+    </div>
+    <div class="col-12 col-md-4">
+        <label asp-for="EngineerUserId" class="form-label fw-bold">مهندس المعاينة</label>
+        <select asp-for="EngineerUserId" asp-items="ViewBag.EngineerUsers" class="form-select">
+            <option value="">-- غير محدد --</option>
+        </select>
+    </div>
+    <div class="col-12 col-md-4">
+        <label asp-for="DesignerUserId" class="form-label fw-bold">المصمم</label>
+        <select asp-for="DesignerUserId" asp-items="ViewBag.DesignerUsers" class="form-select">
+            <option value="">-- غير محدد --</option>
+        </select>
+    </div>
+</div>
+
+<!-- Amounts & Dates -->
+<h6 class="fw-bold text-muted mb-3"><i class="fa-solid fa-coins me-2"></i> القيم والمواعيد</h6>
+<div class="row g-4 mb-4">
+    <div class="col-12 col-md-6 col-xl-3">
+        <label asp-for="EstimatedAmount" class="form-label fw-bold">القيمة التقديرية</label>
+        <input asp-for="EstimatedAmount" type="number" step="0.01" min="0" class="form-control" />
+        <span asp-validation-for="EstimatedAmount" class="text-danger small"></span>
+    </div>
+    <div class="col-12 col-md-6 col-xl-3">
+        <label asp-for="FinalAmount" class="form-label fw-bold">القيمة النهائية</label>
+        <input asp-for="FinalAmount" type="number" step="0.01" min="0" class="form-control" />
+        <span asp-validation-for="FinalAmount" class="text-danger small"></span>
+    </div>
+    <div class="col-12 col-md-6 col-xl-3">
+        <label asp-for="StartDate" class="form-label fw-bold">تاريخ البدء</label>
+        <input asp-for="StartDate" type="date" asp-format="{0:yyyy-MM-dd}" class="form-control" />
+        <span asp-validation-for="StartDate" class="text-danger small"></span>
+    </div>
+    <div class="col-12 col-md-6 col-xl-3">
+        <label asp-for="ExpectedDeliveryDate" class="form-label fw-bold">موعد التسليم المتوقع</label>
+        <input asp-for="ExpectedDeliveryDate" type="date" asp-format="{0:yyyy-MM-dd}" class="form-control" />
+        <span asp-validation-for="ExpectedDeliveryDate" class="text-danger small"></span>
+    </div>
+
+    <!-- Notes -->
+    <div class="col-12">
+        <label asp-for="Notes" class="form-label fw-bold">ملاحظات المشروع</label>
+        <textarea asp-for="Notes" class="form-control" rows="3" placeholder="الألوان، الخامات المطلوبة، ملاحظات خاصة بالتركيب..."></textarea>
+        <span asp-validation-for="Notes" class="text-danger small"></span>
+    </div>
+</div>

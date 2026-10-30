@@ -14,8 +14,8 @@ namespace KitchenProject.Models.Entities
 		[ValidateNever]
 		public Customer Customer { get; set; }
 
-		[Required(ErrorMessage = "Customer is required")]
-		[Display(Name = "Customers")]
+		[Required(ErrorMessage = "يجب اختيار العميل")]
+		[Display(Name = "العميل")]
 		public Guid CustomerId { get; set; }
 
 		[MaxLength(150)]

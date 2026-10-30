@@ -8,7 +8,7 @@ namespace KitchenProject.Models.Entities
 	{
 		[ValidateNever]
 		public Project Projects { get; set; }
-		[Required(ErrorMessage = "Project is required")]
+		[Required(ErrorMessage = "يجب اختيار المشروع")]
 		[Display(Name = "Projects")]
 		public Guid ProjectId { get; set; }
 

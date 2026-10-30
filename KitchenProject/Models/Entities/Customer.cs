@@ -11,7 +11,7 @@ namespace KitchenProject.Models.Entities
 		[StringLength(30)]
 		public required string Name { get; set; }
 
-		[RegularExpression(@"^\d{14}$", ErrorMessage = "The phone number must consist of 14 digits.")]
+		[RegularExpression(@"^\d{14}$", ErrorMessage = "رقم الهاتف يجب أن يكون 14 رقماً")]
 		public required string Phone { get; set; }
 
 		[MaxLength(14)]

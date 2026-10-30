@@ -8,7 +8,7 @@ namespace KitchenProject.Models.Entities
         public bool State { get; set; }
 
        
-        [Required(ErrorMessage = "Site closing message is required")]
+        [Required(ErrorMessage = "رسالة إغلاق الموقع مطلوبة")]
         [Display(Name = "Site closing message")]
         public required string ClosingMessage { get; set; }
 

@@ -9,7 +9,7 @@ using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 
 var builder = WebApplication.CreateBuilder(args);
-builder.Services.AddControllersWithViews();
+builder.Services.AddControllersWithViews(options => options.UseArabicValidationMessages());
 
 
 builder.Services.AddScoped(typeof(IUnitOfWork<>), typeof(UnitOfWork<>));

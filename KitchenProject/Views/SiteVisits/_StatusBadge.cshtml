@@ -1,0 +1,14 @@
+@model KitchenProject.Models.Enums.SiteVisitStatus
+@{
+    var (css, icon) = Model switch
+    {
+        SiteVisitStatus.Scheduled => ("bg-warning-subtle text-warning-emphasis", "fa-calendar-day"),
+        SiteVisitStatus.Completed => ("bg-info-subtle text-info", "fa-ruler-combined"),
+        SiteVisitStatus.Approved  => ("bg-success-subtle text-success", "fa-circle-check"),
+        SiteVisitStatus.Cancelled => ("bg-danger-subtle text-danger", "fa-ban"),
+        _                         => ("bg-light text-dark", "fa-circle")
+    };
+}
+<span class="badge @css rounded-pill px-3 py-2 fw-bold">
+    <i class="fa-solid @icon me-1"></i> @Model.GetDisplayName()
+</span>

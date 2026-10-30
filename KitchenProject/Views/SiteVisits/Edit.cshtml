@@ -1,0 +1,81 @@
+@model KitchenProject.Models.Entities.SiteVisit
+@{
+    ViewData["Title"] = "تعديل المعاينة";
+    Layout = "_DashboardLayout";
+}
+
+<!-- Page Header Bar -->
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+    <div>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-1 small text-muted">
+                <li class="breadcrumb-item"><a asp-action="Index" class="text-decoration-none">المعاينة والمقاسات</a></li>
+                <li class="breadcrumb-item active" aria-current="page">تعديل المعاينة</li>
+            </ol>
+        </nav>
+        <h2 class="page-header-title mb-0">
+            <i class="fa-solid fa-pen-to-square text-primary me-2"></i> تعديل المعاينة وتسجيل المقاسات
+        </h2>
+    </div>
+    <div class="d-flex gap-2">
+        <button type="button" class="btn btn-outline-danger fw-bold rounded-3" data-bs-toggle="modal" data-bs-target="#deleteModal">
+            <i class="fa-solid fa-trash-can"></i>
+        </button>
+        <a asp-controller="Projects" asp-action="Details" asp-route-id="@Model.ProjectId" class="btn btn-outline-secondary fw-bold rounded-3">
+            <i class="fa-solid fa-arrow-right me-1"></i> العودة للمشروع
+        </a>
+    </div>
+</div>
+
+<!-- Form Card -->
+<div class="row justify-content-center">
+    <div class="col-12 col-xl-10">
+        <div class="custom-card p-4 p-md-5">
+            <form asp-action="Edit" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" asp-for="Id" />
+                <input type="hidden" asp-for="Created" />
+
+                <partial name="_SiteVisitForm" model="Model" />
+
+                <hr class="my-4 text-muted opacity-25">
+
+                <div class="d-flex align-items-center justify-content-end gap-3">
+                    <a asp-controller="Projects" asp-action="Details" asp-route-id="@Model.ProjectId" class="btn btn-light border fw-bold px-4 rounded-3">إلغاء</a>
+                    <button type="submit" class="btn btn-primary-custom px-5 py-2 fw-bold">
+                        <i class="fa-solid fa-floppy-disk me-1"></i> حفظ التعديلات
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4 text-start">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold text-danger">
+                    <i class="fa-solid fa-triangle-exclamation me-2"></i> تأكيد حذف المعاينة
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body py-3">
+                هل أنت متأكد من حذف هذه المعاينة ومقاساتها؟
+                <p class="text-muted small mb-0 mt-2">ملاحظة: هذا الإجراء لا يمكن التراجع عنه.</p>
+            </div>
+            <div class="modal-footer border-0 pt-0">
+                <button type="button" class="btn btn-light fw-bold" data-bs-dismiss="modal">إلغاء</button>
+                <form asp-action="Delete" asp-route-id="@Model.Id" method="post" class="d-inline">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="btn btn-danger fw-bold">حذف نهائي</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

@@ -1,0 +1,69 @@
+@model KitchenProject.Models.Entities.SiteVisit
+
+<div asp-validation-summary="ModelOnly" class="alert alert-danger rounded-3 mb-4" role="alert"></div>
+
+<!-- Appointment -->
+<h6 class="fw-bold text-muted mb-3"><i class="fa-solid fa-calendar-check me-2"></i> بيانات الموعد</h6>
+<div class="row g-4 mb-4">
+    <div class="col-12 col-md-6">
+        <label asp-for="ProjectId" class="form-label fw-bold">المشروع <span class="text-danger">*</span></label>
+        <select asp-for="ProjectId" asp-items="ViewBag.Projects" class="form-select">
+            <option value="">-- اختر المشروع --</option>
+        </select>
+        <span asp-validation-for="ProjectId" class="text-danger small"></span>
+    </div>
+    <div class="col-12 col-md-6">
+        <label asp-for="EngineerId" class="form-label fw-bold">مهندس المعاينة <span class="text-danger">*</span></label>
+        <select asp-for="EngineerId" asp-items="ViewBag.Engineers" class="form-select">
+            <option value="">-- اختر المهندس --</option>
+        </select>
+        <span asp-validation-for="EngineerId" class="text-danger small"></span>
+    </div>
+    <div class="col-12 col-md-6">
+        <label asp-for="VisitDate" class="form-label fw-bold">موعد المعاينة <span class="text-danger">*</span></label>
+        <input asp-for="VisitDate" type="datetime-local" asp-format="{0:yyyy-MM-ddTHH:mm}" class="form-control" />
+        <span asp-validation-for="VisitDate" class="text-danger small"></span>
+    </div>
+    <div class="col-12 col-md-6">
+        <label asp-for="Status" class="form-label fw-bold">حالة المعاينة</label>
+        <select asp-for="Status" asp-items="ViewBag.StatusList" class="form-select"></select>
+        <small class="text-muted">اعتماد المعاينة ينقل المشروع تلقائياً لمرحلة التصميم</small>
+    </div>
+</div>
+
+<!-- Measurements -->
+<h6 class="fw-bold text-muted mb-3"><i class="fa-solid fa-ruler-combined me-2"></i> المقاسات (بالسنتيمتر)</h6>
+<div class="row g-4 mb-4">
+    <div class="col-12 col-md-4">
+        <label asp-for="Length" class="form-label fw-bold">الطول</label>
+        <div class="input-group">
+            <input asp-for="Length" type="number" step="0.01" min="0" class="form-control" />
+            <span class="input-group-text">سم</span>
+        </div>
+        <span asp-validation-for="Length" class="text-danger small"></span>
+    </div>
+    <div class="col-12 col-md-4">
+        <label asp-for="Width" class="form-label fw-bold">العرض</label>
+        <div class="input-group">
+            <input asp-for="Width" type="number" step="0.01" min="0" class="form-control" />
+            <span class="input-group-text">سم</span>
+        </div>
+        <span asp-validation-for="Width" class="text-danger small"></span>
+    </div>
+    <div class="col-12 col-md-4">
+        <label asp-for="Height" class="form-label fw-bold">الارتفاع</label>
+        <div class="input-group">
+            <input asp-for="Height" type="number" step="0.01" min="0" class="form-control" />
+            <span class="input-group-text">سم</span>
+        </div>
+        <span asp-validation-for="Height" class="text-danger small"></span>
+    </div>
+    <div class="col-12">
+        <label asp-for="MeasurementsText" class="form-label fw-bold">تفاصيل المقاسات</label>
+        <textarea asp-for="MeasurementsText" class="form-control" rows="4" placeholder="مثال: الجدار A = 320 سم، الجدار B = 240 سم، مكان الشباك على بعد 90 سم، مخرج الغاز..."></textarea>
+    </div>
+    <div class="col-12">
+        <label asp-for="Notes" class="form-label fw-bold">ملاحظات المهندس</label>
+        <textarea asp-for="Notes" class="form-control" rows="3" placeholder="حالة الجدران، أماكن الكهرباء والسباكة، عوائق التركيب..."></textarea>
+    </div>
+</div>

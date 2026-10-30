@@ -13,6 +13,7 @@ builder.Services.AddControllersWithViews();
 
 
 builder.Services.AddScoped(typeof(IUnitOfWork<>), typeof(UnitOfWork<>));
+builder.Services.AddScoped<LookupService>();
 
 //-------------------------------------------------
 builder.Services.AddDbContext<ApplicationDbContext>
@@ -106,6 +107,16 @@ builder.Services.AddHttpContextAccessor(); //AsyncActionFilter ·≈” ⁄„«·Â« ·Ã·» «
 builder.Services.AddSingleton<UserSessionTracker>();
 
 var app = builder.Build();
+
+// Fixed number/date format (decimal point ".") regardless of the Windows region settings,
+// so amounts typed in number inputs always bind correctly.
+var appCulture = new System.Globalization.CultureInfo("en-US");
+app.UseRequestLocalization(new Microsoft.AspNetCore.Builder.RequestLocalizationOptions
+{
+	DefaultRequestCulture = new Microsoft.AspNetCore.Localization.RequestCulture(appCulture),
+	SupportedCultures = new[] { appCulture },
+	SupportedUICultures = new[] { appCulture }
+});
 
 
 if (!app.Environment.IsDevelopment())

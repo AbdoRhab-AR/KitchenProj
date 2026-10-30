@@ -1,0 +1,104 @@
+@model KitchenProject.ViewModels.SettingsViewModel
+@{
+    ViewData["Title"] = "إعدادات الشركة";
+    Layout = "_DashboardLayout";
+}
+
+<!-- Page Header Bar -->
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+    <div>
+        <h2 class="page-header-title mb-1">
+            <i class="fa-solid fa-sliders text-primary me-2"></i> إعدادات الشركة
+        </h2>
+        <p class="text-muted mb-0">بيانات الشركة والشعار والورق الرسمي المستخدم في الطباعة</p>
+    </div>
+</div>
+
+<form asp-action="Index" method="post" enctype="multipart/form-data">
+    @Html.AntiForgeryToken()
+    <div asp-validation-summary="All" class="alert alert-danger rounded-3 mb-4" role="alert"></div>
+
+    <div class="row g-4">
+        <!-- Company Info -->
+        <div class="col-12 col-xl-6">
+            <div class="custom-card p-4 h-100">
+                <h5 class="fw-bold mb-4"><i class="fa-solid fa-building text-primary me-2"></i> بيانات الشركة</h5>
+                <div class="row g-3">
+                    <div class="col-12">
+                        <label asp-for="Name" class="form-label fw-bold">اسم الشركة <span class="text-danger">*</span></label>
+                        <input asp-for="Name" class="form-control" />
+                    </div>
+                    <div class="col-12">
+                        <label asp-for="Activity" class="form-label fw-bold">النشاط / الاسم التجاري <span class="text-danger">*</span></label>
+                        <input asp-for="Activity" class="form-control" />
+                    </div>
+                    <div class="col-12">
+                        <label asp-for="About" class="form-label fw-bold">نبذة <span class="text-danger">*</span></label>
+                        <textarea asp-for="About" class="form-control" rows="3"></textarea>
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <label asp-for="Phone" class="form-label fw-bold">الهاتف <span class="text-danger">*</span></label>
+                        <input asp-for="Phone" class="form-control" dir="ltr" />
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <label asp-for="Email" class="form-label fw-bold">البريد الإلكتروني <span class="text-danger">*</span></label>
+                        <input asp-for="Email" class="form-control" dir="ltr" />
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Branding -->
+        <div class="col-12 col-xl-6">
+            <div class="custom-card p-4 h-100">
+                <h5 class="fw-bold mb-4"><i class="fa-solid fa-palette text-primary me-2"></i> الهوية والطباعة</h5>
+
+                <label class="form-label fw-bold">الشعار</label>
+                <div class="border rounded-3 p-3 mb-2 text-center bg-light">
+                    @if (!string.IsNullOrEmpty(Model.LogoUrl))
+                    {
+                        <img src="@Model.LogoUrl" alt="logo" style="max-height:70px; max-width:100%;" />
+                    }
+                    else
+                    {
+                        <span class="text-muted small">لا يوجد شعار</span>
+                    }
+                </div>
+                <input asp-for="Logo" type="file" accept=".png,.jpg,.jpeg,.webp" class="form-control mb-1" />
+                <small class="text-muted d-block mb-4">يفضل PNG بخلفية شفافة</small>
+
+                <label class="form-label fw-bold">الورق الرسمي (خلفية الطباعة A4)</label>
+                <div class="d-flex gap-3 align-items-start mb-2">
+                    <div class="border rounded-2 bg-light d-flex align-items-center justify-content-center" style="width:105px; height:148px; overflow:hidden;">
+                        @if (!string.IsNullOrEmpty(Model.LetterheadUrl))
+                        {
+                            <img src="@Model.LetterheadUrl" alt="letterhead" style="width:100%; height:100%; object-fit:cover;" />
+                        }
+                        else
+                        {
+                            <span class="text-muted small text-center px-1">بدون ورق رسمي</span>
+                        }
+                    </div>
+                    <div class="small text-muted">
+                        صورة بمقاس A4 عمودي (مثلاً 1488×2105 بكسل) تحتوي رأس وتذييل الورق الرسمي.
+                        تُطبع خلفية لعروض الأسعار والعقود وأوراق المواصفات، ويُترك المحتوى في المنتصف.
+                        @if (!string.IsNullOrEmpty(Model.LetterheadUrl))
+                        {
+                            <div class="form-check mt-2">
+                                <input asp-for="RemoveLetterhead" class="form-check-input" />
+                                <label asp-for="RemoveLetterhead" class="form-check-label text-danger">إيقاف الورق الرسمي (استخدام رأس نصي بسيط)</label>
+                            </div>
+                        }
+                    </div>
+                </div>
+                <input asp-for="Letterhead" type="file" accept=".png,.jpg,.jpeg,.webp" class="form-control" />
+            </div>
+        </div>
+    </div>
+
+    <div class="d-flex justify-content-end mt-4">
+        <button type="submit" class="btn btn-primary-custom px-5 py-2 fw-bold">
+            <i class="fa-solid fa-floppy-disk me-1"></i> حفظ الإعدادات
+        </button>
+    </div>
+</form>

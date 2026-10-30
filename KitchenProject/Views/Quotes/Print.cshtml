@@ -1,0 +1,87 @@
+@model KitchenProject.Models.Entities.Quote
+@{
+    Layout = "_PrintLayout";
+    ViewData["Title"] = "عرض سعر " + Model.QuoteNo;
+    ViewData["DocTitle"] = "عرض سعر";
+    ViewData["DocNo"] = Model.QuoteNo;
+}
+
+<div class="row g-2 mb-3">
+    <div class="col-6">
+        <div class="meta-box">
+            <span class="label">السيد / السادة</span>
+            <div class="fw-bold">@Model.Project?.Customer?.Name</div>
+            <div class="small">@Model.Project?.Customer?.Phone</div>
+            <div class="small text-muted">@(Model.Project?.Address ?? Model.Project?.Customer?.Address)</div>
+        </div>
+    </div>
+    <div class="col-3">
+        <div class="meta-box">
+            <span class="label">التاريخ</span>
+            <div class="fw-bold">@Model.Created.ToLocalTime().ToString("yyyy/MM/dd")</div>
+            <span class="label mt-1">صالح حتى</span>
+            <div class="fw-bold">@(Model.ValidUntil?.ToString("yyyy/MM/dd") ?? "-")</div>
+        </div>
+    </div>
+    <div class="col-3">
+        <div class="meta-box">
+            <span class="label">المشروع</span>
+            <div class="fw-bold">@Model.Project?.ProjectNo</div>
+            <div class="small">@Model.Project?.KitchenType</div>
+        </div>
+    </div>
+</div>
+
+<table class="table table-bordered print-table">
+    <thead>
+        <tr>
+            <th style="width:36px;">#</th>
+            <th>البيان</th>
+            <th style="width:70px;">الوحدة</th>
+            <th style="width:60px;">الكمية</th>
+            <th style="width:100px;">سعر الوحدة</th>
+            <th style="width:110px;">الإجمالي</th>
+        </tr>
+    </thead>
+    <tbody>
+        @{ var n = 1; }
+        @foreach (var item in Model.Items.OrderBy(i => i.Created))
+        {
+            <tr>
+                <td>@(n++)</td>
+                <td>@item.Description</td>
+                <td>@item.Unit</td>
+                <td>@item.Quantity.ToString("0.##")</td>
+                <td>@item.UnitPrice.ToString("N2")</td>
+                <td class="fw-bold">@item.Total.ToString("N2")</td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<div class="d-flex justify-content-between align-items-start gap-4 mt-3 no-break">
+    <div class="flex-grow-1">
+        @if (!string.IsNullOrEmpty(Model.Notes))
+        {
+            <div class="section-title mt-0">الشروط والملاحظات</div>
+            <div class="pre-text small">@Model.Notes</div>
+        }
+    </div>
+    <table class="totals">
+        <tr><td class="text-muted fw-bold">المجموع</td><td class="text-start fw-bold">@Model.Subtotal.ToString("N2")</td></tr>
+        @if (Model.Discount > 0)
+        {
+            <tr><td class="text-muted fw-bold">خصم @Model.DiscountPercent.ToString("0.##")%</td><td class="text-start fw-bold">- @Model.Discount.ToString("N2")</td></tr>
+        }
+        @if (Model.Tax > 0)
+        {
+            <tr><td class="text-muted fw-bold">ضريبة / رسوم</td><td class="text-start fw-bold">@Model.Tax.ToString("N2")</td></tr>
+        }
+        <tr class="grand"><td>الإجمالي (د.ل)</td><td class="text-start">@Model.Total.ToString("N2")</td></tr>
+    </table>
+</div>
+
+<div class="signatures">
+    <div>توقيع العميل بالموافقة</div>
+    <div>الختم والتوقيع</div>
+</div>

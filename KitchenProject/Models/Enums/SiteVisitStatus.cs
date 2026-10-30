@@ -4,16 +4,16 @@ namespace KitchenProject.Models.Enums
 {
 	public enum SiteVisitStatus
 	{
-		[Display(Name = "مؤرشف")]
+		[Display(Name = "مجدولة")]
 		Scheduled=1,
 
-		[Display(Name = "اكتمل")]
+		[Display(Name = "تمت المعاينة")]
 		Completed=2,
 
-		[Display(Name = "تمت الموافقة")]
+		[Display(Name = "معتمدة")]
 		Approved=3,
 
-		[Display(Name = "ملغي")]
+		[Display(Name = "ملغاة")]
 		Cancelled=4
 	}
 }

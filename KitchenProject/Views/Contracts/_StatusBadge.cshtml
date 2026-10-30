@@ -1,0 +1,14 @@
+@model string
+@{
+    var (css, icon) = Model switch
+    {
+        ContractStatuses.Draft     => ("bg-secondary-subtle text-secondary", "fa-file-pen"),
+        ContractStatuses.Active    => ("bg-success-subtle text-success", "fa-file-signature"),
+        ContractStatuses.Completed => ("bg-dark text-white", "fa-flag-checkered"),
+        ContractStatuses.Cancelled => ("bg-danger-subtle text-danger", "fa-ban"),
+        _                          => ("bg-light text-dark", "fa-circle")
+    };
+}
+<span class="badge @css rounded-pill px-3 py-2 fw-bold">
+    <i class="fa-solid @icon me-1"></i> @ContractStatuses.GetName(Model)
+</span>

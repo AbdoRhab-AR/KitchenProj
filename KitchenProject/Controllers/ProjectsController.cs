@@ -15,15 +15,15 @@ namespace KitchenProject.Controllers
 	{
 		private readonly IUnitOfWork<Project> _project;
 		private readonly IUnitOfWork<Customer> _customer;
-		private readonly IUnitOfWork<ApplicationUser> _user;
+		private readonly LookupService _lookup;
 
 		public ProjectsController(IUnitOfWork<Project> project,
 								  IUnitOfWork<Customer> customer,
-								  IUnitOfWork<ApplicationUser> user)
+								  LookupService lookup)
 		{
 			_project = project;
 			_customer = customer;
-			_user = user;
+			_lookup = lookup;
 		}
 
 		// GET: Projects
@@ -70,9 +70,7 @@ namespace KitchenProject.Controllers
 			ViewBag.DeliveredCount = await all.CountAsync(p => p.Status == ProjectStatus.Delivered
 														   || p.Status == ProjectStatus.Closed);
 
-			ViewBag.StatusList = new SelectList(
-				Enum.GetValues<ProjectStatus>().Select(s => new { Value = s, Text = s.GetDisplayName() }),
-				"Value", "Text", status);
+			ViewBag.StatusList = LookupService.EnumList(status);
 
 			return View(projects);
 		}
@@ -103,6 +101,44 @@ namespace KitchenProject.Controllers
 			{
 				return NotFound();
 			}
+
+			return View(project);
+		}
+
+		// GET: Projects/SpecSheet/5
+		// ورقة المواصفات التي يوقعها المصمم والعميل (المقاسات + المواصفات المتفق عليها)
+		public async Task<IActionResult> SpecSheet(Guid? id)
+		{
+			if (id == null)
+			{
+				return NotFound();
+			}
+
+			var project = await _project.Entity.Include(p => p.Customer,
+														p => p.DesignerUser!,
+														p => p.EngineerUser!,
+														p => p.SiteVisits,
+														p => p.Contracts)
+				.AsSplitQuery()
+				.FirstOrDefaultAsync(p => p.Id == id);
+
+			if (project == null)
+			{
+				return NotFound();
+			}
+
+			// المعاينة المعتمدة أولاً، ثم الأحدث غير الملغاة
+			ViewBag.Visit = project.SiteVisits
+				.Where(v => v.Status != SiteVisitStatus.Cancelled)
+				.OrderByDescending(v => v.Status == SiteVisitStatus.Approved)
+				.ThenByDescending(v => v.VisitDate)
+				.FirstOrDefault();
+
+			ViewBag.Specifications = project.Contracts
+				.Where(c => c.Status != ContractStatuses.Cancelled && !string.IsNullOrWhiteSpace(c.Specifications))
+				.OrderByDescending(c => c.Created)
+				.Select(c => c.Specifications)
+				.FirstOrDefault();
 
 			return View(project);
 		}
@@ -269,20 +305,8 @@ namespace KitchenProject.Controllers
 
 		//---------------------------------------------------------------------
 
-		private async Task<string> GenerateProjectNoAsync()
-		{
-			// أعلى رقم موجود + 1 (وليس العدد + 1) حتى لا يتكرر الرقم بعد الحذف
-			var numbers = await _project.Entity.GetAll()
-				.Where(p => p.ProjectNo.StartsWith("PRJ-"))
-				.Select(p => p.ProjectNo.Substring(4))
-				.ToListAsync();
-
-			var max = numbers.Select(n => int.TryParse(n, out var x) ? x : 0)
-							 .DefaultIfEmpty(0)
-							 .Max();
-
-			return $"PRJ-{(max + 1):D4}";
-		}
+		private Task<string> GenerateProjectNoAsync() =>
+			DocumentNumbers.NextAsync(_project.Entity.GetAll().Select(p => p.ProjectNo), "PRJ-");
 
 		private static void ApplyStatusDates(Project project)
 		{
@@ -304,17 +328,10 @@ namespace KitchenProject.Controllers
 				.ToListAsync();
 			ViewBag.Customers = new SelectList(customers, "Id", "Text", project.CustomerId);
 
-			var users = await _user.Entity.Include(u => u.UserProfile)
-				.OrderBy(u => u.UserName)
-				.Select(u => new { u.Id, Text = u.UserProfile != null ? u.UserProfile.DisplayName : u.UserName })
-				.ToListAsync();
-			ViewBag.SalesUsers = new SelectList(users, "Id", "Text", project.SalesUserId);
-			ViewBag.EngineerUsers = new SelectList(users, "Id", "Text", project.EngineerUserId);
-			ViewBag.DesignerUsers = new SelectList(users, "Id", "Text", project.DesignerUserId);
-
-			ViewBag.StatusList = new SelectList(
-				Enum.GetValues<ProjectStatus>().Select(s => new { Value = s, Text = s.GetDisplayName() }),
-				"Value", "Text", project.Status);
+			ViewBag.SalesUsers = await _lookup.UsersAsync(project.SalesUserId);
+			ViewBag.EngineerUsers = await _lookup.UsersAsync(project.EngineerUserId);
+			ViewBag.DesignerUsers = await _lookup.UsersAsync(project.DesignerUserId);
+			ViewBag.StatusList = LookupService.EnumList<ProjectStatus>(project.Status);
 		}
 	}
 }

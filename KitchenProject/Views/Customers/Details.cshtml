@@ -113,7 +113,8 @@
                     </a>
                 </div>
                 <div class="col-12 col-sm-6">
-                    <button type="button" class="btn btn-light border p-3 w-100 text-start d-flex align-items-center gap-3 rounded-3 shadow-sm hover-lift">
+                    @{ var latestProject = Model.Projects?.OrderByDescending(p => p.Created).FirstOrDefault(); }
+                    <a href="@(latestProject != null ? Url.Action("Create", "SiteVisits", new { projectId = latestProject.Id }) : Url.Action("Create", "Projects", new { customerId = Model.Id }))" class="btn btn-light border p-3 w-100 text-start d-flex align-items-center gap-3 rounded-3 shadow-sm hover-lift">
                         <div class="bg-success-subtle text-success rounded-circle p-3">
                             <i class="fa-solid fa-ruler-combined fs-4"></i>
                         </div>
@@ -121,7 +122,7 @@
                             <span class="fw-bold d-block text-dark">جدولة زيارة ميدانية</span>
                             <small class="text-muted">تحديد موعد مهندس المعاينة</small>
                         </div>
-                    </button>
+                    </a>
                 </div>
             </div>
         </div>

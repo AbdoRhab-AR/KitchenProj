@@ -88,8 +88,7 @@ namespace KitchenProject.Controllers
             ViewBag.ActivePage = "Customers";
 
             // Generate unique customer number
-            var count = await _customer.Entity.GetAll().CountAsync();
-            var nextNo = $"CUST-{(count + 1):D4}";
+            var nextNo = await DocumentNumbers.NextAsync(_customer.Entity.GetAll().Select(c => c.CustomerNo), "CUST-");
 
             var model = new Customer
             {

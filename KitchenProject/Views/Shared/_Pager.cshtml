@@ -1,0 +1,34 @@
+@model IDictionary<string, string?>
+@* شريط الصفحات: يقرأ ViewBag.CurrentPage و ViewBag.TotalPages، والموديل = قيم الفلترة التي تُمرر مع كل رابط *@
+@{
+    int current = ViewBag.CurrentPage ?? 1;
+    int total = ViewBag.TotalPages ?? 1;
+
+    Dictionary<string, string?> RouteFor(int page)
+    {
+        var values = new Dictionary<string, string?>(Model) { ["page"] = page.ToString() };
+        return values;
+    }
+}
+@if (total > 1)
+{
+    <div class="card-footer bg-white border-top-0 d-flex align-items-center justify-content-between py-3 px-4">
+        <small class="text-muted">الصفحة @current من @total</small>
+        <nav>
+            <ul class="pagination pagination-sm mb-0">
+                <li class="page-item @(current == 1 ? "disabled" : "")">
+                    <a class="page-link" asp-action="Index" asp-all-route-data="RouteFor(current - 1)">السابق</a>
+                </li>
+                @for (int i = 1; i <= total; i++)
+                {
+                    <li class="page-item @(i == current ? "active" : "")">
+                        <a class="page-link" asp-action="Index" asp-all-route-data="RouteFor(i)">@i</a>
+                    </li>
+                }
+                <li class="page-item @(current == total ? "disabled" : "")">
+                    <a class="page-link" asp-action="Index" asp-all-route-data="RouteFor(current + 1)">التالي</a>
+                </li>
+            </ul>
+        </nav>
+    </div>
+}

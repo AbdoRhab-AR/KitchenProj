@@ -29,3 +29,6 @@ bld/
 
 # User local settings
 *.csproj.user
+
+# User uploads (logos, signed contracts)
+KitchenProject/wwwroot/uploads/

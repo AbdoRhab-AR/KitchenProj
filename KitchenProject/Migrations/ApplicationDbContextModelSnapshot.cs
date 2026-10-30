@@ -164,11 +164,11 @@ namespace KitchenProject.Migrations
                         {
                             Id = new Guid("4a749a24-16a2-4e83-9b41-eafbb66aacec"),
                             Created = new DateTime(2026, 9, 5, 13, 1, 21, 0, DateTimeKind.Utc),
-                            Email = "W.Wide@Gmail.com",
-                            Facebook = "Worldwide Facebook",
-                            Instagram = "Worldwide Instagram",
-                            Phone = "00218951234567",
-                            X = "Worldwide Twitter"
+                            Email = "info@bengsoma.ly",
+                            Facebook = "",
+                            Instagram = "",
+                            Phone = "00218910997500",
+                            X = ""
                         });
                 });
 
@@ -206,6 +206,12 @@ namespace KitchenProject.Migrations
                     b.Property<Guid>("ProjectId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<Guid?>("QuoteId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Specifications")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<DateTime?>("StartDate")
                         .HasColumnType("datetime2");
 
@@ -220,6 +226,8 @@ namespace KitchenProject.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("ProjectId");
+
+                    b.HasIndex("QuoteId");
 
                     b.ToTable("Contracts");
                 });
@@ -602,6 +610,9 @@ namespace KitchenProject.Migrations
                     b.Property<decimal>("Discount")
                         .HasColumnType("decimal(18,2)");
 
+                    b.Property<decimal>("DiscountPercent")
+                        .HasColumnType("decimal(5,2)");
+
                     b.Property<DateTime?>("Modified")
                         .HasColumnType("datetime2");
 
@@ -639,6 +650,45 @@ namespace KitchenProject.Migrations
                     b.ToTable("Quotes");
                 });
 
+            modelBuilder.Entity("KitchenProject.Models.Entities.QuoteItem", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier")
+                        .HasDefaultValueSql("NEWID()");
+
+                    b.Property<DateTime>("Created")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(250)
+                        .HasColumnType("nvarchar(250)");
+
+                    b.Property<DateTime?>("Modified")
+                        .HasColumnType("datetime2");
+
+                    b.Property<decimal>("Quantity")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<Guid>("QuoteId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Unit")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<decimal>("UnitPrice")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("QuoteId");
+
+                    b.ToTable("QuoteItems");
+                });
+
             modelBuilder.Entity("KitchenProject.Models.Entities.SiteInfo", b =>
                 {
                     b.Property<Guid>("Id")
@@ -662,6 +712,9 @@ namespace KitchenProject.Migrations
                     b.Property<DateTime>("Created")
                         .HasColumnType("datetime2");
 
+                    b.Property<string>("LetterheadUrl")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("LogoUrl")
                         .HasColumnType("nvarchar(max)");
 
@@ -681,10 +734,12 @@ namespace KitchenProject.Migrations
                         new
                         {
                             Id = new Guid("44b47e21-a6b8-48d3-b84c-8473ad5806e8"),
-                            About = "We are a specialized news website covering political, sports, and economic events, along with various other sections of general interest to readers. We always strive to provide distinguished and reliable content that reflects the ongoing developments on both the local and global stages.",
-                            Activity = "News site",
+                            About = "شركة بن قسومة لاستيراد الأثاث المنزلي والمكتبي وحلول المطابخ - السراج، طرابلس.",
+                            Activity = "Bin Gsoma Kitchen Solutions Company",
                             Created = new DateTime(2026, 9, 5, 13, 1, 21, 0, DateTimeKind.Utc),
-                            Name = "بن قسومة للمطابخ"
+                            LetterheadUrl = "/images/brand/letterhead.png",
+                            LogoUrl = "/images/brand/logo.png",
+                            Name = "بن قسومة لحلول المطابخ"
                         });
                 });
 
@@ -1131,7 +1186,14 @@ namespace KitchenProject.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.HasOne("KitchenProject.Models.Entities.Quote", "Quote")
+                        .WithMany()
+                        .HasForeignKey("QuoteId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.Navigation("Projects");
+
+                    b.Navigation("Quote");
                 });
 
             modelBuilder.Entity("KitchenProject.Models.Entities.CustomerPayment", b =>
@@ -1246,6 +1308,17 @@ namespace KitchenProject.Migrations
                         .IsRequired();
 
                     b.Navigation("Project");
+                });
+
+            modelBuilder.Entity("KitchenProject.Models.Entities.QuoteItem", b =>
+                {
+                    b.HasOne("KitchenProject.Models.Entities.Quote", "Quote")
+                        .WithMany("Items")
+                        .HasForeignKey("QuoteId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Quote");
                 });
 
             modelBuilder.Entity("KitchenProject.Models.Entities.SiteVisit", b =>
@@ -1410,6 +1483,11 @@ namespace KitchenProject.Migrations
                 });
 
             modelBuilder.Entity("KitchenProject.Models.Entities.Purchase", b =>
+                {
+                    b.Navigation("Items");
+                });
+
+            modelBuilder.Entity("KitchenProject.Models.Entities.Quote", b =>
                 {
                     b.Navigation("Items");
                 });

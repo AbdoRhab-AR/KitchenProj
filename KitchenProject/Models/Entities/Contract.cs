@@ -12,8 +12,16 @@ namespace KitchenProject.Models.Entities
 		[Display(Name = "Projects")]
 		public Guid ProjectId { get; set; }
 
+		// عرض السعر المعتمد الذي بُني عليه العقد (اختياري)
+		[ValidateNever]
+		public Quote? Quote { get; set; }
+		public Guid? QuoteId { get; set; }
+
 		[MaxLength(30)]
 		public required string ContractNo { get; set; }
+
+		// المواصفات الفنية المتفق عليها (الخامات، الألوان، الإكسسوارات...)
+		public string? Specifications { get; set; }
 		[DisplayFormat(DataFormatString = "{0:dd-MM-yyyy hh:mm:ss tt}")]
 		public DateTime? StartDate { get; set; }
 		[DisplayFormat(DataFormatString = "{0:dd-MM-yyyy hh:mm:ss tt}")]

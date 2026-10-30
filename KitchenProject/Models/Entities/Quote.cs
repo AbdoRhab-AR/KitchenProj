@@ -20,6 +20,11 @@ namespace KitchenProject.Models.Entities
 		[Column(TypeName = "decimal(18,2)")]
 		public decimal Subtotal { get; set; }
 
+		// الخصم يُدخل كنسبة مئوية، وقيمته تُحسب في الخادم
+		[Range(0, 100, ErrorMessage = "نسبة الخصم بين 0 و 100")]
+		[Column(TypeName = "decimal(5,2)")]
+		public decimal DiscountPercent { get; set; }
+
 		[Column(TypeName = "decimal(18,2)")]
 		public decimal Discount { get; set; }
 
@@ -33,5 +38,15 @@ namespace KitchenProject.Models.Entities
 		public DesignStatus Status { get; set; } = DesignStatus.Draft;
 
 		public string? Notes { get; set; }
+
+		public List<QuoteItem> Items { get; set; } = new List<QuoteItem>();
+
+		// يعيد حساب الإجمالي من البنود ونسبة الخصم
+		public void Recalculate()
+		{
+			Subtotal = Items.Sum(i => i.Total);
+			Discount = Math.Round(Subtotal * DiscountPercent / 100, 2);
+			Total = Subtotal - Discount + Tax;
+		}
 	}
 }

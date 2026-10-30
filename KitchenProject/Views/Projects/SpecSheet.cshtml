@@ -1,0 +1,96 @@
+@model KitchenProject.Models.Entities.Project
+@{
+    Layout = "_PrintLayout";
+    ViewData["Title"] = "ورقة مواصفات " + Model.ProjectNo;
+    ViewData["DocTitle"] = "ورقة مواصفات المطبخ";
+    ViewData["DocNo"] = Model.ProjectNo;
+
+    var visit = ViewBag.Visit as SiteVisit;
+    var specs = ViewBag.Specifications as string;
+
+    // عند عدم وجود مواصفات مكتوبة تُطبع بنود فارغة للكتابة باليد مع العميل
+    var blankFields = new[]
+    {
+        "خامة الهيكل (الكبائن)", "خامة ولون الواجهات", "سطح العمل (الرخام / الجرانيت)",
+        "المقابض والإكسسوارات", "الإضاءة", "الأجهزة المشمولة", "ملاحظات العميل"
+    };
+}
+
+<div class="row g-2 mb-3">
+    <div class="col-6">
+        <div class="meta-box">
+            <span class="label">العميل</span>
+            <div class="fw-bold">@Model.Customer?.Name</div>
+            <div class="small">@Model.Customer?.Phone</div>
+            <div class="small text-muted">@(Model.Address ?? Model.Customer?.Address)</div>
+        </div>
+    </div>
+    <div class="col-6">
+        <div class="meta-box">
+            <span class="label">المشروع</span>
+            <div class="fw-bold">@Model.ProjectName</div>
+            <div class="small">نوع المطبخ: <strong>@(string.IsNullOrEmpty(Model.KitchenType) ? "................" : Model.KitchenType)</strong></div>
+            <div class="small">المصمم: <strong>@(Model.DesignerUser?.UserName ?? "................")</strong></div>
+        </div>
+    </div>
+</div>
+
+<div class="section-title">المقاسات</div>
+@if (visit != null)
+{
+    <table class="table table-bordered print-table mb-2">
+        <thead>
+            <tr><th>تاريخ المعاينة</th><th>الطول</th><th>العرض</th><th>الارتفاع</th><th>المهندس</th></tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>@visit.VisitDate.ToString("yyyy/MM/dd")</td>
+                <td>@(visit.Length?.ToString("0.##") ?? "-") سم</td>
+                <td>@(visit.Width?.ToString("0.##") ?? "-") سم</td>
+                <td>@(visit.Height?.ToString("0.##") ?? "-") سم</td>
+                <td>@(Model.EngineerUser?.UserName ?? "-")</td>
+            </tr>
+        </tbody>
+    </table>
+    @if (!string.IsNullOrWhiteSpace(visit.MeasurementsText))
+    {
+        <div class="pre-text small border rounded p-2 mb-2">@visit.MeasurementsText</div>
+    }
+}
+else
+{
+    <table class="table table-bordered mb-2">
+        <tr><td class="fw-bold bg-light" style="width:25%;">الطول</td><td></td><td class="fw-bold bg-light" style="width:25%;">العرض</td><td></td></tr>
+        <tr><td class="fw-bold bg-light">الارتفاع</td><td></td><td class="fw-bold bg-light">ملاحظات</td><td></td></tr>
+    </table>
+}
+
+<div class="section-title">المواصفات المتفق عليها</div>
+@if (!string.IsNullOrWhiteSpace(specs))
+{
+    <div class="pre-text border rounded p-2" style="line-height:1.9;">@specs</div>
+}
+else
+{
+    <table class="table table-bordered">
+        @foreach (var field in blankFields)
+        {
+            <tr>
+                <td class="fw-bold bg-light" style="width:32%;">@field</td>
+                <td style="height:34px;"></td>
+            </tr>
+        }
+    </table>
+}
+
+<div class="section-title">رسم توضيحي / ملاحظات المصمم</div>
+<div class="border rounded no-break" style="height:60mm;"></div>
+
+<p class="small text-muted mt-2 mb-0">
+    يقر العميل بمراجعة المقاسات والمواصفات أعلاه والموافقة عليها، وأي تعديل بعد التوقيع قد يترتب عليه تغيير في السعر أو مدة التنفيذ.
+</p>
+
+<div class="signatures">
+    <div>توقيع المصمم<br /><small class="fw-normal text-muted">@Model.DesignerUser?.UserName</small></div>
+    <div>توقيع العميل<br /><small class="fw-normal text-muted">@Model.Customer?.Name</small></div>
+</div>

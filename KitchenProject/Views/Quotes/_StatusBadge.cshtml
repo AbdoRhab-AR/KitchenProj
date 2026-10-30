@@ -1,0 +1,14 @@
+@model KitchenProject.Models.Enums.DesignStatus
+@{
+    var (css, icon) = Model switch
+    {
+        DesignStatus.Draft           => ("bg-secondary-subtle text-secondary", "fa-file-pen"),
+        DesignStatus.WaitingApproval => ("bg-warning-subtle text-warning-emphasis", "fa-hourglass-half"),
+        DesignStatus.Approved        => ("bg-success-subtle text-success", "fa-circle-check"),
+        DesignStatus.Rejected        => ("bg-danger-subtle text-danger", "fa-circle-xmark"),
+        _                            => ("bg-light text-dark", "fa-circle")
+    };
+}
+<span class="badge @css rounded-pill px-3 py-2 fw-bold">
+    <i class="fa-solid @icon me-1"></i> @Model.GetDisplayName()
+</span>

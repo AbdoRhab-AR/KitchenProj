@@ -1,0 +1,175 @@
+@model KitchenProject.Models.Entities.Quote
+
+<div asp-validation-summary="All" class="alert alert-danger rounded-3 mb-4" role="alert"></div>
+
+<!-- Basic Info -->
+<h6 class="fw-bold text-muted mb-3"><i class="fa-solid fa-circle-info me-2"></i> بيانات العرض</h6>
+<div class="row g-4 mb-4">
+    <div class="col-12 col-md-3">
+        <label asp-for="QuoteNo" class="form-label fw-bold">رقم العرض</label>
+        <input asp-for="QuoteNo" class="form-control bg-light fw-bold text-primary" readonly />
+    </div>
+    <div class="col-12 col-md-5">
+        <label asp-for="ProjectId" class="form-label fw-bold">المشروع <span class="text-danger">*</span></label>
+        <select asp-for="ProjectId" asp-items="ViewBag.Projects" class="form-select">
+            <option value="">-- اختر المشروع --</option>
+        </select>
+        <span asp-validation-for="ProjectId" class="text-danger small"></span>
+    </div>
+    <div class="col-6 col-md-2">
+        <label asp-for="ValidUntil" class="form-label fw-bold">صالح حتى</label>
+        <input asp-for="ValidUntil" type="date" asp-format="{0:yyyy-MM-dd}" class="form-control" />
+    </div>
+    <div class="col-6 col-md-2">
+        <label asp-for="Status" class="form-label fw-bold">الحالة</label>
+        <select asp-for="Status" asp-items="ViewBag.StatusList" class="form-select"></select>
+    </div>
+</div>
+
+<!-- Items -->
+<h6 class="fw-bold text-muted mb-3"><i class="fa-solid fa-list-ol me-2"></i> بنود العرض</h6>
+<div class="table-responsive mb-2">
+    <table class="table align-middle mb-0" id="itemsTable">
+        <thead class="bg-light text-muted" style="font-size:0.85rem;">
+            <tr>
+                <th style="width:40px;">#</th>
+                <th>الوصف <span class="text-danger">*</span></th>
+                <th style="width:110px;">الوحدة</th>
+                <th style="width:110px;">الكمية</th>
+                <th style="width:140px;">سعر الوحدة</th>
+                <th style="width:140px;">الإجمالي</th>
+                <th style="width:50px;"></th>
+            </tr>
+        </thead>
+        <tbody>
+            @for (int i = 0; i < Model.Items.Count; i++)
+            {
+                <tr class="item-row">
+                    <td class="row-no text-muted fw-bold">@(i + 1)</td>
+                    <td><input name="Items[@i].Description" value="@Model.Items[i].Description" class="form-control form-control-sm" placeholder="مثال: وحدات سفلية خشب MDF مع رخام" /></td>
+                    <td><input name="Items[@i].Unit" value="@Model.Items[i].Unit" class="form-control form-control-sm" list="units" /></td>
+                    <td><input name="Items[@i].Quantity" value="@Model.Items[i].Quantity.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)" type="number" step="0.01" min="0.01" class="form-control form-control-sm qty" /></td>
+                    <td><input name="Items[@i].UnitPrice" value="@Model.Items[i].UnitPrice.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)" type="number" step="0.01" min="0" class="form-control form-control-sm price" /></td>
+                    <td class="fw-bold line-total">0.00</td>
+                    <td><button type="button" class="btn btn-sm btn-light border text-danger remove-row" title="حذف البند"><i class="fa-solid fa-xmark"></i></button></td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+<datalist id="units">
+    <option value="قطعة"></option>
+    <option value="متر طولي"></option>
+    <option value="متر مربع"></option>
+    <option value="وحدة"></option>
+    <option value="طقم"></option>
+    <option value="خدمة"></option>
+</datalist>
+<button type="button" class="btn btn-sm btn-outline-primary fw-bold mb-4" id="addRow">
+    <i class="fa-solid fa-plus me-1"></i> إضافة بند
+</button>
+
+<!-- Totals -->
+<div class="row g-4">
+    <div class="col-12 col-lg-7">
+        <label asp-for="Notes" class="form-label fw-bold">ملاحظات وشروط العرض</label>
+        <textarea asp-for="Notes" class="form-control" rows="6" placeholder="مدة التنفيذ، طريقة الدفع (مثلاً 50% مقدم)، الضمان، ما لا يشمله العرض..."></textarea>
+    </div>
+    <div class="col-12 col-lg-5">
+        <div class="bg-light rounded-3 p-3">
+            <div class="d-flex justify-content-between mb-2">
+                <span class="fw-bold text-muted">المجموع</span>
+                <span class="fw-bold" id="subtotal">0.00</span>
+            </div>
+            <div class="d-flex justify-content-between align-items-center mb-2 gap-2">
+                <label asp-for="DiscountPercent" class="fw-bold text-muted mb-0">نسبة الخصم</label>
+                <div class="input-group input-group-sm" style="max-width:130px;">
+                    <input asp-for="DiscountPercent" type="number" step="0.01" min="0" max="100" class="form-control" id="discountPercent" />
+                    <span class="input-group-text">%</span>
+                </div>
+                <span class="fw-bold text-danger" id="discountAmount">0.00</span>
+            </div>
+            <div class="d-flex justify-content-between align-items-center mb-2 gap-2">
+                <label asp-for="Tax" class="fw-bold text-muted mb-0">ضريبة / رسوم إضافية</label>
+                <input asp-for="Tax" type="number" step="0.01" min="0" class="form-control form-control-sm" style="max-width:130px;" id="tax" />
+            </div>
+            <hr />
+            <div class="d-flex justify-content-between fs-5">
+                <span class="fw-bold">الإجمالي النهائي</span>
+                <span class="fw-extrabold text-primary" id="grandTotal">0.00</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<template id="rowTemplate">
+    <tr class="item-row">
+        <td class="row-no text-muted fw-bold"></td>
+        <td><input data-field="Description" class="form-control form-control-sm" placeholder="وصف البند" /></td>
+        <td><input data-field="Unit" value="قطعة" class="form-control form-control-sm" list="units" /></td>
+        <td><input data-field="Quantity" value="1" type="number" step="0.01" min="0.01" class="form-control form-control-sm qty" /></td>
+        <td><input data-field="UnitPrice" value="0" type="number" step="0.01" min="0" class="form-control form-control-sm price" /></td>
+        <td class="fw-bold line-total">0.00</td>
+        <td><button type="button" class="btn btn-sm btn-light border text-danger remove-row" title="حذف البند"><i class="fa-solid fa-xmark"></i></button></td>
+    </tr>
+</template>
+
+<script>
+    (function () {
+        const tbody = document.querySelector('#itemsTable tbody');
+        const fmt = n => n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        const num = el => parseFloat(el?.value) || 0;
+
+        // يعيد ترقيم الصفوف وأسماء الحقول Items[0..n] حتى يربطها MVC بشكل صحيح
+        function renumber() {
+            tbody.querySelectorAll('tr.item-row').forEach((tr, i) => {
+                tr.querySelector('.row-no').textContent = i + 1;
+                tr.querySelectorAll('input').forEach(input => {
+                    const field = input.dataset.field || input.name.replace(/^Items\[\d+\]\./, '');
+                    input.dataset.field = field;
+                    input.name = `Items[${i}].${field}`;
+                });
+            });
+        }
+
+        function recalc() {
+            let subtotal = 0;
+            tbody.querySelectorAll('tr.item-row').forEach(tr => {
+                const line = num(tr.querySelector('.qty')) * num(tr.querySelector('.price'));
+                tr.querySelector('.line-total').textContent = fmt(line);
+                subtotal += line;
+            });
+            const discount = Math.round(subtotal * num(document.getElementById('discountPercent'))) / 100;
+            const total = subtotal - discount + num(document.getElementById('tax'));
+            document.getElementById('subtotal').textContent = fmt(subtotal);
+            document.getElementById('discountAmount').textContent = '- ' + fmt(discount);
+            document.getElementById('grandTotal').textContent = fmt(total);
+        }
+
+        document.getElementById('addRow').addEventListener('click', () => {
+            tbody.appendChild(document.getElementById('rowTemplate').content.cloneNode(true));
+            renumber();
+            recalc();
+            tbody.lastElementChild.querySelector('input').focus();
+        });
+
+        tbody.addEventListener('click', e => {
+            const btn = e.target.closest('.remove-row');
+            if (!btn) return;
+            if (tbody.querySelectorAll('tr.item-row').length > 1) {
+                btn.closest('tr').remove();
+            } else {
+                btn.closest('tr').querySelectorAll('input').forEach(i => { if (i.dataset.field === 'Description') i.value = ''; });
+            }
+            renumber();
+            recalc();
+        });
+
+        document.addEventListener('input', e => {
+            if (e.target.matches('.qty, .price, #discountPercent, #tax')) recalc();
+        });
+
+        renumber();
+        recalc();
+    })();
+</script>

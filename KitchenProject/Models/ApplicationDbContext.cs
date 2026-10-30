@@ -22,6 +22,7 @@ namespace KitchenProject.Models
 		public DbSet<SiteInfo> SiteInfo { get; set; }
 		public DbSet<SiteState> SiteState { get; set; }
 		public DbSet<Quote> Quotes { get; set; }
+		public DbSet<QuoteItem> QuoteItems { get; set; }
 		public DbSet<Contract> Contracts { get; set; }
 		public DbSet<CustomerPayment> CustomerPayments { get; set; }
 		public DbSet<Expense> Expenses { get; set; }
@@ -45,6 +46,7 @@ namespace KitchenProject.Models
 			modelBuilder.Entity<SiteInfo>().Property(x => x.Id).HasDefaultValueSql("NEWID()");
 			modelBuilder.Entity<SiteState>().Property(x => x.Id).HasDefaultValueSql("NEWID()");
 			modelBuilder.Entity<Quote>().Property(x => x.Id).HasDefaultValueSql("NEWID()");
+			modelBuilder.Entity<QuoteItem>().Property(x => x.Id).HasDefaultValueSql("NEWID()");
 			modelBuilder.Entity<Contract>().Property(x => x.Id).HasDefaultValueSql("NEWID()");
 			modelBuilder.Entity<CustomerPayment>().Property(x => x.Id).HasDefaultValueSql("NEWID()");
 			modelBuilder.Entity<Expense>().Property(x => x.Id).HasDefaultValueSql("NEWID()");
@@ -100,6 +102,14 @@ namespace KitchenProject.Models
 			modelBuilder.Entity<Contract>()
 				.HasOne(x => x.Projects).WithMany(x => x.Contracts)
 				.HasForeignKey(x => x.ProjectId).OnDelete(DeleteBehavior.Restrict);
+
+			modelBuilder.Entity<QuoteItem>()
+				.HasOne(x => x.Quote).WithMany(x => x.Items)
+				.HasForeignKey(x => x.QuoteId).OnDelete(DeleteBehavior.Cascade);
+
+			modelBuilder.Entity<Contract>()
+				.HasOne(x => x.Quote).WithMany()
+				.HasForeignKey(x => x.QuoteId).OnDelete(DeleteBehavior.Restrict);
 
 			modelBuilder.Entity<CustomerPayment>()
 				.HasOne(x => x.Project).WithMany(x => x.CustomerPayments)

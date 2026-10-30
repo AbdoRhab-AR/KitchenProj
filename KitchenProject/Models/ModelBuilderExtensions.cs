@@ -19,9 +19,11 @@ namespace KitchenProject.Models
 				  new SiteInfo()
 				  {
 					  Id = new Guid("44b47e21-a6b8-48d3-b84c-8473ad5806e8"),
-					  Name = "بن قسومة للمطابخ",
-					  Activity = "News site",
-					  About = "We are a specialized news website covering political, sports, and economic events, along with various other sections of general interest to readers. We always strive to provide distinguished and reliable content that reflects the ongoing developments on both the local and global stages.",
+					  Name = "بن قسومة لحلول المطابخ",
+					  Activity = "Bin Gsoma Kitchen Solutions Company",
+					  About = "شركة بن قسومة لاستيراد الأثاث المنزلي والمكتبي وحلول المطابخ - السراج، طرابلس.",
+					  LogoUrl = "/images/brand/logo.png",
+					  LetterheadUrl = "/images/brand/letterhead.png",
 					  Created = SeedDate
 				  });
 
@@ -29,11 +31,11 @@ namespace KitchenProject.Models
 			  new Contact()
 			  {
 				  Id = new Guid("4a749a24-16a2-4e83-9b41-eafbb66aacec"),
-				  Email = "W.Wide@Gmail.com",
-				  Phone = "00218951234567",
-				  Facebook = "Worldwide Facebook",
-				  X = "Worldwide Twitter",
-				  Instagram = "Worldwide Instagram",
+				  Email = "info@bengsoma.ly",
+				  Phone = "00218910997500",
+				  Facebook = "",
+				  X = "",
+				  Instagram = "",
 				  Created = SeedDate
 
 			  });

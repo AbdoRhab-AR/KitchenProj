@@ -1,0 +1,90 @@
+@model KitchenProject.Models.Entities.Contract
+
+<div asp-validation-summary="All" class="alert alert-danger rounded-3 mb-4" role="alert"></div>
+
+<!-- Basic Info -->
+<h6 class="fw-bold text-muted mb-3"><i class="fa-solid fa-circle-info me-2"></i> بيانات العقد</h6>
+<div class="row g-4 mb-4">
+    <div class="col-12 col-md-3">
+        <label asp-for="ContractNo" class="form-label fw-bold">رقم العقد</label>
+        <input asp-for="ContractNo" class="form-control bg-light fw-bold text-primary" readonly />
+    </div>
+    <div class="col-12 col-md-5">
+        <label asp-for="ProjectId" class="form-label fw-bold">المشروع <span class="text-danger">*</span></label>
+        <select asp-for="ProjectId" asp-items="ViewBag.Projects" class="form-select" id="projectSelect">
+            <option value="">-- اختر المشروع --</option>
+        </select>
+        <span asp-validation-for="ProjectId" class="text-danger small"></span>
+    </div>
+    <div class="col-12 col-md-4">
+        <label asp-for="QuoteId" class="form-label fw-bold">عرض السعر المعتمد</label>
+        <select asp-for="QuoteId" asp-items="ViewBag.Quotes" class="form-select">
+            <option value="">-- بدون --</option>
+        </select>
+        <span asp-validation-for="QuoteId" class="text-danger small"></span>
+        @if (((SelectList)ViewBag.Quotes).Count() == 0)
+        {
+            <small class="text-muted">لا توجد عروض معتمدة لهذا المشروع</small>
+        }
+    </div>
+    <div class="col-12 col-md-3">
+        <label asp-for="TotalAmount" class="form-label fw-bold">قيمة العقد <span class="text-danger">*</span></label>
+        <input asp-for="TotalAmount" type="number" step="0.01" min="0" class="form-control fw-bold" />
+        <span asp-validation-for="TotalAmount" class="text-danger small"></span>
+    </div>
+    <div class="col-6 col-md-3">
+        <label asp-for="StartDate" class="form-label fw-bold">تاريخ البدء</label>
+        <input asp-for="StartDate" type="date" asp-format="{0:yyyy-MM-dd}" class="form-control" />
+    </div>
+    <div class="col-6 col-md-3">
+        <label asp-for="ExpectedEndDate" class="form-label fw-bold">موعد التسليم</label>
+        <input asp-for="ExpectedEndDate" type="date" asp-format="{0:yyyy-MM-dd}" class="form-control" />
+        <span asp-validation-for="ExpectedEndDate" class="text-danger small"></span>
+    </div>
+    <div class="col-12 col-md-3">
+        <label asp-for="Status" class="form-label fw-bold">الحالة</label>
+        <select asp-for="Status" asp-items="ViewBag.StatusList" class="form-select"></select>
+    </div>
+</div>
+
+<!-- Specifications -->
+<h6 class="fw-bold text-muted mb-3"><i class="fa-solid fa-clipboard-list me-2"></i> المواصفات الفنية</h6>
+<div class="mb-4">
+    <textarea asp-for="Specifications" class="form-control" rows="11" style="line-height:1.9;"></textarea>
+    <small class="text-muted">تُطبع كما هي في العقد. اكتب بعد كل بند تفاصيله (الخامة، اللون، الماركة...).</small>
+</div>
+
+<!-- Notes & File -->
+<div class="row g-4">
+    <div class="col-12 col-lg-7">
+        <label asp-for="Notes" class="form-label fw-bold">شروط إضافية / ملاحظات</label>
+        <textarea asp-for="Notes" class="form-control" rows="5" placeholder="جدول الدفعات، شروط التأخير، مسؤوليات الطرفين..."></textarea>
+    </div>
+    <div class="col-12 col-lg-5">
+        <label class="form-label fw-bold">نسخة العقد الموقعة (PDF أو صورة)</label>
+        <input type="file" name="contractFile" accept=".pdf,.jpg,.jpeg,.png" class="form-control" />
+        <small class="text-muted d-block">الحد الأقصى 10 ميجابايت</small>
+        @if (!string.IsNullOrEmpty(Model.ContractFilePath))
+        {
+            <div class="d-flex align-items-center gap-3 mt-2 small">
+                <a href="@Model.ContractFilePath" target="_blank" class="fw-bold"><i class="fa-solid fa-paperclip me-1"></i> الملف الحالي</a>
+                <div class="form-check mb-0">
+                    <input class="form-check-input" type="checkbox" name="removeFile" value="true" id="removeFile" />
+                    <label class="form-check-label text-danger" for="removeFile">حذف الملف</label>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+<script>
+    // تغيير المشروع يعيد تحميل الصفحة لجلب عروض الأسعار المعتمدة الخاصة به (في الإنشاء فقط)
+    (function () {
+        const select = document.getElementById('projectSelect');
+        const isCreate = @Json.Serialize(Model.Id == Guid.Empty);
+        if (!isCreate) return;
+        select.addEventListener('change', () => {
+            if (select.value) location.href = '@Url.Action("Create")?projectId=' + encodeURIComponent(select.value);
+        });
+    })();
+</script>

@@ -36,7 +36,10 @@
             <partial name="_StatusBadge" model="Model.Status" />
         </h2>
     </div>
-    <div class="d-flex gap-2">
+    <div class="d-flex flex-wrap gap-2">
+        <a asp-action="SpecSheet" asp-route-id="@Model.Id" target="_blank" class="btn btn-dark fw-bold rounded-3" title="ورقة المواصفات للمصمم والعميل">
+            <i class="fa-solid fa-print me-1"></i> ورقة المواصفات
+        </a>
         <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-primary-custom d-inline-flex align-items-center gap-2">
             <i class="fa-solid fa-pen-to-square"></i>
             <span>تعديل</span>
@@ -199,44 +202,126 @@
             </div>
         </div>
 
-        <!-- Related Records -->
+        <!-- Site Visits -->
+        <div class="custom-card mb-4">
+            <div class="card-header-custom">
+                <h5 class="fw-bold mb-0 text-dark">
+                    <i class="fa-solid fa-ruler-combined text-info me-2"></i> المعاينات والمقاسات
+                    <span class="badge bg-light text-dark border ms-1">@Model.SiteVisits.Count</span>
+                </h5>
+                <a asp-controller="SiteVisits" asp-action="Create" asp-route-projectId="@Model.Id" class="btn btn-sm btn-outline-primary fw-bold">
+                    <i class="fa-solid fa-plus me-1"></i> جدولة معاينة
+                </a>
+            </div>
+            @if (Model.SiteVisits.Any())
+            {
+                <div class="table-responsive">
+                    <table class="table table-sm align-middle mb-0">
+                        <tbody>
+                            @foreach (var v in Model.SiteVisits.OrderByDescending(v => v.VisitDate))
+                            {
+                                <tr>
+                                    <td class="ps-4 fw-bold">@v.VisitDate.ToString("yyyy/MM/dd hh:mm tt")</td>
+                                    <td class="small text-muted">
+                                        @if (v.Length.HasValue || v.Width.HasValue)
+                                        {
+                                            <span>@(v.Length?.ToString("0.##") ?? "-") × @(v.Width?.ToString("0.##") ?? "-") × @(v.Height?.ToString("0.##") ?? "-") سم</span>
+                                        }
+                                        else
+                                        {
+                                            <span>لم تُسجل المقاسات</span>
+                                        }
+                                    </td>
+                                    <td><partial name="~/Views/SiteVisits/_StatusBadge.cshtml" model="v.Status" /></td>
+                                    <td class="pe-4 text-end">
+                                        <a asp-controller="SiteVisits" asp-action="Edit" asp-route-id="@v.Id" class="btn btn-sm btn-light border text-primary"><i class="fa-solid fa-pen-to-square"></i></a>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            else
+            {
+                <p class="text-muted small text-center py-3 mb-0">لا توجد معاينات بعد</p>
+            }
+        </div>
+
+        <!-- Quotes -->
+        <div class="custom-card mb-4">
+            <div class="card-header-custom">
+                <h5 class="fw-bold mb-0 text-dark">
+                    <i class="fa-solid fa-file-invoice-dollar text-warning me-2"></i> عروض الأسعار
+                    <span class="badge bg-light text-dark border ms-1">@Model.Quotes.Count</span>
+                </h5>
+                <a asp-controller="Quotes" asp-action="Create" asp-route-projectId="@Model.Id" class="btn btn-sm btn-outline-primary fw-bold">
+                    <i class="fa-solid fa-plus me-1"></i> عرض سعر
+                </a>
+            </div>
+            @if (Model.Quotes.Any())
+            {
+                <div class="table-responsive">
+                    <table class="table table-sm align-middle mb-0">
+                        <tbody>
+                            @foreach (var q in Model.Quotes.OrderByDescending(q => q.Created))
+                            {
+                                <tr>
+                                    <td class="ps-4"><a asp-controller="Quotes" asp-action="Details" asp-route-id="@q.Id" class="fw-bold">@q.QuoteNo</a></td>
+                                    <td class="small text-muted">@q.Created.ToLocalTime().ToString("yyyy/MM/dd")</td>
+                                    <td class="fw-bold">@q.Total.ToString("N2")</td>
+                                    <td><partial name="~/Views/Quotes/_StatusBadge.cshtml" model="q.Status" /></td>
+                                    <td class="pe-4 text-end">
+                                        <a asp-controller="Quotes" asp-action="Print" asp-route-id="@q.Id" target="_blank" class="btn btn-sm btn-light border" title="طباعة"><i class="fa-solid fa-print"></i></a>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            else
+            {
+                <p class="text-muted small text-center py-3 mb-0">لا توجد عروض أسعار بعد</p>
+            }
+        </div>
+
+        <!-- Contracts -->
         <div class="custom-card">
             <div class="card-header-custom">
                 <h5 class="fw-bold mb-0 text-dark">
-                    <i class="fa-solid fa-folder-tree text-primary me-2"></i> سجلات المشروع
+                    <i class="fa-solid fa-file-contract text-success me-2"></i> العقود
+                    <span class="badge bg-light text-dark border ms-1">@Model.Contracts.Count</span>
                 </h5>
+                <a asp-controller="Contracts" asp-action="Create" asp-route-projectId="@Model.Id" class="btn btn-sm btn-outline-primary fw-bold">
+                    <i class="fa-solid fa-plus me-1"></i> عقد
+                </a>
             </div>
-            <div class="p-4">
-                <div class="row g-3">
-                    @{
-                        var related = new[]
-                        {
-                            (Title: "المعاينات", Icon: "fa-ruler-combined", Css: "info", Count: Model.SiteVisits.Count),
-                            (Title: "عروض الأسعار", Icon: "fa-file-invoice-dollar", Css: "warning", Count: Model.Quotes.Count),
-                            (Title: "العقود", Icon: "fa-file-contract", Css: "success", Count: Model.Contracts.Count),
-                            (Title: "الدفعات", Icon: "fa-wallet", Css: "primary", Count: Model.CustomerPayments.Count),
-                            (Title: "المصروفات", Icon: "fa-receipt", Css: "danger", Count: Model.Expenses.Count)
-                        };
-                    }
-                    @foreach (var r in related)
-                    {
-                        <div class="col-6 col-md-4">
-                            <div class="border rounded-3 p-3 d-flex align-items-center gap-3 h-100">
-                                <div class="bg-@(r.Css)-subtle text-@(r.Css) rounded-circle d-flex align-items-center justify-content-center" style="width:44px; height:44px;">
-                                    <i class="fa-solid @r.Icon"></i>
-                                </div>
-                                <div>
-                                    <span class="fw-bold d-block text-dark">@r.Title</span>
-                                    <small class="text-muted">@r.Count سجل</small>
-                                </div>
-                            </div>
-                        </div>
-                    }
+            @if (Model.Contracts.Any())
+            {
+                <div class="table-responsive">
+                    <table class="table table-sm align-middle mb-0">
+                        <tbody>
+                            @foreach (var c in Model.Contracts.OrderByDescending(c => c.Created))
+                            {
+                                <tr>
+                                    <td class="ps-4"><a asp-controller="Contracts" asp-action="Details" asp-route-id="@c.Id" class="fw-bold">@c.ContractNo</a></td>
+                                    <td class="fw-bold">@c.TotalAmount.ToString("N2")</td>
+                                    <td class="small"><span class="text-success">@c.PaidAmount.ToString("N2")</span> مدفوع</td>
+                                    <td><partial name="~/Views/Contracts/_StatusBadge.cshtml" model="c.Status" /></td>
+                                    <td class="pe-4 text-end">
+                                        <a asp-controller="Contracts" asp-action="Print" asp-route-id="@c.Id" target="_blank" class="btn btn-sm btn-light border" title="طباعة"><i class="fa-solid fa-print"></i></a>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
                 </div>
-                <p class="text-muted small mb-0 mt-3">
-                    <i class="fa-solid fa-circle-info me-1"></i> شاشات المعاينات وعروض الأسعار والعقود ستُضاف في المرحلة القادمة.
-                </p>
-            </div>
+            }
+            else
+            {
+                <p class="text-muted small text-center py-3 mb-0">لا توجد عقود بعد</p>
+            }
         </div>
     </div>
 </div>

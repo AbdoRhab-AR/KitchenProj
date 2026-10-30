@@ -5,8 +5,7 @@ namespace KitchenProject.Models.Entities
 {
     public class SiteInfo : BaseEntity
     {
-        [StringLength(50, ErrorMessage = "{0} length must be between {2} and {1}.", MinimumLength = 3)]
-        [RegularExpression(@"^[a-zA-Z][a-zA-Z0-9]+$", ErrorMessage = "The string must start with a letter followed by letters and numbers only.")]
+        [StringLength(50, ErrorMessage = "الاسم يجب أن يكون بين {2} و {1} حرفاً", MinimumLength = 3)]
         public required string Name { get; set; }
 
         [StringLength(200)]
@@ -20,6 +19,10 @@ namespace KitchenProject.Models.Entities
 
         [Display(Name = "Cover Image")]
         public string? CoverImageUrl { get; set; }
+
+        // صورة الورق الرسمي (A4) تُستخدم خلفية لكل المستندات المطبوعة
+        [Display(Name = "Letterhead")]
+        public string? LetterheadUrl { get; set; }
 
         [NotMapped]
         public IFormFile? Logo { get; set; }

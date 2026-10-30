@@ -1,0 +1,163 @@
+@model IEnumerable<KitchenProject.Models.Entities.CustomerPayment>
+@{
+    ViewData["Title"] = "تحصيلات العملاء";
+    Layout = "_DashboardLayout";
+    DateTime? from = ViewBag.From;
+    DateTime? to = ViewBag.To;
+    PaymentMethod? method = ViewBag.Method;
+    var returnUrl = Context.Request.Path + Context.Request.QueryString;
+}
+
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+    <div>
+        <h2 class="page-header-title mb-1">
+            <i class="fa-solid fa-wallet text-primary me-2"></i> تحصيلات العملاء
+        </h2>
+        <p class="text-muted mb-0">
+            @if (ViewBag.ProjectName != null)
+            {
+                <span>تحصيلات المشروع: <strong>@ViewBag.ProjectName</strong></span>
+            }
+            else
+            {
+                <span>إيصالات القبض من العملاء على المشاريع والعقود</span>
+            }
+        </p>
+    </div>
+    <div>
+        <a asp-action="Create" asp-route-projectId="@ViewBag.ProjectId" class="btn btn-primary-custom d-inline-flex align-items-center gap-2">
+            <i class="fa-solid fa-plus"></i>
+            <span>إيصال قبض</span>
+        </a>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-12 col-sm-4">
+        <div class="custom-card p-3 d-flex align-items-center justify-content-between">
+            <div>
+                <span class="text-muted fw-bold d-block mb-1" style="font-size:0.85rem;">تحصيل اليوم</span>
+                <h3 class="fw-extrabold mb-0 text-primary">@(((decimal)ViewBag.TodayTotal).ToString("N2"))</h3>
+            </div>
+            <div class="bg-primary-subtle text-primary rounded-3 p-3"><i class="fa-solid fa-calendar-day fs-3"></i></div>
+        </div>
+    </div>
+    <div class="col-12 col-sm-4">
+        <div class="custom-card p-3 d-flex align-items-center justify-content-between">
+            <div>
+                <span class="text-muted fw-bold d-block mb-1" style="font-size:0.85rem;">تحصيل هذا الشهر</span>
+                <h3 class="fw-extrabold mb-0 text-success">@(((decimal)ViewBag.MonthTotal).ToString("N2"))</h3>
+            </div>
+            <div class="bg-success-subtle text-success rounded-3 p-3"><i class="fa-solid fa-sack-dollar fs-3"></i></div>
+        </div>
+    </div>
+    <div class="col-12 col-sm-4">
+        <div class="custom-card p-3 d-flex align-items-center justify-content-between">
+            <div>
+                <span class="text-muted fw-bold d-block mb-1" style="font-size:0.85rem;">متبقي على العقود</span>
+                <h3 class="fw-extrabold mb-0 text-danger">@(((decimal)ViewBag.Outstanding).ToString("N2"))</h3>
+            </div>
+            <div class="bg-danger-subtle text-danger rounded-3 p-3"><i class="fa-solid fa-file-invoice fs-3"></i></div>
+        </div>
+    </div>
+</div>
+
+<div class="custom-card mb-4 p-3">
+    <form method="get" asp-action="Index" class="row g-3 align-items-end">
+        <input type="hidden" name="projectId" value="@ViewBag.ProjectId" />
+        <div class="col-12 col-md-4">
+            <label class="form-label small fw-bold text-muted">بحث</label>
+            <input type="text" name="searchString" class="form-control" placeholder="رقم الإيصال، المشروع، العميل..." value="@ViewBag.SearchString">
+        </div>
+        <div class="col-6 col-md-2">
+            <label class="form-label small fw-bold text-muted">الطريقة</label>
+            <select name="method" class="form-select" asp-items="ViewBag.MethodList"><option value="">الكل</option></select>
+        </div>
+        <div class="col-6 col-md-2">
+            <label class="form-label small fw-bold text-muted">من</label>
+            <input type="date" name="from" value="@from?.ToString("yyyy-MM-dd")" class="form-control" />
+        </div>
+        <div class="col-6 col-md-2">
+            <label class="form-label small fw-bold text-muted">إلى</label>
+            <input type="date" name="to" value="@to?.ToString("yyyy-MM-dd")" class="form-control" />
+        </div>
+        <div class="col-6 col-md-2 d-flex gap-2">
+            <button type="submit" class="btn btn-primary fw-bold rounded-3 flex-grow-1"><i class="fa-solid fa-search me-1"></i> بحث</button>
+            <a asp-action="Index" class="btn btn-light border fw-bold text-muted" title="إلغاء الفلترة"><i class="fa-solid fa-xmark"></i></a>
+        </div>
+    </form>
+</div>
+
+<div class="custom-card">
+    <div class="card-header-custom">
+        <h5 class="fw-bold mb-0 text-dark"><i class="fa-solid fa-list text-secondary me-2"></i> الإيصالات</h5>
+        <div class="d-flex gap-2">
+            <span class="badge bg-success-subtle text-success">الإجمالي: @(((decimal)ViewBag.FilteredTotal).ToString("N2"))</span>
+            <span class="badge bg-light text-dark border">@ViewBag.TotalCount إيصال</span>
+        </div>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="bg-light text-muted" style="font-size:0.85rem;">
+                <tr>
+                    <th class="ps-4">الإيصال</th>
+                    <th>التاريخ</th>
+                    <th>المشروع / العميل</th>
+                    <th>العقد</th>
+                    <th>الطريقة</th>
+                    <th>المبلغ</th>
+                    <th class="text-center pe-4">الإجراءات</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.Any())
+                {
+                    foreach (var p in Model)
+                    {
+                        <tr>
+                            <td class="ps-4"><span class="badge bg-primary-subtle text-primary px-2 py-1 rounded-2">@p.ReceiptNo</span></td>
+                            <td class="small text-muted">@p.PaymentDate.ToString("yyyy/MM/dd")</td>
+                            <td>
+                                <a asp-controller="Projects" asp-action="Details" asp-route-id="@p.ProjectId" class="fw-bold text-dark text-decoration-none">@p.Project?.ProjectName</a>
+                                <small class="d-block text-muted">@p.Project?.Customer?.Name</small>
+                            </td>
+                            <td class="small">
+                                @if (p.Contract != null)
+                                {
+                                    <a asp-controller="Contracts" asp-action="Details" asp-route-id="@p.ContractId">@p.Contract.ContractNo</a>
+                                }
+                                else
+                                {
+                                    <span class="text-muted">عربون</span>
+                                }
+                            </td>
+                            <td class="small">@p.Payment.GetDisplayName() @if (!string.IsNullOrEmpty(p.ReferenceNo)) { <small class="d-block text-muted">@p.ReferenceNo</small> }</td>
+                            <td class="fw-bold text-success">@p.Amount.ToString("N2")</td>
+                            <td class="text-center pe-4">
+                                <div class="btn-group btn-group-sm" role="group">
+                                    <a asp-action="Receipt" asp-route-id="@p.Id" target="_blank" class="btn btn-light border text-dark" title="طباعة الإيصال"><i class="fa-solid fa-print"></i></a>
+                                    <button type="submit" form="del-@p.Id" class="btn btn-light border text-danger" title="حذف"><i class="fa-solid fa-trash-can"></i></button>
+                                </div>
+                                <form id="del-@p.Id" asp-action="Delete" asp-route-id="@p.Id" asp-route-returnUrl="@returnUrl" method="post" class="d-none" onsubmit="return confirm('حذف الإيصال @p.ReceiptNo؟ سيتم تحديث المدفوع في العقد.')">
+                                    @Html.AntiForgeryToken()
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="7" class="text-center py-5 text-muted">
+                            <i class="fa-solid fa-wallet display-4 mb-3 d-block text-secondary opacity-50"></i>
+                            <h5 class="fw-bold mb-1">لا توجد تحصيلات</h5>
+                            <p class="text-muted small mb-0">سجّل دفعات العملاء من صفحة المشروع أو العقد</p>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <partial name="_Pager" model='new Dictionary<string, string?> { ["searchString"] = ViewBag.SearchString, ["method"] = method?.ToString(), ["projectId"] = ViewBag.ProjectId?.ToString(), ["from"] = from?.ToString("yyyy-MM-dd"), ["to"] = to?.ToString("yyyy-MM-dd") }' />
+</div>

@@ -1,0 +1,164 @@
+@model IEnumerable<KitchenProject.Models.Entities.StockTransaction>
+@{
+    ViewData["Title"] = "كشف الحركات المخزنية";
+    Layout = "_DashboardLayout";
+    DateTime? from = ViewBag.From;
+    DateTime? to = ViewBag.To;
+    StockTransactionType? type = ViewBag.Type;
+    var returnUrl = Context.Request.Path + Context.Request.QueryString;
+}
+
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+    <div>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-1 small text-muted">
+                <li class="breadcrumb-item"><a asp-action="Index" class="text-decoration-none">المخزن</a></li>
+                <li class="breadcrumb-item active" aria-current="page">كشف الحركات</li>
+            </ol>
+        </nav>
+        <h2 class="page-header-title mb-0">
+            <i class="fa-solid fa-right-left text-primary me-2"></i> كشف الحركات المخزنية
+        </h2>
+    </div>
+    <div>
+        <a asp-action="Index" class="btn btn-outline-secondary fw-bold rounded-3"><i class="fa-solid fa-arrow-right me-1"></i> الأرصدة</a>
+    </div>
+</div>
+
+<div class="custom-card mb-4 p-3">
+    <form method="get" asp-action="Movements" class="row g-3 align-items-end">
+        <div class="col-12 col-md-3">
+            <label class="form-label small fw-bold text-muted">الخامة</label>
+            <select name="itemId" class="form-select" asp-items="ViewBag.Items"><option value="">كل الخامات</option></select>
+        </div>
+        <div class="col-12 col-md-3">
+            <label class="form-label small fw-bold text-muted">المشروع</label>
+            <select name="projectId" class="form-select" asp-items="ViewBag.Projects"><option value="">كل المشاريع</option></select>
+        </div>
+        <div class="col-6 col-md-2">
+            <label class="form-label small fw-bold text-muted">نوع الحركة</label>
+            <select name="type" class="form-select" asp-items="ViewBag.TypeList"><option value="">الكل</option></select>
+        </div>
+        <div class="col-6 col-md-1">
+            <label class="form-label small fw-bold text-muted">من</label>
+            <input type="date" name="from" value="@from?.ToString("yyyy-MM-dd")" class="form-control px-1" />
+        </div>
+        <div class="col-6 col-md-1">
+            <label class="form-label small fw-bold text-muted">إلى</label>
+            <input type="date" name="to" value="@to?.ToString("yyyy-MM-dd")" class="form-control px-1" />
+        </div>
+        <div class="col-6 col-md-2 d-flex gap-2">
+            <button type="submit" class="btn btn-primary fw-bold rounded-3 flex-grow-1"><i class="fa-solid fa-filter me-1"></i> عرض</button>
+            <a asp-action="Movements" class="btn btn-light border fw-bold text-muted" title="إلغاء الفلترة"><i class="fa-solid fa-xmark"></i></a>
+        </div>
+    </form>
+</div>
+
+<div class="custom-card">
+    <div class="card-header-custom">
+        <h5 class="fw-bold mb-0 text-dark"><i class="fa-solid fa-list text-secondary me-2"></i> الحركات</h5>
+        <div class="d-flex gap-2 small">
+            <span class="badge bg-success-subtle text-success">وارد: @(((decimal)ViewBag.InTotal).ToString("N2"))</span>
+            <span class="badge bg-danger-subtle text-danger">منصرف: @(((decimal)ViewBag.OutTotal).ToString("N2"))</span>
+            <span class="badge bg-light text-dark border">@ViewBag.TotalCount حركة</span>
+        </div>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="bg-light text-muted" style="font-size:0.85rem;">
+                <tr>
+                    <th class="ps-4">التاريخ</th>
+                    <th>الحركة</th>
+                    <th>المرجع</th>
+                    <th>الخامة</th>
+                    <th>المشروع</th>
+                    <th>وارد</th>
+                    <th>منصرف</th>
+                    <th>التكلفة</th>
+                    <th class="pe-4"></th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.Any())
+                {
+                    foreach (var m in Model)
+                    {
+                        <tr>
+                            <td class="ps-4 small">@m.TransactionDate.ToString("yyyy/MM/dd")</td>
+                            <td><partial name="_TypeBadge" model="m.TransactionType" /></td>
+                            <td class="small">
+                                @if (m.PurchaseId.HasValue)
+                                {
+                                    <a asp-controller="Purchases" asp-action="Details" asp-route-id="@m.PurchaseId" class="fw-bold">@m.ReferenceNo</a>
+                                }
+                                else
+                                {
+                                    <span class="fw-bold">@m.ReferenceNo</span>
+                                }
+                                @if (!string.IsNullOrEmpty(m.Notes))
+                                {
+                                    <small class="d-block text-muted text-truncate" style="max-width:180px;" title="@m.Notes">@m.Notes</small>
+                                }
+                            </td>
+                            <td><a asp-controller="Items" asp-action="Details" asp-route-id="@m.ItemId" class="text-dark fw-semibold text-decoration-none">@m.Items?.Name</a></td>
+                            <td class="small">
+                                @if (m.Projects != null)
+                                {
+                                    <a asp-controller="Projects" asp-action="Details" asp-route-id="@m.ProjectId">@m.Projects.ProjectNo</a>
+                                }
+                            </td>
+                            <td class="text-success fw-bold">@(m.QuantityIn > 0 ? m.QuantityIn.ToString("0.##") : "")</td>
+                            <td class="text-danger fw-bold">@(m.QuantityOut > 0 ? m.QuantityOut.ToString("0.##") : "")</td>
+                            <td class="small">@m.TotalCost.ToString("N2")<small class="d-block text-muted">@m.UnitCost.ToString("N2") للوحدة</small></td>
+                            <td class="pe-4 text-end">
+                                @if (!m.PurchaseId.HasValue)
+                                {
+                                    <form asp-action="DeleteMovement" asp-route-id="@m.Id" asp-route-returnUrl="@returnUrl" method="post" onsubmit="return confirm('حذف هذه الحركة؟')">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="btn btn-sm btn-light border text-danger" title="حذف الحركة"><i class="fa-solid fa-trash-can"></i></button>
+                                    </form>
+                                }
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="9" class="text-center py-5 text-muted">
+                            <i class="fa-solid fa-right-left display-4 mb-3 d-block text-secondary opacity-50"></i>
+                            <h5 class="fw-bold mb-1">لا توجد حركات</h5>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    @{
+        // الشريط المشترك يربط بـ Index، فنبني روابط الصفحات هنا مباشرة
+        int current = ViewBag.CurrentPage;
+        int total = ViewBag.TotalPages;
+        var route = new Dictionary<string, string?>
+        {
+            ["itemId"] = ViewBag.ItemId?.ToString(),
+            ["projectId"] = ViewBag.ProjectId?.ToString(),
+            ["type"] = type?.ToString(),
+            ["from"] = from?.ToString("yyyy-MM-dd"),
+            ["to"] = to?.ToString("yyyy-MM-dd")
+        };
+        Dictionary<string, string?> PageRoute(int p) => new(route) { ["page"] = p.ToString() };
+    }
+    @if (total > 1)
+    {
+        <div class="card-footer bg-white border-top-0 d-flex align-items-center justify-content-between py-3 px-4">
+            <small class="text-muted">الصفحة @current من @total</small>
+            <nav>
+                <ul class="pagination pagination-sm mb-0">
+                    <li class="page-item @(current == 1 ? "disabled" : "")"><a class="page-link" asp-action="Movements" asp-all-route-data="PageRoute(current - 1)">السابق</a></li>
+                    <li class="page-item @(current == total ? "disabled" : "")"><a class="page-link" asp-action="Movements" asp-all-route-data="PageRoute(current + 1)">التالي</a></li>
+                </ul>
+            </nav>
+        </div>
+    }
+</div>

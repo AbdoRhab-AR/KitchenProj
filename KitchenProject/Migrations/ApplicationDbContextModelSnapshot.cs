@@ -309,8 +309,10 @@ namespace KitchenProject.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<int>("Payment")
-                        .HasMaxLength(30)
                         .HasColumnType("int");
+
+                    b.Property<DateTime>("PaymentDate")
+                        .HasColumnType("datetime2");
 
                     b.Property<Guid>("ProjectId")
                         .HasColumnType("uniqueidentifier");
@@ -319,6 +321,10 @@ namespace KitchenProject.Migrations
                         .IsRequired()
                         .HasMaxLength(30)
                         .HasColumnType("nvarchar(30)");
+
+                    b.Property<string>("ReferenceNo")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
 
                     b.HasKey("Id");
 
@@ -360,7 +366,6 @@ namespace KitchenProject.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<int>("Payment")
-                        .HasMaxLength(30)
                         .HasColumnType("int");
 
                     b.Property<Guid?>("ProjectId")
@@ -395,6 +400,9 @@ namespace KitchenProject.Migrations
                     b.Property<bool>("IsActive")
                         .HasColumnType("bit");
 
+                    b.Property<Guid?>("ItemGroupId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<decimal>("MinQuantity")
                         .HasColumnType("decimal(18,2)");
 
@@ -406,11 +414,17 @@ namespace KitchenProject.Migrations
                         .HasMaxLength(150)
                         .HasColumnType("nvarchar(150)");
 
+                    b.Property<string>("Notes")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<decimal>("PurchasePrice")
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<decimal>("SalePrice")
                         .HasColumnType("decimal(18,2)");
+
+                    b.Property<int>("Type")
+                        .HasColumnType("int");
 
                     b.Property<string>("Unit")
                         .IsRequired()
@@ -419,7 +433,76 @@ namespace KitchenProject.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("Code")
+                        .IsUnique();
+
+                    b.HasIndex("ItemGroupId");
+
                     b.ToTable("Items");
+                });
+
+            modelBuilder.Entity("KitchenProject.Models.Entities.ItemGroup", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier")
+                        .HasDefaultValueSql("NEWID()");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)");
+
+                    b.Property<DateTime>("Created")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(250)
+                        .HasColumnType("nvarchar(250)");
+
+                    b.Property<DateTime?>("Modified")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Code")
+                        .IsUnique();
+
+                    b.ToTable("ItemGroups");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = new Guid("a1000000-0000-4000-8000-00000000000a"),
+                            Code = "A",
+                            Created = new DateTime(2026, 9, 5, 13, 1, 21, 0, DateTimeKind.Utc),
+                            Name = "البند A",
+                            SortOrder = 1
+                        },
+                        new
+                        {
+                            Id = new Guid("b1000000-0000-4000-8000-00000000000b"),
+                            Code = "B",
+                            Created = new DateTime(2026, 9, 5, 13, 1, 21, 0, DateTimeKind.Utc),
+                            Name = "البند B",
+                            SortOrder = 2
+                        },
+                        new
+                        {
+                            Id = new Guid("c1000000-0000-4000-8000-00000000000c"),
+                            Code = "C",
+                            Created = new DateTime(2026, 9, 5, 13, 1, 21, 0, DateTimeKind.Utc),
+                            Name = "البند C",
+                            SortOrder = 3
+                        });
                 });
 
             modelBuilder.Entity("KitchenProject.Models.Entities.Project", b =>
@@ -512,11 +595,13 @@ namespace KitchenProject.Migrations
                     b.Property<DateTime>("Created")
                         .HasColumnType("datetime2");
 
+                    b.Property<bool>("DirectToProject")
+                        .HasColumnType("bit");
+
                     b.Property<decimal>("Discount")
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<string>("InvoiceNo")
-                        .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
@@ -531,6 +616,14 @@ namespace KitchenProject.Migrations
 
                     b.Property<Guid?>("ProjectId")
                         .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("PurchaseDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("PurchaseNo")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
 
                     b.Property<string>("Status")
                         .IsRequired()
@@ -628,7 +721,6 @@ namespace KitchenProject.Migrations
                         .HasColumnType("nvarchar(30)");
 
                     b.Property<int>("Status")
-                        .HasMaxLength(30)
                         .HasColumnType("int");
 
                     b.Property<decimal>("Subtotal")
@@ -665,6 +757,9 @@ namespace KitchenProject.Migrations
                         .HasMaxLength(250)
                         .HasColumnType("nvarchar(250)");
 
+                    b.Property<Guid?>("ItemId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<DateTime?>("Modified")
                         .HasColumnType("datetime2");
 
@@ -683,6 +778,8 @@ namespace KitchenProject.Migrations
                         .HasColumnType("decimal(18,2)");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("ItemId");
 
                     b.HasIndex("QuoteId");
 
@@ -849,6 +946,9 @@ namespace KitchenProject.Migrations
                     b.Property<Guid?>("ProjectId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<Guid?>("PurchaseId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<decimal>("QuantityIn")
                         .HasColumnType("decimal(18,2)");
 
@@ -858,6 +958,9 @@ namespace KitchenProject.Migrations
                     b.Property<string>("ReferenceNo")
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
+
+                    b.Property<DateTime>("TransactionDate")
+                        .HasColumnType("datetime2");
 
                     b.Property<int>("TransactionType")
                         .HasColumnType("int");
@@ -873,6 +976,8 @@ namespace KitchenProject.Migrations
                     b.HasIndex("ItemId");
 
                     b.HasIndex("ProjectId");
+
+                    b.HasIndex("PurchaseId");
 
                     b.HasIndex("WarehouseId");
 
@@ -944,8 +1049,10 @@ namespace KitchenProject.Migrations
                     b.Property<string>("Notes")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<DateTime>("PaymentDate")
+                        .HasColumnType("datetime2");
+
                     b.Property<int>("PaymentMethod")
-                        .HasMaxLength(30)
                         .HasColumnType("int");
 
                     b.Property<Guid?>("PurchaseId")
@@ -955,6 +1062,8 @@ namespace KitchenProject.Migrations
                         .HasColumnType("uniqueidentifier");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("PurchaseId");
 
                     b.HasIndex("SupplierId");
 
@@ -1027,6 +1136,15 @@ namespace KitchenProject.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Warehouses");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = new Guid("d3f1c2a4-5b6e-4f70-8a91-0b2c3d4e5f61"),
+                            Created = new DateTime(2026, 9, 5, 13, 1, 21, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            Name = "المخزن الرئيسي"
+                        });
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole", b =>
@@ -1223,6 +1341,16 @@ namespace KitchenProject.Migrations
                     b.Navigation("Project");
                 });
 
+            modelBuilder.Entity("KitchenProject.Models.Entities.Item", b =>
+                {
+                    b.HasOne("KitchenProject.Models.Entities.ItemGroup", "Group")
+                        .WithMany("Items")
+                        .HasForeignKey("ItemGroupId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Group");
+                });
+
             modelBuilder.Entity("KitchenProject.Models.Entities.Project", b =>
                 {
                     b.HasOne("KitchenProject.Models.Entities.Customer", "Customer")
@@ -1259,18 +1387,19 @@ namespace KitchenProject.Migrations
                 {
                     b.HasOne("KitchenProject.Models.Entities.Project", "Projects")
                         .WithMany()
-                        .HasForeignKey("ProjectId");
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("KitchenProject.Models.Entities.Supplier", "Suppliers")
                         .WithMany("Purchases")
                         .HasForeignKey("SupplierId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.HasOne("KitchenProject.Models.Entities.Warehouse", "Warehouses")
                         .WithMany()
                         .HasForeignKey("WarehouseId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("Projects");
@@ -1312,11 +1441,18 @@ namespace KitchenProject.Migrations
 
             modelBuilder.Entity("KitchenProject.Models.Entities.QuoteItem", b =>
                 {
+                    b.HasOne("KitchenProject.Models.Entities.Item", "Item")
+                        .WithMany()
+                        .HasForeignKey("ItemId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.HasOne("KitchenProject.Models.Entities.Quote", "Quote")
                         .WithMany("Items")
                         .HasForeignKey("QuoteId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("Item");
 
                     b.Navigation("Quote");
                 });
@@ -1353,6 +1489,11 @@ namespace KitchenProject.Migrations
                         .HasForeignKey("ProjectId")
                         .OnDelete(DeleteBehavior.Restrict);
 
+                    b.HasOne("KitchenProject.Models.Entities.Purchase", "Purchase")
+                        .WithMany()
+                        .HasForeignKey("PurchaseId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("KitchenProject.Models.Entities.Warehouse", "Warehouses")
                         .WithMany("StockTransactions")
                         .HasForeignKey("WarehouseId")
@@ -1363,16 +1504,25 @@ namespace KitchenProject.Migrations
 
                     b.Navigation("Projects");
 
+                    b.Navigation("Purchase");
+
                     b.Navigation("Warehouses");
                 });
 
             modelBuilder.Entity("KitchenProject.Models.Entities.SupplierPayment", b =>
                 {
+                    b.HasOne("KitchenProject.Models.Entities.Purchase", "Purchase")
+                        .WithMany("Payments")
+                        .HasForeignKey("PurchaseId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("KitchenProject.Models.Entities.Supplier", "supplier")
-                        .WithMany()
+                        .WithMany("Payments")
                         .HasForeignKey("SupplierId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+
+                    b.Navigation("Purchase");
 
                     b.Navigation("supplier");
                 });
@@ -1467,6 +1617,11 @@ namespace KitchenProject.Migrations
                     b.Navigation("StockTransactions");
                 });
 
+            modelBuilder.Entity("KitchenProject.Models.Entities.ItemGroup", b =>
+                {
+                    b.Navigation("Items");
+                });
+
             modelBuilder.Entity("KitchenProject.Models.Entities.Project", b =>
                 {
                     b.Navigation("Contracts");
@@ -1485,6 +1640,8 @@ namespace KitchenProject.Migrations
             modelBuilder.Entity("KitchenProject.Models.Entities.Purchase", b =>
                 {
                     b.Navigation("Items");
+
+                    b.Navigation("Payments");
                 });
 
             modelBuilder.Entity("KitchenProject.Models.Entities.Quote", b =>
@@ -1494,6 +1651,8 @@ namespace KitchenProject.Migrations
 
             modelBuilder.Entity("KitchenProject.Models.Entities.Supplier", b =>
                 {
+                    b.Navigation("Payments");
+
                     b.Navigation("Purchases");
                 });
 

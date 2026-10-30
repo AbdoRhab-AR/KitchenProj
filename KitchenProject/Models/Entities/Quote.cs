@@ -34,7 +34,6 @@ namespace KitchenProject.Models.Entities
 		[Column(TypeName = "decimal(18,2)")]
 		public decimal Total { get; set; }
 
-		[MaxLength(30)]
 		public DesignStatus Status { get; set; } = DesignStatus.Draft;
 
 		public string? Notes { get; set; }

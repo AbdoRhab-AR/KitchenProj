@@ -10,6 +10,11 @@ namespace KitchenProject.Models.Entities
 		public Quote Quote { get; set; }
 		public Guid QuoteId { get; set; }
 
+		// الصنف الجاهز المختار من الكتالوج (اختياري؛ يمكن كتابة بند حر)
+		[ValidateNever]
+		public Item? Item { get; set; }
+		public Guid? ItemId { get; set; }
+
 		[Required(ErrorMessage = "وصف البند مطلوب")]
 		[MaxLength(250)]
 		public string Description { get; set; } = "";

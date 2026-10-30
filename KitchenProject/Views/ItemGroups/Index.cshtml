@@ -1,0 +1,114 @@
+@model IEnumerable<KitchenProject.Models.Entities.ItemGroup>
+@{
+    ViewData["Title"] = "بنود الأصناف الجاهزة";
+    Layout = "_DashboardLayout";
+    var counts = (Dictionary<Guid, int>)ViewBag.ItemCounts;
+}
+
+<!-- Page Header Bar -->
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+    <div>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-1 small text-muted">
+                <li class="breadcrumb-item"><a asp-controller="Items" asp-action="Index" class="text-decoration-none">الأصناف</a></li>
+                <li class="breadcrumb-item active" aria-current="page">البنود</li>
+            </ol>
+        </nav>
+        <h2 class="page-header-title mb-1">
+            <i class="fa-solid fa-layer-group text-primary me-2"></i> بنود الأصناف الجاهزة
+        </h2>
+        <p class="text-muted mb-0">الأصناف الجاهزة مقسمة إلى بنود (A، B، C...). عدّل أسماء البنود حسب تقسيم الشركة.</p>
+    </div>
+    <div>
+        <a asp-controller="Items" asp-action="Index" asp-route-type="Finished" class="btn btn-outline-secondary fw-bold rounded-3">
+            <i class="fa-solid fa-arrow-right me-1"></i> الأصناف الجاهزة
+        </a>
+    </div>
+</div>
+
+<div class="row g-4">
+    @foreach (var group in Model)
+    {
+        var count = counts.GetValueOrDefault(group.Id);
+        <div class="col-12 col-md-6 col-xl-4">
+            <div class="custom-card p-4 h-100">
+                <form asp-action="Save" method="post">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="Id" value="@group.Id" />
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                        <span class="badge bg-primary text-white fs-5 px-3 py-2 rounded-3">@group.Code</span>
+                        <a asp-controller="Items" asp-action="Index" asp-route-groupId="@group.Id" class="badge bg-light text-dark border text-decoration-none">
+                            @count صنف
+                        </a>
+                    </div>
+                    <div class="row g-2">
+                        <div class="col-4">
+                            <label class="form-label small fw-bold text-muted">الرمز</label>
+                            <input name="Code" value="@group.Code" class="form-control" maxlength="10" required />
+                        </div>
+                        <div class="col-8">
+                            <label class="form-label small fw-bold text-muted">اسم البند</label>
+                            <input name="Name" value="@group.Name" class="form-control" maxlength="100" required />
+                        </div>
+                        <div class="col-8">
+                            <label class="form-label small fw-bold text-muted">وصف مختصر</label>
+                            <input name="Description" value="@group.Description" class="form-control" maxlength="250" />
+                        </div>
+                        <div class="col-4">
+                            <label class="form-label small fw-bold text-muted">الترتيب</label>
+                            <input name="SortOrder" value="@group.SortOrder" type="number" class="form-control" />
+                        </div>
+                    </div>
+                    <div class="d-flex gap-2 mt-3">
+                        <button type="submit" class="btn btn-primary-custom btn-sm fw-bold flex-grow-1">
+                            <i class="fa-solid fa-floppy-disk me-1"></i> حفظ
+                        </button>
+                        <a asp-controller="Items" asp-action="Create" asp-route-type="Finished" asp-route-groupId="@group.Id" class="btn btn-sm btn-outline-primary fw-bold" title="إضافة صنف لهذا البند">
+                            <i class="fa-solid fa-plus"></i> صنف
+                        </a>
+                        @if (count == 0)
+                        {
+                            <button type="submit" form="delete-@group.Id" class="btn btn-sm btn-outline-danger" title="حذف البند" onclick="return confirm('حذف البند @group.Code؟')">
+                                <i class="fa-solid fa-trash-can"></i>
+                            </button>
+                        }
+                    </div>
+                </form>
+                <form id="delete-@group.Id" asp-action="Delete" asp-route-id="@group.Id" method="post" class="d-none">
+                    @Html.AntiForgeryToken()
+                </form>
+            </div>
+        </div>
+    }
+
+    <!-- New group -->
+    <div class="col-12 col-md-6 col-xl-4">
+        <div class="custom-card p-4 h-100 border border-2 border-dashed" style="border-style:dashed !important;">
+            <form asp-action="Save" method="post">
+                @Html.AntiForgeryToken()
+                <h6 class="fw-bold text-muted mb-3"><i class="fa-solid fa-plus me-1"></i> بند جديد</h6>
+                <div class="row g-2">
+                    <div class="col-4">
+                        <label class="form-label small fw-bold text-muted">الرمز</label>
+                        <input name="Code" class="form-control" maxlength="10" placeholder="D" required />
+                    </div>
+                    <div class="col-8">
+                        <label class="form-label small fw-bold text-muted">اسم البند</label>
+                        <input name="Name" class="form-control" maxlength="100" required />
+                    </div>
+                    <div class="col-8">
+                        <label class="form-label small fw-bold text-muted">وصف مختصر</label>
+                        <input name="Description" class="form-control" maxlength="250" />
+                    </div>
+                    <div class="col-4">
+                        <label class="form-label small fw-bold text-muted">الترتيب</label>
+                        <input name="SortOrder" value="@(Model.Any() ? Model.Max(g => g.SortOrder) + 1 : 1)" type="number" class="form-control" />
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-outline-primary btn-sm fw-bold w-100 mt-3">
+                    <i class="fa-solid fa-plus me-1"></i> إضافة البند
+                </button>
+            </form>
+        </div>
+    </div>
+</div>

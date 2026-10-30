@@ -345,6 +345,7 @@ namespace KitchenProject.Controllers
 		{
 			ViewBag.Projects = await _lookup.ProjectsAsync(quote.ProjectId);
 			ViewBag.StatusList = LookupService.EnumList(quote.Status);
+			ViewBag.ItemOptions = await _lookup.ItemOptionsAsync(ItemType.Finished);
 		}
 	}
 }

@@ -1,0 +1,132 @@
+@model IEnumerable<KitchenProject.Models.Entities.Supplier>
+@{
+    ViewData["Title"] = "الموردين";
+    Layout = "_DashboardLayout";
+    var balances = (Dictionary<Guid, (decimal Total, decimal Paid)>)ViewBag.Balances;
+}
+
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+    <div>
+        <h2 class="page-header-title mb-1">
+            <i class="fa-solid fa-truck-field text-primary me-2"></i> الموردين
+        </h2>
+        <p class="text-muted mb-0">موردو الخامات وحساباتهم (المشتريات والمدفوعات والمستحق)</p>
+    </div>
+    <div>
+        <a asp-action="Create" class="btn btn-primary-custom d-inline-flex align-items-center gap-2">
+            <i class="fa-solid fa-plus"></i>
+            <span>مورد جديد</span>
+        </a>
+    </div>
+</div>
+
+<!-- KPI Stats Cards -->
+<div class="row g-3 mb-4">
+    <div class="col-12 col-sm-4">
+        <div class="custom-card p-3 d-flex align-items-center justify-content-between">
+            <div>
+                <span class="text-muted fw-bold d-block mb-1" style="font-size:0.85rem;">موردون فعالون</span>
+                <h3 class="fw-extrabold mb-0 text-primary">@ViewBag.SupplierCount</h3>
+            </div>
+            <div class="bg-primary-subtle text-primary rounded-3 p-3"><i class="fa-solid fa-truck-field fs-3"></i></div>
+        </div>
+    </div>
+    <div class="col-12 col-sm-4">
+        <div class="custom-card p-3 d-flex align-items-center justify-content-between">
+            <div>
+                <span class="text-muted fw-bold d-block mb-1" style="font-size:0.85rem;">إجمالي المشتريات المستلمة</span>
+                <h3 class="fw-extrabold mb-0 text-success">@(((decimal)ViewBag.PurchasesTotal).ToString("N2"))</h3>
+            </div>
+            <div class="bg-success-subtle text-success rounded-3 p-3"><i class="fa-solid fa-cart-shopping fs-3"></i></div>
+        </div>
+    </div>
+    <div class="col-12 col-sm-4">
+        <div class="custom-card p-3 d-flex align-items-center justify-content-between">
+            <div>
+                <span class="text-muted fw-bold d-block mb-1" style="font-size:0.85rem;">مستحق للموردين</span>
+                <h3 class="fw-extrabold mb-0 text-danger">@(((decimal)ViewBag.DueTotal).ToString("N2"))</h3>
+            </div>
+            <div class="bg-danger-subtle text-danger rounded-3 p-3"><i class="fa-solid fa-hand-holding-dollar fs-3"></i></div>
+        </div>
+    </div>
+</div>
+
+<div class="custom-card mb-4 p-3">
+    <form method="get" asp-action="Index" class="row g-3 align-items-center">
+        <div class="col-12 col-md-8 col-lg-9">
+            <div class="input-group">
+                <span class="input-group-text bg-white border-end-0"><i class="fa-solid fa-magnifying-glass text-muted"></i></span>
+                <input type="text" name="searchString" class="form-control border-start-0 ps-0" placeholder="بحث بالاسم أو الرقم أو الهاتف..." value="@ViewBag.SearchString">
+            </div>
+        </div>
+        <div class="col-12 col-md-4 col-lg-3 d-flex gap-2">
+            <button type="submit" class="btn btn-primary fw-bold px-4 rounded-3 flex-grow-1"><i class="fa-solid fa-search me-1"></i> بحث</button>
+            @if (!string.IsNullOrEmpty(ViewBag.SearchString))
+            {
+                <a asp-action="Index" class="btn btn-light border fw-bold text-muted" title="إلغاء الفلترة"><i class="fa-solid fa-xmark"></i></a>
+            }
+        </div>
+    </form>
+</div>
+
+<div class="custom-card">
+    <div class="card-header-custom">
+        <h5 class="fw-bold mb-0 text-dark"><i class="fa-solid fa-list text-secondary me-2"></i> قائمة الموردين</h5>
+        <span class="badge bg-light text-dark border">عدد النتائج: @ViewBag.TotalCount</span>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="bg-light text-muted" style="font-size:0.85rem;">
+                <tr>
+                    <th class="ps-4">الرقم</th>
+                    <th>المورد</th>
+                    <th>الهاتف</th>
+                    <th>شروط الدفع</th>
+                    <th>المشتريات</th>
+                    <th>المستحق</th>
+                    <th class="text-center pe-4">الإجراءات</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.Any())
+                {
+                    foreach (var s in Model)
+                    {
+                        var (total, paid) = balances.GetValueOrDefault(s.Id);
+                        var due = total - paid;
+                        <tr class="@(s.IsActive ? "" : "opacity-50")">
+                            <td class="ps-4"><span class="badge bg-primary-subtle text-primary px-2 py-1 rounded-2">@s.SupplierNo</span></td>
+                            <td>
+                                <a asp-action="Details" asp-route-id="@s.Id" class="fw-bold text-dark text-decoration-none">@s.Name</a>
+                                <small class="d-block text-muted">@s.Address</small>
+                            </td>
+                            <td class="small" dir="ltr">@s.Phone</td>
+                            <td class="small text-muted">@s.PaymentTerms</td>
+                            <td class="fw-bold">@total.ToString("N2")</td>
+                            <td class="fw-bold @(due > 0 ? "text-danger" : "text-success")">@due.ToString("N2")</td>
+                            <td class="text-center pe-4">
+                                <div class="btn-group btn-group-sm" role="group">
+                                    <a asp-action="Details" asp-route-id="@s.Id" class="btn btn-light border text-info" title="كشف الحساب"><i class="fa-solid fa-eye"></i></a>
+                                    <a asp-controller="Purchases" asp-action="Create" asp-route-supplierId="@s.Id" class="btn btn-light border text-success" title="فاتورة شراء"><i class="fa-solid fa-cart-plus"></i></a>
+                                    <a asp-action="Edit" asp-route-id="@s.Id" class="btn btn-light border text-primary" title="تعديل"><i class="fa-solid fa-pen-to-square"></i></a>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="7" class="text-center py-5 text-muted">
+                            <i class="fa-solid fa-truck-field display-4 mb-3 d-block text-secondary opacity-50"></i>
+                            <h5 class="fw-bold mb-1">لا يوجد موردون</h5>
+                            <p class="text-muted small mb-0">أضف موردي الخامات لتسجيل فواتير الشراء</p>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <partial name="_Pager" model='new Dictionary<string, string?> { ["searchString"] = ViewBag.SearchString }' />
+</div>

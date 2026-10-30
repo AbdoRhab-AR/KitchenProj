@@ -1,0 +1,190 @@
+@model KitchenProject.Models.Entities.Purchase
+@{
+    ViewData["Title"] = "فاتورة الشراء " + Model.PurchaseNo;
+    Layout = "_DashboardLayout";
+    var isDraft = Model.Status == PurchaseStatuses.Draft;
+    var isReceived = Model.Status == PurchaseStatuses.Received;
+    var paidPercent = Model.Total > 0 ? (int)Math.Min(100, Math.Round(Model.PaidAmount / Model.Total * 100)) : 0;
+}
+
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+    <div>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-1 small text-muted">
+                <li class="breadcrumb-item"><a asp-action="Index" class="text-decoration-none">المشتريات</a></li>
+                <li class="breadcrumb-item"><a asp-controller="Suppliers" asp-action="Details" asp-route-id="@Model.SupplierId" class="text-decoration-none">@Model.Suppliers?.Name</a></li>
+                <li class="breadcrumb-item active" aria-current="page">@Model.PurchaseNo</li>
+            </ol>
+        </nav>
+        <h2 class="page-header-title mb-0 d-flex flex-wrap align-items-center gap-2">
+            <i class="fa-solid fa-cart-shopping text-primary"></i>
+            <span>فاتورة شراء @Model.PurchaseNo</span>
+            <partial name="_StatusBadge" model="Model.Status" />
+        </h2>
+    </div>
+    <div class="d-flex flex-wrap gap-2">
+        @if (isDraft)
+        {
+            <form asp-action="Receive" asp-route-id="@Model.Id" method="post" class="d-inline" onsubmit="return confirm('استلام الأصناف بالمخزن؟ لن يمكن تعديل الفاتورة بعدها.')">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="btn btn-success fw-bold rounded-3"><i class="fa-solid fa-truck-ramp-box me-1"></i> استلام بالمخزن</button>
+            </form>
+            <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-primary-custom d-inline-flex align-items-center gap-2">
+                <i class="fa-solid fa-pen-to-square"></i> تعديل
+            </a>
+        }
+        @if (Model.Status != PurchaseStatuses.Cancelled)
+        {
+            <form asp-action="Cancel" asp-route-id="@Model.Id" method="post" class="d-inline" onsubmit="return confirm('إلغاء الفاتورة؟ @(isReceived ? "سيتم سحب كمياتها من المخزن." : "")')">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="btn btn-outline-warning fw-bold rounded-3"><i class="fa-solid fa-ban me-1"></i> إلغاء الفاتورة</button>
+            </form>
+        }
+        @if (!isReceived && !Model.Payments.Any())
+        {
+            <form asp-action="Delete" asp-route-id="@Model.Id" method="post" class="d-inline" onsubmit="return confirm('حذف الفاتورة نهائياً؟')">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="btn btn-outline-danger fw-bold rounded-3" title="حذف"><i class="fa-solid fa-trash-can"></i></button>
+            </form>
+        }
+    </div>
+</div>
+
+@if (isDraft)
+{
+    <div class="alert alert-info border-0 rounded-3 d-flex align-items-center gap-2 mb-4">
+        <i class="fa-solid fa-circle-info"></i>
+        <span>هذه الفاتورة مسودة ولم تدخل أصنافها المخزن بعد. اضغط <strong>استلام بالمخزن</strong> عند وصول البضاعة.</span>
+    </div>
+}
+
+<div class="row g-4">
+    <div class="col-12 col-xl-8">
+        <div class="custom-card mb-4">
+            <div class="card-header-custom">
+                <h5 class="fw-bold mb-0 text-dark"><i class="fa-solid fa-cubes text-warning me-2"></i> الخامات</h5>
+                <span class="badge bg-light text-dark border">@Model.Items.Count سطر</span>
+            </div>
+            <div class="table-responsive">
+                <table class="table align-middle mb-0">
+                    <thead class="bg-light text-muted small"><tr><th class="ps-4">#</th><th>الخامة</th><th>الكمية</th><th>سعر الوحدة</th><th class="pe-4">الإجمالي</th></tr></thead>
+                    <tbody>
+                        @{ var n = 1; }
+                        @foreach (var line in Model.Items.OrderBy(i => i.Created))
+                        {
+                            <tr>
+                                <td class="ps-4 text-muted">@(n++)</td>
+                                <td>
+                                    <a asp-controller="Items" asp-action="Details" asp-route-id="@line.ItemId" class="fw-bold text-dark text-decoration-none">@line.Items?.Name</a>
+                                    <small class="d-block text-muted font-monospace">@line.Items?.Code</small>
+                                </td>
+                                <td>@line.Quantity.ToString("0.##") @line.Items?.Unit</td>
+                                <td>@line.UnitPrice.ToString("N2")</td>
+                                <td class="pe-4 fw-bold">@line.Total.ToString("N2")</td>
+                            </tr>
+                        }
+                    </tbody>
+                    <tfoot class="small">
+                        <tr><td colspan="4" class="text-end text-muted fw-bold">المجموع</td><td class="pe-4 fw-bold">@Model.Subtotal.ToString("N2")</td></tr>
+                        @if (Model.Discount > 0)
+                        {
+                            <tr><td colspan="4" class="text-end text-muted fw-bold">خصم المورد</td><td class="pe-4 fw-bold text-danger">- @Model.Discount.ToString("N2")</td></tr>
+                        }
+                        @if (Model.Tax > 0)
+                        {
+                            <tr><td colspan="4" class="text-end text-muted fw-bold">ضريبة / نقل</td><td class="pe-4 fw-bold">@Model.Tax.ToString("N2")</td></tr>
+                        }
+                        <tr class="fs-6"><td colspan="4" class="text-end fw-bold">الإجمالي</td><td class="pe-4 fw-extrabold text-primary">@Model.Total.ToString("N2")</td></tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+
+        @if (!string.IsNullOrEmpty(Model.Notes))
+        {
+            <div class="custom-card p-4">
+                <h6 class="fw-bold mb-2"><i class="fa-solid fa-note-sticky text-warning me-2"></i> ملاحظات</h6>
+                <p class="mb-0 text-secondary" style="white-space:pre-line;">@Model.Notes</p>
+            </div>
+        }
+    </div>
+
+    <div class="col-12 col-xl-4">
+        <div class="custom-card p-4 mb-4">
+            <h6 class="fw-bold mb-3"><i class="fa-solid fa-circle-info text-primary me-2"></i> بيانات الفاتورة</h6>
+            <div class="d-flex flex-column gap-2 small">
+                <span>المورد: <a asp-controller="Suppliers" asp-action="Details" asp-route-id="@Model.SupplierId" class="fw-bold">@Model.Suppliers?.Name</a></span>
+                <span>رقم فاتورة المورد: <strong>@(Model.InvoiceNo ?? "-")</strong></span>
+                <span>التاريخ: <strong>@Model.PurchaseDate.ToString("yyyy/MM/dd")</strong></span>
+                <span>المخزن: <strong>@Model.Warehouses?.Name</strong></span>
+                <span>المشروع:
+                    @if (Model.Projects != null)
+                    {
+                        <a asp-controller="Projects" asp-action="Details" asp-route-id="@Model.ProjectId" class="fw-bold">@Model.Projects.ProjectNo - @Model.Projects.ProjectName</a>
+                        @if (Model.DirectToProject)
+                        {
+                            <span class="badge bg-danger-subtle text-danger ms-1">صرف مباشر</span>
+                        }
+                    }
+                    else
+                    {
+                        <strong>مشتريات عامة</strong>
+                    }
+                </span>
+            </div>
+        </div>
+
+        <div class="custom-card p-4">
+            <h6 class="fw-bold mb-3"><i class="fa-solid fa-coins text-warning me-2"></i> السداد للمورد</h6>
+            <div class="d-flex justify-content-between mb-2"><span class="text-muted fw-bold">الإجمالي</span><span class="fw-bold">@Model.Total.ToString("N2")</span></div>
+            <div class="d-flex justify-content-between mb-2"><span class="text-muted fw-bold">المدفوع</span><span class="fw-bold text-success">@Model.PaidAmount.ToString("N2")</span></div>
+            <div class="d-flex justify-content-between mb-3"><span class="text-muted fw-bold">المتبقي</span><span class="fw-bold text-danger">@Model.RemainingAmount.ToString("N2")</span></div>
+            <div class="progress mb-3" style="height:8px;"><div class="progress-bar bg-success" style="width:@paidPercent%"></div></div>
+
+            @foreach (var p in Model.Payments.OrderByDescending(p => p.PaymentDate))
+            {
+                <div class="d-flex align-items-center justify-content-between border-top py-2 small">
+                    <div>
+                        <strong class="text-success">@p.Amount.ToString("N2")</strong>
+                        <span class="text-muted">· @p.PaymentMethod.GetDisplayName() · @p.PaymentDate.ToString("yyyy/MM/dd")</span>
+                        @if (!string.IsNullOrEmpty(p.Notes)) { <div class="text-muted">@p.Notes</div> }
+                    </div>
+                    <form asp-action="DeletePayment" asp-route-paymentId="@p.Id" method="post" onsubmit="return confirm('حذف هذا السداد؟')">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="btn btn-sm btn-light border text-danger" title="حذف"><i class="fa-solid fa-xmark"></i></button>
+                    </form>
+                </div>
+            }
+
+            @if (isReceived && Model.RemainingAmount > 0)
+            {
+                <form asp-action="AddPayment" asp-route-id="@Model.Id" method="post" class="border-top pt-3 mt-2">
+                    @Html.AntiForgeryToken()
+                    <div class="row g-2">
+                        <div class="col-6">
+                            <label class="form-label small fw-bold text-muted">المبلغ</label>
+                            <input name="amount" type="number" step="0.01" min="0.01" max="@Model.RemainingAmount.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)" value="@Model.RemainingAmount.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)" class="form-control form-control-sm" required />
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small fw-bold text-muted">الطريقة</label>
+                            <select name="paymentMethod" asp-items="ViewBag.PaymentMethods" class="form-select form-select-sm"></select>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small fw-bold text-muted">التاريخ</label>
+                            <input name="paymentDate" type="date" value="@DateTime.Today.ToString("yyyy-MM-dd")" class="form-control form-control-sm" />
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small fw-bold text-muted">ملاحظة</label>
+                            <input name="notes" class="form-control form-control-sm" placeholder="رقم الصك..." />
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-sm btn-success fw-bold w-100 mt-3"><i class="fa-solid fa-money-bill-transfer me-1"></i> تسجيل سداد</button>
+                </form>
+            }
+            else if (isDraft)
+            {
+                <small class="text-muted d-block">السداد متاح بعد استلام الفاتورة</small>
+            }
+        </div>
+    </div>
+</div>

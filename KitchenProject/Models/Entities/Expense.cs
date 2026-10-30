@@ -17,7 +17,6 @@ namespace KitchenProject.Models.Entities
 		[Column(TypeName = "decimal(18,2)")]
 		public decimal Amount { get; set; }
 
-		[MaxLength(30)]
 		public PaymentMethod Payment { get; set; } = PaymentMethod.Cash ;
 
 		public string? Description { get; set; }

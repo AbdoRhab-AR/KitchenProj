@@ -16,6 +16,23 @@
     var saleValue = contractsTotal > 0 ? contractsTotal : (Model.FinalAmount > 0 ? Model.FinalAmount : Model.EstimatedAmount);
     var remaining = saleValue - paidTotal;
     var paidPercent = saleValue > 0 ? (int)Math.Min(100, Math.Round(paidTotal / saleValue * 100)) : 0;
+
+    // تكلفة الخامات = المصروف للمشروع - المرتجع منه
+    var materials = ViewBag.Materials as List<StockTransaction> ?? new();
+    var purchases = ViewBag.Purchases as List<Purchase> ?? new();
+    var materialsCost = materials.Sum(m => (m.QuantityOut - m.QuantityIn) * m.UnitCost);
+    var margin = saleValue - materialsCost - expensesTotal;
+    var printReceiptId = TempData["PrintReceiptId"] as string;
+}
+
+@if (printReceiptId != null)
+{
+    <div class="alert alert-success border-0 rounded-3 d-flex align-items-center justify-content-between gap-2 mb-4">
+        <span><i class="fa-solid fa-receipt me-2"></i> تم حفظ إيصال القبض.</span>
+        <a asp-controller="Payments" asp-action="Receipt" asp-route-id="@printReceiptId" target="_blank" class="btn btn-sm btn-success fw-bold">
+            <i class="fa-solid fa-print me-1"></i> طباعة الإيصال
+        </a>
+    </div>
 }
 
 <!-- Page Header Bar -->
@@ -165,7 +182,7 @@
         <div class="custom-card p-4 mb-4">
             <h5 class="fw-bold mb-3 text-dark"><i class="fa-solid fa-coins text-warning me-2"></i> الملخص المالي</h5>
             <div class="row g-3 mb-3">
-                <div class="col-6 col-md-3">
+                <div class="col-6 col-md">
                     <div class="bg-light rounded-3 p-3 h-100">
                         <span class="text-muted d-block small fw-bold">قيمة المشروع</span>
                         <span class="fw-bold fs-5 text-dark">@saleValue.ToString("N2")</span>
@@ -174,24 +191,34 @@
                         </small>
                     </div>
                 </div>
-                <div class="col-6 col-md-3">
+                <div class="col-6 col-md">
                     <div class="bg-success-subtle rounded-3 p-3 h-100">
                         <span class="text-muted d-block small fw-bold">المحصّل</span>
                         <span class="fw-bold fs-5 text-success">@paidTotal.ToString("N2")</span>
                     </div>
                 </div>
-                <div class="col-6 col-md-3">
+                <div class="col-6 col-md">
                     <div class="bg-danger-subtle rounded-3 p-3 h-100">
                         <span class="text-muted d-block small fw-bold">المتبقي</span>
                         <span class="fw-bold fs-5 text-danger">@remaining.ToString("N2")</span>
                     </div>
                 </div>
-                <div class="col-6 col-md-3">
+                <div class="col-6 col-md">
+                    <div class="bg-warning-subtle rounded-3 p-3 h-100">
+                        <span class="text-muted d-block small fw-bold">تكلفة الخامات</span>
+                        <span class="fw-bold fs-5 text-warning-emphasis">@materialsCost.ToString("N2")</span>
+                    </div>
+                </div>
+                <div class="col-6 col-md">
                     <div class="bg-warning-subtle rounded-3 p-3 h-100">
                         <span class="text-muted d-block small fw-bold">المصروفات</span>
                         <span class="fw-bold fs-5 text-warning-emphasis">@expensesTotal.ToString("N2")</span>
                     </div>
                 </div>
+            </div>
+            <div class="d-flex justify-content-between align-items-center bg-light rounded-3 px-3 py-2 mb-3">
+                <span class="small fw-bold text-muted">الهامش المبدئي (القيمة - الخامات - المصروفات)</span>
+                <span class="fw-bold @(margin >= 0 ? "text-success" : "text-danger")">@margin.ToString("N2")</span>
             </div>
             <div class="d-flex justify-content-between small text-muted mb-1">
                 <span>نسبة التحصيل</span>
@@ -321,6 +348,111 @@
             else
             {
                 <p class="text-muted small text-center py-3 mb-0">لا توجد عقود بعد</p>
+            }
+        </div>
+
+        <!-- Customer Payments -->
+        <div class="custom-card mt-4">
+            <div class="card-header-custom">
+                <h5 class="fw-bold mb-0 text-dark">
+                    <i class="fa-solid fa-wallet text-primary me-2"></i> دفعات العميل
+                    <span class="badge bg-light text-dark border ms-1">@Model.CustomerPayments.Count</span>
+                </h5>
+                <a asp-controller="Payments" asp-action="Create" asp-route-projectId="@Model.Id" class="btn btn-sm btn-outline-primary fw-bold">
+                    <i class="fa-solid fa-plus me-1"></i> تسجيل دفعة
+                </a>
+            </div>
+            @if (Model.CustomerPayments.Any())
+            {
+                <div class="table-responsive">
+                    <table class="table table-sm align-middle mb-0">
+                        <tbody>
+                            @foreach (var p in Model.CustomerPayments.OrderByDescending(p => p.PaymentDate))
+                            {
+                                <tr>
+                                    <td class="ps-4 fw-bold">@p.ReceiptNo</td>
+                                    <td class="small text-muted">@p.PaymentDate.ToString("yyyy/MM/dd")</td>
+                                    <td class="small">@p.Payment.GetDisplayName()</td>
+                                    <td class="small text-muted text-truncate" style="max-width:200px;">@p.Notes</td>
+                                    <td class="fw-bold text-success">@p.Amount.ToString("N2")</td>
+                                    <td class="pe-4 text-end">
+                                        <a asp-controller="Payments" asp-action="Receipt" asp-route-id="@p.Id" target="_blank" class="btn btn-sm btn-light border" title="طباعة الإيصال"><i class="fa-solid fa-print"></i></a>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            else
+            {
+                <p class="text-muted small text-center py-3 mb-0">لم تُسجل دفعات بعد</p>
+            }
+        </div>
+
+        <!-- Materials -->
+        <div class="custom-card mt-4">
+            <div class="card-header-custom">
+                <h5 class="fw-bold mb-0 text-dark">
+                    <i class="fa-solid fa-cubes text-warning me-2"></i> الخامات المصروفة
+                    <span class="badge bg-light text-dark border ms-1">@materialsCost.ToString("N2")</span>
+                </h5>
+                <div class="d-flex gap-2">
+                    <a asp-controller="Stock" asp-action="Issue" asp-route-projectId="@Model.Id" class="btn btn-sm btn-outline-danger fw-bold">
+                        <i class="fa-solid fa-dolly me-1"></i> صرف
+                    </a>
+                    <a asp-controller="Stock" asp-action="Issue" asp-route-projectId="@Model.Id" asp-route-type="Return" class="btn btn-sm btn-outline-info fw-bold">
+                        <i class="fa-solid fa-rotate-left me-1"></i> مرتجع
+                    </a>
+                    <a asp-controller="Purchases" asp-action="Create" asp-route-projectId="@Model.Id" class="btn btn-sm btn-outline-success fw-bold" title="شراء خامات لهذا المشروع">
+                        <i class="fa-solid fa-cart-plus"></i>
+                    </a>
+                </div>
+            </div>
+            @if (materials.Any())
+            {
+                <div class="table-responsive">
+                    <table class="table table-sm align-middle mb-0">
+                        <thead class="bg-light text-muted small"><tr><th class="ps-4">التاريخ</th><th>الحركة</th><th>الخامة</th><th>الكمية</th><th class="pe-4">التكلفة</th></tr></thead>
+                        <tbody>
+                            @foreach (var m in materials)
+                            {
+                                var isReturn = m.QuantityIn > 0;
+                                <tr>
+                                    <td class="ps-4 small">@m.TransactionDate.ToString("yyyy/MM/dd") <small class="d-block text-muted">@m.ReferenceNo</small></td>
+                                    <td><partial name="~/Views/Stock/_TypeBadge.cshtml" model="m.TransactionType" /></td>
+                                    <td class="fw-semibold">@m.Items?.Name</td>
+                                    <td>@((isReturn ? m.QuantityIn : m.QuantityOut).ToString("0.##")) @m.Items?.Unit</td>
+                                    <td class="pe-4 fw-bold @(isReturn ? "text-success" : "")">@(isReturn ? "- " : "")@m.TotalCost.ToString("N2")</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            else
+            {
+                <p class="text-muted small text-center py-3 mb-0">لم تُصرف خامات لهذا المشروع بعد</p>
+            }
+
+            @if (purchases.Any())
+            {
+                <div class="border-top px-4 py-3 small">
+                    <span class="fw-bold text-muted d-block mb-2"><i class="fa-solid fa-cart-shopping me-1"></i> مشتريات مرتبطة بالمشروع</span>
+                    @foreach (var p in purchases)
+                    {
+                        <div class="d-flex justify-content-between align-items-center py-1">
+                            <span>
+                                <a asp-controller="Purchases" asp-action="Details" asp-route-id="@p.Id" class="fw-bold">@p.PurchaseNo</a>
+                                <span class="text-muted">· @p.Suppliers?.Name · @p.PurchaseDate.ToString("yyyy/MM/dd")</span>
+                            </span>
+                            <span class="d-flex align-items-center gap-2">
+                                <strong>@p.Total.ToString("N2")</strong>
+                                <partial name="~/Views/Purchases/_StatusBadge.cshtml" model="p.Status" />
+                            </span>
+                        </div>
+                    }
+                </div>
             }
         </div>
     </div>

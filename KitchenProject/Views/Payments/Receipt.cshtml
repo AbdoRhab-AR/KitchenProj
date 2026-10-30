@@ -1,0 +1,70 @@
+@model KitchenProject.Models.Entities.CustomerPayment
+@{
+    Layout = "_PrintLayout";
+    ViewData["Title"] = "إيصال قبض " + Model.ReceiptNo;
+    ViewData["DocTitle"] = "إيصال قبض";
+    ViewData["DocNo"] = Model.ReceiptNo;
+}
+
+<div class="row g-2 mb-3">
+    <div class="col-6">
+        <div class="meta-box">
+            <span class="label">استلمنا من السيد / السادة</span>
+            <div class="fw-bold">@Model.Project?.Customer?.Name</div>
+            <div class="small">@Model.Project?.Customer?.Phone</div>
+        </div>
+    </div>
+    <div class="col-3">
+        <div class="meta-box">
+            <span class="label">التاريخ</span>
+            <div class="fw-bold">@Model.PaymentDate.ToString("yyyy/MM/dd")</div>
+            <span class="label mt-1">طريقة الدفع</span>
+            <div class="fw-bold">@Model.Payment.GetDisplayName()</div>
+        </div>
+    </div>
+    <div class="col-3">
+        <div class="meta-box">
+            <span class="label">المشروع</span>
+            <div class="fw-bold">@Model.Project?.ProjectNo</div>
+            @if (Model.Contract != null)
+            {
+                <span class="label mt-1">العقد</span>
+                <div class="fw-bold">@Model.Contract.ContractNo</div>
+            }
+        </div>
+    </div>
+</div>
+
+<table class="table table-bordered print-table">
+    <tbody>
+        <tr>
+            <td class="fw-bold" style="width:30%; background:#f6f6f6;">مبلغ وقدره</td>
+            <td class="fw-bold fs-5">@Model.Amount.ToString("N2") د.ل</td>
+        </tr>
+        <tr>
+            <td class="fw-bold" style="background:#f6f6f6;">وذلك عن</td>
+            <td>@(string.IsNullOrWhiteSpace(Model.Notes) ? "دفعة من قيمة مشروع " + Model.Project?.ProjectName : Model.Notes)</td>
+        </tr>
+        @if (!string.IsNullOrEmpty(Model.ReferenceNo))
+        {
+            <tr>
+                <td class="fw-bold" style="background:#f6f6f6;">رقم الصك / الحوالة</td>
+                <td>@Model.ReferenceNo</td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+@if (Model.Contract != null)
+{
+    <table class="totals ms-auto mt-3">
+        <tr><td class="text-muted fw-bold">قيمة العقد</td><td class="text-start fw-bold">@Model.Contract.TotalAmount.ToString("N2")</td></tr>
+        <tr><td class="text-muted fw-bold">إجمالي المدفوع</td><td class="text-start fw-bold">@Model.Contract.PaidAmount.ToString("N2")</td></tr>
+        <tr class="grand"><td>المتبقي (د.ل)</td><td class="text-start">@Model.Contract.RemainingAmount.ToString("N2")</td></tr>
+    </table>
+}
+
+<div class="signatures">
+    <div>توقيع المستلم</div>
+    <div>الختم</div>
+</div>

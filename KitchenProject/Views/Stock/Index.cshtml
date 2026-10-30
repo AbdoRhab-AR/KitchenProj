@@ -1,0 +1,161 @@
+@model List<StockRow>
+@{
+    ViewData["Title"] = "المخزن";
+    Layout = "_DashboardLayout";
+}
+
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+    <div>
+        <h2 class="page-header-title mb-1">
+            <i class="fa-solid fa-warehouse text-primary me-2"></i> المخزن
+        </h2>
+        <p class="text-muted mb-0">أرصدة الخامات وقيمتها، وصرفها على المشاريع</p>
+    </div>
+    <div class="d-flex flex-wrap gap-2">
+        <a asp-action="Movements" class="btn btn-outline-secondary fw-bold rounded-3"><i class="fa-solid fa-right-left me-1"></i> كشف الحركات</a>
+        <a asp-action="Adjust" class="btn btn-outline-warning fw-bold rounded-3"><i class="fa-solid fa-scale-balanced me-1"></i> تسوية جرد</a>
+        <a asp-controller="Purchases" asp-action="Create" class="btn btn-outline-success fw-bold rounded-3"><i class="fa-solid fa-cart-plus me-1"></i> شراء</a>
+        <a asp-action="Issue" class="btn btn-primary-custom d-inline-flex align-items-center gap-2">
+            <i class="fa-solid fa-dolly"></i>
+            <span>صرف لمشروع</span>
+        </a>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-6 col-lg-3">
+        <div class="custom-card p-3 d-flex align-items-center justify-content-between">
+            <div>
+                <span class="text-muted fw-bold d-block mb-1" style="font-size:0.85rem;">قيمة المخزون</span>
+                <h3 class="fw-extrabold mb-0 text-primary">@(((decimal)ViewBag.StockValue).ToString("N2"))</h3>
+            </div>
+            <div class="bg-primary-subtle text-primary rounded-3 p-3 d-none d-sm-block"><i class="fa-solid fa-sack-dollar fs-3"></i></div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="custom-card p-3 d-flex align-items-center justify-content-between">
+            <div>
+                <span class="text-muted fw-bold d-block mb-1" style="font-size:0.85rem;">أصناف متوفرة</span>
+                <h3 class="fw-extrabold mb-0 text-success">@ViewBag.ItemCount</h3>
+            </div>
+            <div class="bg-success-subtle text-success rounded-3 p-3 d-none d-sm-block"><i class="fa-solid fa-cubes fs-3"></i></div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <a asp-action="Index" asp-route-lowStock="true" asp-route-warehouseId="@ViewBag.WarehouseId" class="text-decoration-none">
+            <div class="custom-card p-3 d-flex align-items-center justify-content-between">
+                <div>
+                    <span class="text-muted fw-bold d-block mb-1" style="font-size:0.85rem;">تحت حد الطلب</span>
+                    <h3 class="fw-extrabold mb-0 text-danger">@ViewBag.LowCount</h3>
+                </div>
+                <div class="bg-danger-subtle text-danger rounded-3 p-3 d-none d-sm-block"><i class="fa-solid fa-triangle-exclamation fs-3"></i></div>
+            </div>
+        </a>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="custom-card p-3 d-flex align-items-center justify-content-between">
+            <div>
+                <span class="text-muted fw-bold d-block mb-1" style="font-size:0.85rem;">مصروف للمشاريع هذا الشهر</span>
+                <h3 class="fw-extrabold mb-0 text-warning">@(((decimal)ViewBag.MonthIssued).ToString("N2"))</h3>
+            </div>
+            <div class="bg-warning-subtle text-warning rounded-3 p-3 d-none d-sm-block"><i class="fa-solid fa-dolly fs-3"></i></div>
+        </div>
+    </div>
+</div>
+
+<div class="custom-card mb-4 p-3">
+    <form method="get" asp-action="Index" class="row g-3 align-items-center">
+        <div class="col-12 col-md-5">
+            <div class="input-group">
+                <span class="input-group-text bg-white border-end-0"><i class="fa-solid fa-magnifying-glass text-muted"></i></span>
+                <input type="text" name="searchString" class="form-control border-start-0 ps-0" placeholder="بحث باسم الخامة أو الكود..." value="@ViewBag.SearchString">
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <select name="warehouseId" class="form-select" asp-items="ViewBag.Warehouses">
+                <option value="">كل المخازن</option>
+            </select>
+        </div>
+        <div class="col-6 col-md-2">
+            <div class="form-check form-switch mb-0">
+                <input class="form-check-input" type="checkbox" role="switch" name="lowStock" value="true" id="lowStock" @(ViewBag.LowStock ? "checked" : "") />
+                <label class="form-check-label small fw-bold" for="lowStock">تحت حد الطلب</label>
+            </div>
+        </div>
+        <div class="col-12 col-md-2 d-flex gap-2">
+            <button type="submit" class="btn btn-primary fw-bold rounded-3 flex-grow-1"><i class="fa-solid fa-search me-1"></i> بحث</button>
+            @if (!string.IsNullOrEmpty(ViewBag.SearchString) || ViewBag.WarehouseId != null || ViewBag.LowStock)
+            {
+                <a asp-action="Index" class="btn btn-light border fw-bold text-muted" title="إلغاء الفلترة"><i class="fa-solid fa-xmark"></i></a>
+            }
+        </div>
+    </form>
+</div>
+
+<div class="custom-card">
+    <div class="card-header-custom">
+        <h5 class="fw-bold mb-0 text-dark"><i class="fa-solid fa-boxes-stacked text-secondary me-2"></i> أرصدة الخامات</h5>
+        <span class="badge bg-light text-dark border">@Model.Count صنف</span>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="bg-light text-muted" style="font-size:0.85rem;">
+                <tr>
+                    <th class="ps-4">الكود</th>
+                    <th>الخامة</th>
+                    <th>الرصيد</th>
+                    <th>حد الطلب</th>
+                    <th>متوسط التكلفة</th>
+                    <th>القيمة</th>
+                    <th class="text-center pe-4">الإجراءات</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.Any())
+                {
+                    foreach (var r in Model)
+                    {
+                        <tr class="@(r.IsLow ? "table-danger" : "")">
+                            <td class="ps-4"><span class="badge bg-light text-dark border font-monospace">@r.Item.Code</span></td>
+                            <td><a asp-controller="Items" asp-action="Details" asp-route-id="@r.Item.Id" class="fw-bold text-dark text-decoration-none">@r.Item.Name</a></td>
+                            <td>
+                                <span class="fw-bold fs-6 @(r.IsLow ? "text-danger" : r.Balance > 0 ? "text-success" : "text-muted")">@r.Balance.ToString("0.##")</span>
+                                <small class="text-muted">@r.Item.Unit</small>
+                                @if (r.IsLow)
+                                {
+                                    <i class="fa-solid fa-triangle-exclamation text-danger ms-1" title="يُنصح بالشراء"></i>
+                                }
+                            </td>
+                            <td class="small text-muted">@(r.Item.MinQuantity > 0 ? r.Item.MinQuantity.ToString("0.##") : "-")</td>
+                            <td class="small">@r.AverageCost.ToString("N2")</td>
+                            <td class="fw-bold">@r.Value.ToString("N2")</td>
+                            <td class="text-center pe-4">
+                                <div class="btn-group btn-group-sm" role="group">
+                                    <a asp-action="Movements" asp-route-itemId="@r.Item.Id" class="btn btn-light border text-info" title="كشف الحركات"><i class="fa-solid fa-right-left"></i></a>
+                                    <a asp-action="Issue" asp-route-itemId="@r.Item.Id" class="btn btn-light border text-danger" title="صرف لمشروع"><i class="fa-solid fa-dolly"></i></a>
+                                    <a asp-action="Adjust" asp-route-itemId="@r.Item.Id" class="btn btn-light border text-warning" title="تسوية جرد"><i class="fa-solid fa-scale-balanced"></i></a>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="7" class="text-center py-5 text-muted">
+                            <i class="fa-solid fa-warehouse display-4 mb-3 d-block text-secondary opacity-50"></i>
+                            <h5 class="fw-bold mb-1">لا توجد خامات</h5>
+                            <p class="text-muted small mb-0"><a asp-controller="Items" asp-action="Create" asp-route-type="Raw">أضف الخامات</a> ثم سجّل فواتير الشراء لإدخالها المخزن</p>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+            @if (Model.Any())
+            {
+                <tfoot class="bg-light">
+                    <tr><td colspan="5" class="ps-4 fw-bold text-end">إجمالي القيمة</td><td class="fw-extrabold text-primary">@Model.Sum(r => r.Value).ToString("N2")</td><td></td></tr>
+                </tfoot>
+            }
+        </table>
+    </div>
+</div>

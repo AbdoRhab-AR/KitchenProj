@@ -28,6 +28,7 @@ namespace KitchenProject.Models
 		public DbSet<Expense> Expenses { get; set; }
 		public DbSet<Supplier> Suppliers { get; set; }
 		public DbSet<Item> Items { get; set; }
+		public DbSet<ItemGroup> ItemGroups { get; set; }
 		public DbSet<Warehouse> Warehouses { get; set; }
 		public DbSet<StockTransaction> StockTransactions { get; set; }
 		public DbSet<Purchase> Purchases { get; set; }
@@ -52,6 +53,7 @@ namespace KitchenProject.Models
 			modelBuilder.Entity<Expense>().Property(x => x.Id).HasDefaultValueSql("NEWID()");
 			modelBuilder.Entity<Supplier>().Property(x => x.Id).HasDefaultValueSql("NEWID()");
 			modelBuilder.Entity<Item>().Property(x => x.Id).HasDefaultValueSql("NEWID()");
+			modelBuilder.Entity<ItemGroup>().Property(x => x.Id).HasDefaultValueSql("NEWID()");
 			modelBuilder.Entity<Warehouse>().Property(x => x.Id).HasDefaultValueSql("NEWID()");
 			modelBuilder.Entity<StockTransaction>().Property(x => x.Id).HasDefaultValueSql("NEWID()");
 			modelBuilder.Entity<Purchase>().Property(x => x.Id).HasDefaultValueSql("NEWID()");
@@ -138,6 +140,41 @@ namespace KitchenProject.Models
 			modelBuilder.Entity<StockTransaction>()
 				.HasOne(x => x.Projects).WithMany(x => x.StockTransactions)
 				.HasForeignKey(x => x.ProjectId).OnDelete(DeleteBehavior.Restrict);
+
+			modelBuilder.Entity<StockTransaction>()
+				.HasOne(x => x.Purchase).WithMany()
+				.HasForeignKey(x => x.PurchaseId).OnDelete(DeleteBehavior.Restrict);
+
+			modelBuilder.Entity<Item>()
+				.HasOne(x => x.Group).WithMany(x => x.Items)
+				.HasForeignKey(x => x.ItemGroupId).OnDelete(DeleteBehavior.Restrict);
+
+			modelBuilder.Entity<Item>().HasIndex(x => x.Code).IsUnique();
+			modelBuilder.Entity<ItemGroup>().HasIndex(x => x.Code).IsUnique();
+
+			modelBuilder.Entity<QuoteItem>()
+				.HasOne(x => x.Item).WithMany()
+				.HasForeignKey(x => x.ItemId).OnDelete(DeleteBehavior.SetNull);
+
+			modelBuilder.Entity<Purchase>()
+				.HasOne(x => x.Suppliers).WithMany(x => x.Purchases)
+				.HasForeignKey(x => x.SupplierId).OnDelete(DeleteBehavior.Restrict);
+
+			modelBuilder.Entity<Purchase>()
+				.HasOne(x => x.Warehouses).WithMany()
+				.HasForeignKey(x => x.WarehouseId).OnDelete(DeleteBehavior.Restrict);
+
+			modelBuilder.Entity<Purchase>()
+				.HasOne(x => x.Projects).WithMany()
+				.HasForeignKey(x => x.ProjectId).OnDelete(DeleteBehavior.Restrict);
+
+			modelBuilder.Entity<SupplierPayment>()
+				.HasOne(x => x.supplier).WithMany(x => x.Payments)
+				.HasForeignKey(x => x.SupplierId).OnDelete(DeleteBehavior.Restrict);
+
+			modelBuilder.Entity<SupplierPayment>()
+				.HasOne(x => x.Purchase).WithMany(x => x.Payments)
+				.HasForeignKey(x => x.PurchaseId).OnDelete(DeleteBehavior.Restrict);
 		}
 	}
 }

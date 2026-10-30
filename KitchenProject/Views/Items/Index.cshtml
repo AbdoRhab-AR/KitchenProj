@@ -1,0 +1,196 @@
+@model IEnumerable<KitchenProject.Models.Entities.Item>
+@{
+    ViewData["Title"] = "الأصناف";
+    Layout = "_DashboardLayout";
+    var balances = (Dictionary<Guid, decimal>)ViewBag.Balances;
+    ItemType? type = ViewBag.Type;
+}
+
+<!-- Page Header & Title Bar -->
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+    <div>
+        <h2 class="page-header-title mb-1">
+            <i class="fa-solid fa-boxes-stacked text-primary me-2"></i> الأصناف
+        </h2>
+        <p class="text-muted mb-0">الخامات التي تدخل المخزن، والأصناف الجاهزة التي تُباع في عروض الأسعار</p>
+    </div>
+    <div class="d-flex flex-wrap gap-2">
+        <a asp-controller="ItemGroups" asp-action="Index" class="btn btn-outline-secondary fw-bold rounded-3">
+            <i class="fa-solid fa-layer-group me-1"></i> البنود A / B / C
+        </a>
+        <a asp-action="Create" asp-route-type="Raw" class="btn btn-outline-primary fw-bold rounded-3">
+            <i class="fa-solid fa-cubes me-1"></i> خام جديد
+        </a>
+        <a asp-action="Create" asp-route-type="Finished" class="btn btn-primary-custom d-inline-flex align-items-center gap-2">
+            <i class="fa-solid fa-plus"></i>
+            <span>صنف جاهز</span>
+        </a>
+    </div>
+</div>
+
+<!-- KPI Stats Cards -->
+<div class="row g-3 mb-4">
+    <div class="col-12 col-sm-4">
+        <a asp-action="Index" asp-route-type="Raw" class="text-decoration-none">
+            <div class="custom-card p-3 d-flex align-items-center justify-content-between">
+                <div>
+                    <span class="text-muted fw-bold d-block mb-1" style="font-size:0.85rem;">أصناف خام</span>
+                    <h3 class="fw-extrabold mb-0 text-warning">@ViewBag.RawCount</h3>
+                </div>
+                <div class="bg-warning-subtle text-warning rounded-3 p-3"><i class="fa-solid fa-cubes fs-3"></i></div>
+            </div>
+        </a>
+    </div>
+    <div class="col-12 col-sm-4">
+        <a asp-action="Index" asp-route-type="Finished" class="text-decoration-none">
+            <div class="custom-card p-3 d-flex align-items-center justify-content-between">
+                <div>
+                    <span class="text-muted fw-bold d-block mb-1" style="font-size:0.85rem;">أصناف جاهزة</span>
+                    <h3 class="fw-extrabold mb-0 text-success">@ViewBag.FinishedCount</h3>
+                </div>
+                <div class="bg-success-subtle text-success rounded-3 p-3"><i class="fa-solid fa-couch fs-3"></i></div>
+            </div>
+        </a>
+    </div>
+    <div class="col-12 col-sm-4">
+        <a asp-action="Index" asp-route-lowStock="true" class="text-decoration-none">
+            <div class="custom-card p-3 d-flex align-items-center justify-content-between">
+                <div>
+                    <span class="text-muted fw-bold d-block mb-1" style="font-size:0.85rem;">تحت حد الطلب</span>
+                    <h3 class="fw-extrabold mb-0 text-danger">@ViewBag.LowCount</h3>
+                </div>
+                <div class="bg-danger-subtle text-danger rounded-3 p-3"><i class="fa-solid fa-triangle-exclamation fs-3"></i></div>
+            </div>
+        </a>
+    </div>
+</div>
+
+<!-- Search & Filter Card -->
+<div class="custom-card mb-4 p-3">
+    <form method="get" asp-action="Index" class="row g-3 align-items-center">
+        <div class="col-12 col-md-4">
+            <div class="input-group">
+                <span class="input-group-text bg-white border-end-0"><i class="fa-solid fa-magnifying-glass text-muted"></i></span>
+                <input type="text" name="searchString" class="form-control border-start-0 ps-0" placeholder="بحث بالاسم أو الكود..." value="@ViewBag.SearchString">
+            </div>
+        </div>
+        <div class="col-6 col-md-2">
+            <select name="type" class="form-select" asp-items="ViewBag.TypeList">
+                <option value="">كل الأنواع</option>
+            </select>
+        </div>
+        <div class="col-6 col-md-3">
+            <select name="groupId" class="form-select" asp-items="ViewBag.Groups">
+                <option value="">كل البنود</option>
+            </select>
+        </div>
+        <div class="col-12 col-md-3 d-flex gap-2">
+            <button type="submit" class="btn btn-primary fw-bold px-4 rounded-3 flex-grow-1">
+                <i class="fa-solid fa-search me-1"></i> بحث
+            </button>
+            @if (!string.IsNullOrEmpty(ViewBag.SearchString) || type != null || ViewBag.GroupId != null || ViewBag.LowStock)
+            {
+                <a asp-action="Index" class="btn btn-light border fw-bold text-muted" title="إلغاء الفلترة"><i class="fa-solid fa-xmark"></i></a>
+            }
+        </div>
+    </form>
+</div>
+
+<!-- Items Table Card -->
+<div class="custom-card">
+    <div class="card-header-custom">
+        <h5 class="fw-bold mb-0 text-dark">
+            <i class="fa-solid fa-list text-secondary me-2"></i> قائمة الأصناف
+            @if (ViewBag.LowStock)
+            {
+                <span class="badge bg-danger-subtle text-danger ms-1">تحت حد الطلب</span>
+            }
+        </h5>
+        <span class="badge bg-light text-dark border">عدد النتائج: @ViewBag.TotalCount</span>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="bg-light text-muted" style="font-size:0.85rem;">
+                <tr>
+                    <th class="ps-4">الكود</th>
+                    <th>الصنف</th>
+                    <th>النوع / البند</th>
+                    <th>الوحدة</th>
+                    <th>السعر</th>
+                    <th>الرصيد</th>
+                    <th class="text-center pe-4">الإجراءات</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.Any())
+                {
+                    foreach (var item in Model)
+                    {
+                        var balance = balances.GetValueOrDefault(item.Id);
+                        var low = item.Type == ItemType.Raw && item.MinQuantity > 0 && balance <= item.MinQuantity;
+                        <tr class="@(item.IsActive ? "" : "opacity-50")">
+                            <td class="ps-4"><span class="badge bg-light text-dark border font-monospace">@item.Code</span></td>
+                            <td>
+                                <a asp-action="Details" asp-route-id="@item.Id" class="fw-bold text-dark text-decoration-none">@item.Name</a>
+                                @if (!item.IsActive)
+                                {
+                                    <small class="d-block text-muted">موقوف</small>
+                                }
+                            </td>
+                            <td>
+                                <partial name="_TypeBadge" model="item.Type" />
+                                @if (item.Group != null)
+                                {
+                                    <span class="badge bg-primary-subtle text-primary ms-1" title="@item.Group.Name">@item.Group.Code - @item.Group.Name</span>
+                                }
+                            </td>
+                            <td class="small text-muted">@item.Unit</td>
+                            <td class="fw-bold">
+                                @if (item.Type == ItemType.Raw)
+                                {
+                                    @item.PurchasePrice.ToString("N2") <small class="d-block text-muted fw-normal" style="font-size:0.72rem;">آخر سعر شراء</small>
+                                }
+                                else
+                                {
+                                    @item.SalePrice.ToString("N2") <small class="d-block text-muted fw-normal" style="font-size:0.72rem;">سعر البيع</small>
+                                }
+                            </td>
+                            <td>
+                                @if (item.Type == ItemType.Raw)
+                                {
+                                    <span class="fw-bold @(low ? "text-danger" : balance > 0 ? "text-success" : "text-muted")">@balance.ToString("0.##")</span>
+                                    @if (low)
+                                    {
+                                        <i class="fa-solid fa-triangle-exclamation text-danger ms-1" title="الرصيد عند أو تحت حد الطلب (@item.MinQuantity.ToString("0.##"))"></i>
+                                    }
+                                }
+                                else
+                                {
+                                    <span class="text-muted small">—</span>
+                                }
+                            </td>
+                            <td class="text-center pe-4">
+                                <div class="btn-group btn-group-sm" role="group">
+                                    <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-light border text-info" title="عرض التفاصيل"><i class="fa-solid fa-eye"></i></a>
+                                    <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-light border text-primary" title="تعديل"><i class="fa-solid fa-pen-to-square"></i></a>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="7" class="text-center py-5 text-muted">
+                            <i class="fa-solid fa-boxes-stacked display-4 mb-3 d-block text-secondary opacity-50"></i>
+                            <h5 class="fw-bold mb-1">لا توجد أصناف</h5>
+                            <p class="text-muted small mb-0">أضف الخامات التي تشتريها والأصناف الجاهزة التي تبيعها</p>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <partial name="_Pager" model='new Dictionary<string, string?> { ["searchString"] = ViewBag.SearchString, ["type"] = type?.ToString(), ["groupId"] = ViewBag.GroupId?.ToString(), ["lowStock"] = ViewBag.LowStock ? "true" : null }' />
+</div>

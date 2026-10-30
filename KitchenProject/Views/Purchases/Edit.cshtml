@@ -1,0 +1,43 @@
+@model KitchenProject.Models.Entities.Purchase
+@{
+    ViewData["Title"] = "تعديل فاتورة الشراء " + Model.PurchaseNo;
+    Layout = "_DashboardLayout";
+}
+
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+    <div>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-1 small text-muted">
+                <li class="breadcrumb-item"><a asp-action="Index" class="text-decoration-none">المشتريات</a></li>
+                <li class="breadcrumb-item"><a asp-action="Details" asp-route-id="@Model.Id" class="text-decoration-none">@Model.PurchaseNo</a></li>
+                <li class="breadcrumb-item active" aria-current="page">تعديل</li>
+            </ol>
+        </nav>
+        <h2 class="page-header-title mb-0">
+            <i class="fa-solid fa-pen-to-square text-primary me-2"></i> تعديل مسودة الشراء
+        </h2>
+    </div>
+    <div>
+        <a asp-action="Details" asp-route-id="@Model.Id" class="btn btn-outline-secondary fw-bold rounded-3">
+            <i class="fa-solid fa-arrow-right me-1"></i> رجوع
+        </a>
+    </div>
+</div>
+
+<div class="custom-card p-4 p-md-5">
+    <form asp-action="Edit" asp-route-id="@Model.Id" method="post">
+        @Html.AntiForgeryToken()
+        <input type="hidden" asp-for="Id" />
+        <partial name="_PurchaseForm" model="Model" />
+        <hr class="my-4 text-muted opacity-25">
+        <div class="d-flex flex-wrap align-items-center justify-content-end gap-3">
+            <a asp-action="Details" asp-route-id="@Model.Id" class="btn btn-light border fw-bold px-4 rounded-3">إلغاء</a>
+            <button type="submit" class="btn btn-outline-primary px-4 py-2 fw-bold">
+                <i class="fa-solid fa-floppy-disk me-1"></i> حفظ المسودة
+            </button>
+            <button type="submit" name="receive" value="true" class="btn btn-primary-custom px-5 py-2 fw-bold">
+                <i class="fa-solid fa-truck-ramp-box me-1"></i> حفظ واستلام بالمخزن
+            </button>
+        </div>
+    </form>
+</div>

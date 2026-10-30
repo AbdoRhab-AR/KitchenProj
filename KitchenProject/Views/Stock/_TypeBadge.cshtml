@@ -1,0 +1,14 @@
+@model StockTransactionType
+@{
+    var (css, icon) = Model switch
+    {
+        StockTransactionType.Purchase    => ("bg-success-subtle text-success", "fa-truck-ramp-box"),
+        StockTransactionType.Issue       => ("bg-danger-subtle text-danger", "fa-dolly"),
+        StockTransactionType.Return      => ("bg-info-subtle text-info-emphasis", "fa-rotate-left"),
+        StockTransactionType.Adjustment  => ("bg-warning-subtle text-warning-emphasis", "fa-scale-balanced"),
+        _                                => ("bg-light text-dark", "fa-right-left")
+    };
+}
+<span class="badge @css rounded-pill px-2 py-1 fw-bold">
+    <i class="fa-solid @icon me-1"></i>@Model.GetDisplayName()
+</span>

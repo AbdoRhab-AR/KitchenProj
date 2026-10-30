@@ -15,14 +15,20 @@ namespace KitchenProject.Controllers
 	{
 		private readonly IUnitOfWork<Project> _project;
 		private readonly IUnitOfWork<Customer> _customer;
+		private readonly IUnitOfWork<Purchase> _purchase;
+		private readonly IUnitOfWork<StockTransaction> _tx;
 		private readonly LookupService _lookup;
 
 		public ProjectsController(IUnitOfWork<Project> project,
 								  IUnitOfWork<Customer> customer,
+								  IUnitOfWork<Purchase> purchase,
+								  IUnitOfWork<StockTransaction> tx,
 								  LookupService lookup)
 		{
 			_project = project;
 			_customer = customer;
+			_purchase = purchase;
+			_tx = tx;
 			_lookup = lookup;
 		}
 
@@ -101,6 +107,17 @@ namespace KitchenProject.Controllers
 			{
 				return NotFound();
 			}
+
+			// المواد المصروفة للمشروع (صرف - مرتجع) ومشترياته المباشرة
+			ViewBag.Materials = await _tx.Entity.Include(t => t.Items)
+				.Where(t => t.ProjectId == project.Id)
+				.OrderByDescending(t => t.TransactionDate).ThenByDescending(t => t.Created)
+				.ToListAsync();
+
+			ViewBag.Purchases = await _purchase.Entity.Include(p => p.Suppliers)
+				.Where(p => p.ProjectId == project.Id && p.Status != PurchaseStatuses.Cancelled)
+				.OrderByDescending(p => p.PurchaseDate)
+				.ToListAsync();
 
 			return View(project);
 		}
@@ -289,6 +306,7 @@ namespace KitchenProject.Controllers
 				.Where(p => p.Id == id)
 				.AnyAsync(p => p.Contracts.Any() || p.CustomerPayments.Any()
 							|| p.StockTransactions.Any() || p.Expenses.Any() || p.Quotes.Any());
+			hasLinkedRecords = hasLinkedRecords || await _purchase.Entity.GetAll().AnyAsync(p => p.ProjectId == id);
 
 			if (hasLinkedRecords)
 			{

@@ -1,0 +1,186 @@
+@model StockIssueViewModel
+@{
+    var isReturn = Model.Type == StockTransactionType.Return;
+    ViewData["Title"] = isReturn ? "مرتجع من مشروع" : "صرف خامات لمشروع";
+    Layout = "_DashboardLayout";
+    var options = (List<ItemOption>)ViewBag.ItemOptions;
+    var balances = (Dictionary<Guid, decimal>)ViewBag.Balances;
+    var inv = System.Globalization.CultureInfo.InvariantCulture;
+
+    string ItemSelect(Guid selected) =>
+        "<option value=\"\">-- اختر الخامة --</option>" + string.Concat(options.Select(o =>
+            $"<option value=\"{o.Id}\" data-unit=\"{System.Net.WebUtility.HtmlEncode(o.Unit)}\" data-balance=\"{balances.GetValueOrDefault(o.Id).ToString("0.##", inv)}\"{(o.Id == selected ? " selected" : "")}>{System.Net.WebUtility.HtmlEncode(o.Code + " - " + o.Name)}</option>"));
+
+    if (Model.Lines.Count == 0)
+    {
+        Model.Lines.Add(new StockIssueLine());
+    }
+}
+
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+    <div>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-1 small text-muted">
+                <li class="breadcrumb-item"><a asp-action="Index" class="text-decoration-none">المخزن</a></li>
+                <li class="breadcrumb-item active" aria-current="page">@ViewData["Title"]</li>
+            </ol>
+        </nav>
+        <h2 class="page-header-title mb-0">
+            <i class="fa-solid @(isReturn ? "fa-rotate-left" : "fa-dolly") text-primary me-2"></i> @ViewData["Title"]
+        </h2>
+    </div>
+    <div class="d-flex gap-2">
+        @if (isReturn)
+        {
+            <a asp-action="Issue" asp-route-projectId="@Model.ProjectId" class="btn btn-outline-danger fw-bold rounded-3"><i class="fa-solid fa-dolly me-1"></i> صرف بدلاً من ذلك</a>
+        }
+        else
+        {
+            <a asp-action="Issue" asp-route-projectId="@Model.ProjectId" asp-route-type="Return" class="btn btn-outline-info fw-bold rounded-3"><i class="fa-solid fa-rotate-left me-1"></i> مرتجع من مشروع</a>
+        }
+        <a asp-action="Index" class="btn btn-outline-secondary fw-bold rounded-3"><i class="fa-solid fa-arrow-right me-1"></i> المخزن</a>
+    </div>
+</div>
+
+<div class="custom-card p-4 p-md-5">
+    <form asp-action="Issue" method="post">
+        @Html.AntiForgeryToken()
+        <input type="hidden" asp-for="Type" />
+
+        <div asp-validation-summary="All" class="alert alert-danger rounded-3 mb-4" role="alert"></div>
+
+        <div class="row g-4 mb-4">
+            <div class="col-12 col-md-5">
+                <label asp-for="ProjectId" class="form-label fw-bold">المشروع <span class="text-danger">*</span></label>
+                <select asp-for="ProjectId" asp-items="ViewBag.Projects" class="form-select">
+                    <option value="">-- اختر المشروع --</option>
+                </select>
+            </div>
+            <div class="col-6 col-md-3">
+                <label asp-for="WarehouseId" class="form-label fw-bold">المخزن</label>
+                <select asp-for="WarehouseId" asp-items="ViewBag.Warehouses" class="form-select"></select>
+            </div>
+            <div class="col-6 col-md-2">
+                <label asp-for="Date" class="form-label fw-bold">التاريخ</label>
+                <input asp-for="Date" type="date" asp-format="{0:yyyy-MM-dd}" class="form-control" />
+            </div>
+        </div>
+
+        <h6 class="fw-bold text-muted mb-3"><i class="fa-solid fa-cubes me-2"></i> @(isReturn ? "الخامات المرتجعة" : "الخامات المصروفة")</h6>
+        <div class="table-responsive mb-2">
+            <table class="table align-middle mb-0" id="linesTable">
+                <thead class="bg-light text-muted" style="font-size:0.85rem;">
+                    <tr>
+                        <th style="width:40px;">#</th>
+                        <th>الخامة</th>
+                        <th style="width:150px;">المتوفر</th>
+                        <th style="width:140px;">الكمية</th>
+                        <th style="width:50px;"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @for (int i = 0; i < Model.Lines.Count; i++)
+                    {
+                        <tr class="line-row">
+                            <td class="row-no text-muted fw-bold">@(i + 1)</td>
+                            <td><select name="Lines[@i].ItemId" class="form-select form-select-sm item-select">@Html.Raw(ItemSelect(Model.Lines[i].ItemId))</select></td>
+                            <td class="balance small fw-bold"></td>
+                            <td><input name="Lines[@i].Quantity" value="@Model.Lines[i].Quantity.ToString("0.##", inv)" type="number" step="0.01" min="0.01" class="form-control form-control-sm qty" /></td>
+                            <td><button type="button" class="btn btn-sm btn-light border text-danger remove-row" title="حذف السطر"><i class="fa-solid fa-xmark"></i></button></td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+        <button type="button" class="btn btn-sm btn-outline-primary fw-bold mb-4" id="addRow">
+            <i class="fa-solid fa-plus me-1"></i> إضافة سطر
+        </button>
+
+        <div class="mb-2">
+            <label asp-for="Notes" class="form-label fw-bold">ملاحظات</label>
+            <input asp-for="Notes" class="form-control" placeholder="@(isReturn ? "سبب الإرجاع" : "اسم المستلم / مرحلة التنفيذ")" />
+        </div>
+
+        <p class="small text-muted mb-0">
+            <i class="fa-solid fa-circle-info me-1"></i>
+            تُحسب تكلفة الخامة بمتوسط سعر شرائها وتُسجل على المشروع.
+            @if (!isReturn)
+            {
+                <span>صرف المواد ينقل المشروع إلى مرحلة التنفيذ.</span>
+            }
+        </p>
+
+        <hr class="my-4 text-muted opacity-25">
+        <div class="d-flex align-items-center justify-content-end gap-3">
+            <a asp-action="Index" class="btn btn-light border fw-bold px-4 rounded-3">إلغاء</a>
+            <button type="submit" class="btn btn-primary-custom px-5 py-2 fw-bold">
+                <i class="fa-solid fa-floppy-disk me-1"></i> @(isReturn ? "تسجيل المرتجع" : "تسجيل الصرف")
+            </button>
+        </div>
+    </form>
+</div>
+
+<template id="rowTemplate">
+    <tr class="line-row">
+        <td class="row-no text-muted fw-bold"></td>
+        <td><select data-field="ItemId" class="form-select form-select-sm item-select">@Html.Raw(ItemSelect(Guid.Empty))</select></td>
+        <td class="balance small fw-bold"></td>
+        <td><input data-field="Quantity" value="1" type="number" step="0.01" min="0.01" class="form-control form-control-sm qty" /></td>
+        <td><button type="button" class="btn btn-sm btn-light border text-danger remove-row" title="حذف السطر"><i class="fa-solid fa-xmark"></i></button></td>
+    </tr>
+</template>
+
+<script>
+    (function () {
+        const tbody = document.querySelector('#linesTable tbody');
+        const isReturn = @(isReturn ? "true" : "false");
+
+        function renumber() {
+            tbody.querySelectorAll('tr.line-row').forEach((tr, i) => {
+                tr.querySelector('.row-no').textContent = i + 1;
+                tr.querySelectorAll('input, select').forEach(input => {
+                    const field = input.dataset.field || input.name.replace(/^Lines\[\d+\]\./, '');
+                    input.dataset.field = field;
+                    input.name = `Lines[${i}].${field}`;
+                });
+            });
+        }
+
+        // يعرض رصيد المخزن ويلوّن الكمية إذا تجاوزته
+        function refresh(tr) {
+            const opt = tr.querySelector('.item-select').selectedOptions[0];
+            const cell = tr.querySelector('.balance');
+            const qty = parseFloat(tr.querySelector('.qty').value) || 0;
+            if (!opt || !opt.value) { cell.textContent = ''; return; }
+            const balance = parseFloat(opt.dataset.balance) || 0;
+            cell.textContent = `${balance} ${opt.dataset.unit}`;
+            const over = !isReturn && qty > balance;
+            cell.className = 'balance small fw-bold ' + (over ? 'text-danger' : 'text-success');
+            tr.querySelector('.qty').classList.toggle('is-invalid', over);
+        }
+
+        document.getElementById('addRow').addEventListener('click', () => {
+            tbody.appendChild(document.getElementById('rowTemplate').content.cloneNode(true));
+            renumber();
+            tbody.lastElementChild.querySelector('select').focus();
+        });
+
+        tbody.addEventListener('click', e => {
+            const btn = e.target.closest('.remove-row');
+            if (!btn) return;
+            if (tbody.querySelectorAll('tr.line-row').length > 1) {
+                btn.closest('tr').remove();
+            } else {
+                btn.closest('tr').querySelector('select').value = '';
+                refresh(btn.closest('tr'));
+            }
+            renumber();
+        });
+
+        tbody.addEventListener('change', e => { if (e.target.matches('.item-select')) refresh(e.target.closest('tr')); });
+        tbody.addEventListener('input', e => { if (e.target.matches('.qty')) refresh(e.target.closest('tr')); });
+
+        tbody.querySelectorAll('tr.line-row').forEach(refresh);
+        renumber();
+    })();
+</script>

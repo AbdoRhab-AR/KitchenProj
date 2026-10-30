@@ -1,0 +1,136 @@
+@model KitchenProject.Models.Entities.Supplier
+@{
+    ViewData["Title"] = "المورد - " + Model.Name;
+    Layout = "_DashboardLayout";
+    var purchases = (List<Purchase>)ViewBag.Purchases;
+    var payments = (List<SupplierPayment>)ViewBag.Payments;
+    var received = purchases.Where(p => p.Status == PurchaseStatuses.Received).ToList();
+    var totalPurchases = received.Sum(p => p.Total);
+    var totalPaid = payments.Sum(p => p.Amount);
+    var due = received.Sum(p => p.RemainingAmount);
+}
+
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+    <div>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-1 small text-muted">
+                <li class="breadcrumb-item"><a asp-action="Index" class="text-decoration-none">الموردين</a></li>
+                <li class="breadcrumb-item active" aria-current="page">@Model.SupplierNo</li>
+            </ol>
+        </nav>
+        <h2 class="page-header-title mb-0 d-flex flex-wrap align-items-center gap-2">
+            <i class="fa-solid fa-truck-field text-primary"></i>
+            <span>@Model.Name</span>
+            <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-1 rounded-pill" style="font-size:0.8rem;">@Model.SupplierNo</span>
+            @if (!Model.IsActive)
+            {
+                <span class="badge bg-secondary" style="font-size:0.8rem;">موقوف</span>
+            }
+        </h2>
+    </div>
+    <div class="d-flex flex-wrap gap-2">
+        <a asp-controller="Purchases" asp-action="Create" asp-route-supplierId="@Model.Id" class="btn btn-success fw-bold rounded-3">
+            <i class="fa-solid fa-cart-plus me-1"></i> فاتورة شراء
+        </a>
+        <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-primary-custom d-inline-flex align-items-center gap-2">
+            <i class="fa-solid fa-pen-to-square"></i> تعديل
+        </a>
+        <form asp-action="Delete" asp-route-id="@Model.Id" method="post" class="d-inline" onsubmit="return confirm('حذف المورد @Model.Name؟')">
+            @Html.AntiForgeryToken()
+            <button type="submit" class="btn btn-outline-danger fw-bold rounded-3" title="حذف"><i class="fa-solid fa-trash-can"></i></button>
+        </form>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-12 col-lg-4">
+        <div class="custom-card p-4 mb-4">
+            <h6 class="fw-bold mb-3"><i class="fa-solid fa-coins text-warning me-2"></i> كشف الحساب</h6>
+            <div class="d-flex justify-content-between mb-2"><span class="text-muted fw-bold">المشتريات المستلمة</span><span class="fw-bold">@totalPurchases.ToString("N2")</span></div>
+            <div class="d-flex justify-content-between mb-2"><span class="text-muted fw-bold">المدفوع</span><span class="fw-bold text-success">@totalPaid.ToString("N2")</span></div>
+            <div class="d-flex justify-content-between"><span class="text-muted fw-bold">المستحق للمورد</span><span class="fw-bold fs-5 @(due > 0 ? "text-danger" : "text-success")">@due.ToString("N2")</span></div>
+        </div>
+        <div class="custom-card p-4">
+            <h6 class="fw-bold mb-3"><i class="fa-solid fa-circle-info text-primary me-2"></i> البيانات</h6>
+            <div class="d-flex flex-column gap-2 small">
+                <span>الهاتف: <strong dir="ltr">@(Model.Phone ?? "-")</strong></span>
+                <span>العنوان: <strong>@(Model.Address ?? "-")</strong></span>
+                <span>شروط الدفع: <strong>@(Model.PaymentTerms ?? "-")</strong></span>
+            </div>
+            @if (!string.IsNullOrEmpty(Model.Notes))
+            {
+                <p class="bg-light p-3 rounded-3 text-secondary small mb-0 mt-3" style="white-space:pre-line;">@Model.Notes</p>
+            }
+        </div>
+    </div>
+
+    <div class="col-12 col-lg-8">
+        <div class="custom-card mb-4">
+            <div class="card-header-custom">
+                <h5 class="fw-bold mb-0 text-dark"><i class="fa-solid fa-cart-shopping text-success me-2"></i> فواتير الشراء <span class="badge bg-light text-dark border ms-1">@purchases.Count</span></h5>
+            </div>
+            @if (purchases.Any())
+            {
+                <div class="table-responsive">
+                    <table class="table table-sm align-middle mb-0">
+                        <thead class="bg-light text-muted small"><tr><th class="ps-4">الرقم</th><th>التاريخ</th><th>المشروع</th><th>الإجمالي</th><th>المتبقي</th><th class="pe-4">الحالة</th></tr></thead>
+                        <tbody>
+                            @foreach (var p in purchases)
+                            {
+                                <tr>
+                                    <td class="ps-4"><a asp-controller="Purchases" asp-action="Details" asp-route-id="@p.Id" class="fw-bold">@p.PurchaseNo</a>
+                                        @if (!string.IsNullOrEmpty(p.InvoiceNo)) { <small class="d-block text-muted">فاتورة @p.InvoiceNo</small> }
+                                    </td>
+                                    <td class="small">@p.PurchaseDate.ToString("yyyy/MM/dd")</td>
+                                    <td class="small">@p.Projects?.ProjectNo</td>
+                                    <td class="fw-bold">@p.Total.ToString("N2")</td>
+                                    <td class="fw-bold @(p.RemainingAmount > 0 && p.Status == PurchaseStatuses.Received ? "text-danger" : "text-muted")">@p.RemainingAmount.ToString("N2")</td>
+                                    <td class="pe-4"><partial name="~/Views/Purchases/_StatusBadge.cshtml" model="p.Status" /></td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            else
+            {
+                <p class="text-muted small text-center py-3 mb-0">لا توجد فواتير شراء بعد</p>
+            }
+        </div>
+
+        <div class="custom-card">
+            <div class="card-header-custom">
+                <h5 class="fw-bold mb-0 text-dark"><i class="fa-solid fa-money-bill-transfer text-primary me-2"></i> المدفوعات <span class="badge bg-light text-dark border ms-1">@payments.Count</span></h5>
+            </div>
+            @if (payments.Any())
+            {
+                <div class="table-responsive">
+                    <table class="table table-sm align-middle mb-0">
+                        <thead class="bg-light text-muted small"><tr><th class="ps-4">التاريخ</th><th>الفاتورة</th><th>الطريقة</th><th>المبلغ</th><th class="pe-4">ملاحظات</th></tr></thead>
+                        <tbody>
+                            @foreach (var p in payments)
+                            {
+                                <tr>
+                                    <td class="ps-4 small">@p.PaymentDate.ToString("yyyy/MM/dd")</td>
+                                    <td class="small">
+                                        @if (p.Purchase != null)
+                                        {
+                                            <a asp-controller="Purchases" asp-action="Details" asp-route-id="@p.PurchaseId">@p.Purchase.PurchaseNo</a>
+                                        }
+                                    </td>
+                                    <td class="small">@p.PaymentMethod.GetDisplayName()</td>
+                                    <td class="fw-bold text-success">@p.Amount.ToString("N2")</td>
+                                    <td class="pe-4 small text-muted">@p.Notes</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            else
+            {
+                <p class="text-muted small text-center py-3 mb-0">لا توجد مدفوعات بعد</p>
+            }
+        </div>
+    </div>
+</div>

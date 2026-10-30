@@ -331,15 +331,27 @@
             <div class="sidebar-heading">المخازن والمشتريات</div>
             <ul class="nav nav-sidebar flex-column">
                 <li class="nav-item">
-                    <a class="nav-link @(ViewBag.ActivePage == "Warehouses" ? "active" : "")" href="#">
-                        <i class="fa-solid fa-boxes-stacked"></i>
-                        <span>المخازن والخامات</span>
+                    <a class="nav-link @(ViewBag.ActivePage == "Stock" ? "active" : "")" href="@Url.Action("Index", "Stock")">
+                        <i class="fa-solid fa-warehouse"></i>
+                        <span>المخزن والأرصدة</span>
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link @(ViewBag.ActivePage == "Purchases" ? "active" : "")" href="#">
+                    <a class="nav-link @(ViewBag.ActivePage == "Items" ? "active" : "")" href="@Url.Action("Index", "Items")">
+                        <i class="fa-solid fa-boxes-stacked"></i>
+                        <span>الأصناف والبنود</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link @(ViewBag.ActivePage == "Purchases" ? "active" : "")" href="@Url.Action("Index", "Purchases")">
                         <i class="fa-solid fa-cart-shopping"></i>
-                        <span>المشتريات والموردين</span>
+                        <span>المشتريات</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link @(ViewBag.ActivePage == "Suppliers" ? "active" : "")" href="@Url.Action("Index", "Suppliers")">
+                        <i class="fa-solid fa-truck-field"></i>
+                        <span>الموردين</span>
                     </a>
                 </li>
             </ul>
@@ -347,7 +359,7 @@
             <div class="sidebar-heading">المالية والحسابات</div>
             <ul class="nav nav-sidebar flex-column">
                 <li class="nav-item">
-                    <a class="nav-link @(ViewBag.ActivePage == "Payments" ? "active" : "")" href="#">
+                    <a class="nav-link @(ViewBag.ActivePage == "Payments" ? "active" : "")" href="@Url.Action("Index", "Payments")">
                         <i class="fa-solid fa-wallet"></i>
                         <span>تحصيلات العملاء</span>
                     </a>
@@ -403,6 +415,10 @@
                     <li><a class="dropdown-item rounded-3 py-2" href="@Url.Action("Create", "Customers")"><i class="fa-solid fa-user-plus text-primary me-2"></i> عميل جديد</a></li>
                     <li><a class="dropdown-item rounded-3 py-2" href="@Url.Action("Create", "Projects")"><i class="fa-solid fa-folder-plus text-success me-2"></i> مشروع جديد</a></li>
                     <li><a class="dropdown-item rounded-3 py-2" href="@Url.Action("Create", "SiteVisits")"><i class="fa-solid fa-ruler-vertical text-warning me-2"></i> موعد معاينة</a></li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li><a class="dropdown-item rounded-3 py-2" href="@Url.Action("Create", "Payments")"><i class="fa-solid fa-hand-holding-dollar text-success me-2"></i> إيصال قبض</a></li>
+                    <li><a class="dropdown-item rounded-3 py-2" href="@Url.Action("Create", "Purchases")"><i class="fa-solid fa-cart-plus text-primary me-2"></i> فاتورة شراء</a></li>
+                    <li><a class="dropdown-item rounded-3 py-2" href="@Url.Action("Issue", "Stock")"><i class="fa-solid fa-dolly text-danger me-2"></i> صرف خامات</a></li>
                 </ul>
             </div>
 

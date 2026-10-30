@@ -14,6 +14,7 @@ builder.Services.AddControllersWithViews();
 
 builder.Services.AddScoped(typeof(IUnitOfWork<>), typeof(UnitOfWork<>));
 builder.Services.AddScoped<LookupService>();
+builder.Services.AddScoped<StockService>();
 
 //-------------------------------------------------
 builder.Services.AddDbContext<ApplicationDbContext>

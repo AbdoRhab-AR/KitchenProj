@@ -49,6 +49,21 @@ namespace KitchenProject.Models
 
 			 });
 
+			//--------------------Inventory-----------------------------
+			// المخزن الرئيسي + بنود الأصناف الجاهزة بأسماء مؤقتة تُعدل من شاشة البنود
+			modelBuilder.Entity<Warehouse>().HasData(
+				new Warehouse
+				{
+					Id = new Guid("d3f1c2a4-5b6e-4f70-8a91-0b2c3d4e5f61"),
+					Name = "المخزن الرئيسي",
+					Created = SeedDate
+				});
+
+			modelBuilder.Entity<ItemGroup>().HasData(
+				new ItemGroup { Id = new Guid("a1000000-0000-4000-8000-00000000000a"), Code = "A", Name = "البند A", SortOrder = 1, Created = SeedDate },
+				new ItemGroup { Id = new Guid("b1000000-0000-4000-8000-00000000000b"), Code = "B", Name = "البند B", SortOrder = 2, Created = SeedDate },
+				new ItemGroup { Id = new Guid("c1000000-0000-4000-8000-00000000000c"), Code = "C", Name = "البند C", SortOrder = 3, Created = SeedDate });
+
 			//--------------------Roles-----------------------------
 			var progRoleId = "109400b7-ee44-4b6c-bef8-0cc59de1543e";
 

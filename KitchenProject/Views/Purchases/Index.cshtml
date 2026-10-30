@@ -1,0 +1,175 @@
+@model IEnumerable<KitchenProject.Models.Entities.Purchase>
+@{
+    ViewData["Title"] = "المشتريات";
+    Layout = "_DashboardLayout";
+    string? status = ViewBag.Status;
+}
+
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+    <div>
+        <h2 class="page-header-title mb-1">
+            <i class="fa-solid fa-cart-shopping text-primary me-2"></i> المشتريات
+        </h2>
+        <p class="text-muted mb-0">
+            @if (ViewBag.ProjectName != null)
+            {
+                <span>مشتريات المشروع: <strong>@ViewBag.ProjectName</strong></span>
+            }
+            else
+            {
+                <span>فواتير شراء الخامات من الموردين واستلامها بالمخزن</span>
+            }
+        </p>
+    </div>
+    <div class="d-flex gap-2">
+        <a asp-controller="Suppliers" asp-action="Index" class="btn btn-outline-secondary fw-bold rounded-3">
+            <i class="fa-solid fa-truck-field me-1"></i> الموردين
+        </a>
+        <a asp-action="Create" asp-route-projectId="@ViewBag.ProjectId" asp-route-supplierId="@ViewBag.SupplierId" class="btn btn-primary-custom d-inline-flex align-items-center gap-2">
+            <i class="fa-solid fa-plus"></i>
+            <span>فاتورة شراء</span>
+        </a>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-12 col-sm-4">
+        <a asp-action="Index" asp-route-status="@PurchaseStatuses.Draft" class="text-decoration-none">
+            <div class="custom-card p-3 d-flex align-items-center justify-content-between">
+                <div>
+                    <span class="text-muted fw-bold d-block mb-1" style="font-size:0.85rem;">مسودات لم تُستلم</span>
+                    <h3 class="fw-extrabold mb-0 text-secondary">@ViewBag.DraftCount</h3>
+                </div>
+                <div class="bg-secondary-subtle text-secondary rounded-3 p-3"><i class="fa-solid fa-file-pen fs-3"></i></div>
+            </div>
+        </a>
+    </div>
+    <div class="col-12 col-sm-4">
+        <div class="custom-card p-3 d-flex align-items-center justify-content-between">
+            <div>
+                <span class="text-muted fw-bold d-block mb-1" style="font-size:0.85rem;">مشتريات هذا الشهر</span>
+                <h3 class="fw-extrabold mb-0 text-success">@(((decimal)ViewBag.MonthTotal).ToString("N2"))</h3>
+            </div>
+            <div class="bg-success-subtle text-success rounded-3 p-3"><i class="fa-solid fa-calendar-check fs-3"></i></div>
+        </div>
+    </div>
+    <div class="col-12 col-sm-4">
+        <div class="custom-card p-3 d-flex align-items-center justify-content-between">
+            <div>
+                <span class="text-muted fw-bold d-block mb-1" style="font-size:0.85rem;">مستحق للموردين</span>
+                <h3 class="fw-extrabold mb-0 text-danger">@(((decimal)ViewBag.DueTotal).ToString("N2"))</h3>
+            </div>
+            <div class="bg-danger-subtle text-danger rounded-3 p-3"><i class="fa-solid fa-hand-holding-dollar fs-3"></i></div>
+        </div>
+    </div>
+</div>
+
+<div class="custom-card mb-4 p-3">
+    <form method="get" asp-action="Index" class="row g-3 align-items-center">
+        <input type="hidden" name="projectId" value="@ViewBag.ProjectId" />
+        <div class="col-12 col-md-4">
+            <div class="input-group">
+                <span class="input-group-text bg-white border-end-0"><i class="fa-solid fa-magnifying-glass text-muted"></i></span>
+                <input type="text" name="searchString" class="form-control border-start-0 ps-0" placeholder="بحث برقم الفاتورة أو المورد..." value="@ViewBag.SearchString">
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <select name="supplierId" class="form-select" asp-items="ViewBag.Suppliers">
+                <option value="">كل الموردين</option>
+            </select>
+        </div>
+        <div class="col-6 col-md-2">
+            <select name="status" class="form-select">
+                <option value="">كل الحالات</option>
+                @foreach (var s in PurchaseStatuses.All)
+                {
+                    <option value="@s" selected="@(s == status)">@PurchaseStatuses.GetName(s)</option>
+                }
+            </select>
+        </div>
+        <div class="col-12 col-md-3 d-flex gap-2">
+            <button type="submit" class="btn btn-primary fw-bold px-4 rounded-3 flex-grow-1"><i class="fa-solid fa-search me-1"></i> بحث</button>
+            @if (!string.IsNullOrEmpty(ViewBag.SearchString) || status != null || ViewBag.SupplierId != null || ViewBag.ProjectId != null)
+            {
+                <a asp-action="Index" class="btn btn-light border fw-bold text-muted" title="إلغاء الفلترة"><i class="fa-solid fa-xmark"></i></a>
+            }
+        </div>
+    </form>
+</div>
+
+<div class="custom-card">
+    <div class="card-header-custom">
+        <h5 class="fw-bold mb-0 text-dark"><i class="fa-solid fa-list text-secondary me-2"></i> فواتير الشراء</h5>
+        <span class="badge bg-light text-dark border">عدد النتائج: @ViewBag.TotalCount</span>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="bg-light text-muted" style="font-size:0.85rem;">
+                <tr>
+                    <th class="ps-4">الرقم</th>
+                    <th>المورد</th>
+                    <th>التاريخ</th>
+                    <th>المشروع</th>
+                    <th>الإجمالي</th>
+                    <th>المتبقي</th>
+                    <th>الحالة</th>
+                    <th class="text-center pe-4">الإجراءات</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.Any())
+                {
+                    foreach (var p in Model)
+                    {
+                        <tr>
+                            <td class="ps-4">
+                                <a asp-action="Details" asp-route-id="@p.Id" class="badge bg-primary-subtle text-primary px-2 py-1 rounded-2 text-decoration-none">@p.PurchaseNo</a>
+                                @if (!string.IsNullOrEmpty(p.InvoiceNo))
+                                {
+                                    <small class="d-block text-muted" style="font-size:0.72rem;">فاتورة المورد @p.InvoiceNo</small>
+                                }
+                            </td>
+                            <td><a asp-controller="Suppliers" asp-action="Details" asp-route-id="@p.SupplierId" class="fw-bold text-dark text-decoration-none">@p.Suppliers?.Name</a></td>
+                            <td class="small text-muted">@p.PurchaseDate.ToString("yyyy/MM/dd")</td>
+                            <td class="small">
+                                @if (p.Projects != null)
+                                {
+                                    <a asp-controller="Projects" asp-action="Details" asp-route-id="@p.ProjectId">@p.Projects.ProjectNo</a>
+                                    @if (p.DirectToProject) { <i class="fa-solid fa-dolly text-danger ms-1" title="صرف مباشر للمشروع"></i> }
+                                }
+                                else
+                                {
+                                    <span class="text-muted">عام</span>
+                                }
+                            </td>
+                            <td class="fw-bold">@p.Total.ToString("N2")</td>
+                            <td class="fw-bold @(p.Status == PurchaseStatuses.Received && p.RemainingAmount > 0 ? "text-danger" : "text-muted")">@p.RemainingAmount.ToString("N2")</td>
+                            <td><partial name="_StatusBadge" model="p.Status" /></td>
+                            <td class="text-center pe-4">
+                                <div class="btn-group btn-group-sm" role="group">
+                                    <a asp-action="Details" asp-route-id="@p.Id" class="btn btn-light border text-info" title="عرض التفاصيل"><i class="fa-solid fa-eye"></i></a>
+                                    @if (p.Status == PurchaseStatuses.Draft)
+                                    {
+                                        <a asp-action="Edit" asp-route-id="@p.Id" class="btn btn-light border text-primary" title="تعديل"><i class="fa-solid fa-pen-to-square"></i></a>
+                                    }
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="8" class="text-center py-5 text-muted">
+                            <i class="fa-solid fa-cart-shopping display-4 mb-3 d-block text-secondary opacity-50"></i>
+                            <h5 class="fw-bold mb-1">لا توجد فواتير شراء</h5>
+                            <p class="text-muted small mb-0">سجّل فاتورة شراء لإدخال الخامات للمخزن</p>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <partial name="_Pager" model='new Dictionary<string, string?> { ["searchString"] = ViewBag.SearchString, ["status"] = status, ["supplierId"] = ViewBag.SupplierId?.ToString(), ["projectId"] = ViewBag.ProjectId?.ToString() }' />
+</div>

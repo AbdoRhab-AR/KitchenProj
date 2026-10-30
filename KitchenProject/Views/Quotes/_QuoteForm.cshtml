@@ -1,4 +1,14 @@
 @model KitchenProject.Models.Entities.Quote
+@{
+    var catalog = ViewBag.ItemOptions as List<ItemOption> ?? new();
+    var inv = System.Globalization.CultureInfo.InvariantCulture;
+
+    // كتالوج الأصناف الجاهزة مقسماً حسب البنود A/B/C، واختيار صنف يملأ الوصف والوحدة والسعر
+    string CatalogSelect(Guid? selected) =>
+        "<option value=\"\">بند حر</option>" + string.Concat(catalog.GroupBy(o => o.GroupName ?? "بدون بند").Select(g =>
+            $"<optgroup label=\"{System.Net.WebUtility.HtmlEncode(g.Key)}\">" + string.Concat(g.Select(o =>
+                $"<option value=\"{o.Id}\" data-name=\"{System.Net.WebUtility.HtmlEncode(o.Name)}\" data-unit=\"{System.Net.WebUtility.HtmlEncode(o.Unit)}\" data-price=\"{o.Price.ToString("0.##", inv)}\"{(o.Id == selected ? " selected" : "")}>{System.Net.WebUtility.HtmlEncode(o.Code + " - " + o.Name)}</option>")) + "</optgroup>"));
+}
 
 <div asp-validation-summary="All" class="alert alert-danger rounded-3 mb-4" role="alert"></div>
 
@@ -33,6 +43,7 @@
         <thead class="bg-light text-muted" style="font-size:0.85rem;">
             <tr>
                 <th style="width:40px;">#</th>
+                <th style="width:210px;">من الكتالوج</th>
                 <th>الوصف <span class="text-danger">*</span></th>
                 <th style="width:110px;">الوحدة</th>
                 <th style="width:110px;">الكمية</th>
@@ -46,6 +57,7 @@
             {
                 <tr class="item-row">
                     <td class="row-no text-muted fw-bold">@(i + 1)</td>
+                    <td><select name="Items[@i].ItemId" class="form-select form-select-sm catalog-select">@Html.Raw(CatalogSelect(Model.Items[i].ItemId))</select></td>
                     <td><input name="Items[@i].Description" value="@Model.Items[i].Description" class="form-control form-control-sm" placeholder="مثال: وحدات سفلية خشب MDF مع رخام" /></td>
                     <td><input name="Items[@i].Unit" value="@Model.Items[i].Unit" class="form-control form-control-sm" list="units" /></td>
                     <td><input name="Items[@i].Quantity" value="@Model.Items[i].Quantity.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)" type="number" step="0.01" min="0.01" class="form-control form-control-sm qty" /></td>
@@ -105,6 +117,7 @@
 <template id="rowTemplate">
     <tr class="item-row">
         <td class="row-no text-muted fw-bold"></td>
+        <td><select data-field="ItemId" class="form-select form-select-sm catalog-select">@Html.Raw(CatalogSelect(null))</select></td>
         <td><input data-field="Description" class="form-control form-control-sm" placeholder="وصف البند" /></td>
         <td><input data-field="Unit" value="قطعة" class="form-control form-control-sm" list="units" /></td>
         <td><input data-field="Quantity" value="1" type="number" step="0.01" min="0.01" class="form-control form-control-sm qty" /></td>
@@ -124,7 +137,7 @@
         function renumber() {
             tbody.querySelectorAll('tr.item-row').forEach((tr, i) => {
                 tr.querySelector('.row-no').textContent = i + 1;
-                tr.querySelectorAll('input').forEach(input => {
+                tr.querySelectorAll('input, select').forEach(input => {
                     const field = input.dataset.field || input.name.replace(/^Items\[\d+\]\./, '');
                     input.dataset.field = field;
                     input.name = `Items[${i}].${field}`;
@@ -162,6 +175,18 @@
                 btn.closest('tr').querySelectorAll('input').forEach(i => { if (i.dataset.field === 'Description') i.value = ''; });
             }
             renumber();
+            recalc();
+        });
+
+        // اختيار صنف من الكتالوج يملأ الوصف والوحدة وسعر البيع (ويبقى قابلاً للتعديل)
+        tbody.addEventListener('change', e => {
+            if (!e.target.matches('.catalog-select')) return;
+            const opt = e.target.selectedOptions[0];
+            if (!opt || !opt.value) return;
+            const tr = e.target.closest('tr');
+            tr.querySelector('[data-field="Description"]').value = opt.dataset.name;
+            tr.querySelector('[data-field="Unit"]').value = opt.dataset.unit;
+            tr.querySelector('.price').value = opt.dataset.price;
             recalc();
         });
 

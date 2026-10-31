@@ -32,17 +32,24 @@ namespace KitchenProject.Classes
 		public static string GetName(string? role) =>
 			role != null && Names.TryGetValue(role, out var name) ? name : role ?? "-";
 
-		// المشاريع والعملاء محور النظام فيراها الجميع
-		private static readonly string[] Common = { "Home", "Account", "Customers", "Projects" };
+		// شاشات مفتوحة لكل مستخدم مسجل
+		private static readonly string[] Common = { "Home", "Account" };
 
-		// "Controller" = كل الشاشة، و "Controller:Action1|Action2" = إجراءات محددة منها فقط
+		// إجراءات الاطلاع فقط (عرض وطباعة)، يرمز لها بـ "view" في الجدول أدناه
+		private static readonly string[] ViewActions = { "Index", "Details", "Print", "Receipt", "SpecSheet", "Movements", "Profit", "CostSheet" };
+
+		// المشاريع والعملاء محور النظام: يطلع عليها الجميع، والتعديل للمدير والمبيعات
+		private static readonly string[] EveryoneViews = { "Customers:view", "Projects:view" };
+
+		// "Controller" = كل الشاشة (اطلاع وتعديل)
+		// "Controller:view" = اطلاع فقط، و "Controller:view|Action" = اطلاع + إجراءات محددة
 		private static readonly Dictionary<string, string[]> Screens = new()
 		{
-			[Sales] = new[] { "SiteVisits", "Quotes", "Contracts", "Payments" },
-			[Engineer] = new[] { "SiteVisits", "Stock:Index|Movements|Issue", "MaterialRequests:Index|Details|Create|Cancel" },
-			[Designer] = new[] { "SiteVisits", "Quotes", "Contracts", "MaterialRequests:Index|Details|Create|Cancel" },
-			[Warehouse] = new[] { "Items", "ItemGroups", "Stock", "Purchases", "Suppliers", "Warehouses", "MaterialRequests:Index|Details|Create|Cancel|Issue|ToPurchase" },
-			[Accountant] = new[] { "Contracts", "Payments", "Expenses", "Reports", "Purchases", "Suppliers", "Stock:Index|Movements", "MaterialRequests:Index|Details" }
+			[Sales] = new[] { "Customers", "Projects", "SiteVisits", "Quotes", "Contracts", "Payments" },
+			[Engineer] = new[] { "SiteVisits", "Quotes:view", "Contracts:view", "Items:view", "Stock:view|Issue", "MaterialRequests:view|Create|Cancel" },
+			[Designer] = new[] { "SiteVisits", "Quotes", "Contracts:view", "Items:view", "MaterialRequests:view|Create|Cancel" },
+			[Warehouse] = new[] { "Items", "ItemGroups", "Stock", "Purchases", "Suppliers", "Warehouses", "MaterialRequests:view|Create|Cancel|Issue|ToPurchase" },
+			[Accountant] = new[] { "Payments", "Expenses", "Reports", "Contracts:view", "Quotes:view", "Purchases:view|AddPayment|DeletePayment", "Suppliers:view", "Items:view", "Stock:view", "MaterialRequests:view" }
 		};
 
 		public static bool IsFullAccess(ClaimsPrincipal user) => user.IsInRole(Prog) || user.IsInRole(Admin);
@@ -57,6 +64,7 @@ namespace KitchenProject.Classes
 
 			return Screens.Where(s => user.IsInRole(s.Key))
 				.SelectMany(s => s.Value)
+				.Concat(EveryoneViews)
 				.Any(entry => Allows(entry, controller, action));
 		}
 
@@ -65,9 +73,11 @@ namespace KitchenProject.Classes
 			var parts = entry.Split(':');
 			if (!parts[0].Equals(controller, StringComparison.OrdinalIgnoreCase))
 				return false;
+			if (parts.Length == 1 || action == null)
+				return true;
 
-			return parts.Length == 1 || action == null
-				|| parts[1].Split('|').Contains(action, StringComparer.OrdinalIgnoreCase);
+			var allowed = parts[1].Split('|').SelectMany(a => a == "view" ? ViewActions : new[] { a });
+			return allowed.Contains(action, StringComparer.OrdinalIgnoreCase);
 		}
 
 		// ثوابت ثابتة لبذر الأدوار في قاعدة البيانات (HasData يحتاج قيماً لا تتغير)

@@ -151,7 +151,7 @@
                                     <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-light border text-primary" title="تعديل">
                                         <i class="fa-solid fa-pen-to-square"></i>
                                     </a>
-                                    <button type="button" class="btn btn-light border text-danger" data-bs-toggle="modal" data-bs-target="#deleteModal-@item.Id" title="حذف">
+                                    <button type="button" asp-permission="Delete" class="btn btn-light border text-danger" data-bs-toggle="modal" data-bs-target="#deleteModal-@item.Id" title="حذف">
                                         <i class="fa-solid fa-trash-can"></i>
                                     </button>
                                 </div>

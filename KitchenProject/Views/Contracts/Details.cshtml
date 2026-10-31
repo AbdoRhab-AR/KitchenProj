@@ -28,7 +28,7 @@
         <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-primary-custom d-inline-flex align-items-center gap-2">
             <i class="fa-solid fa-pen-to-square"></i> تعديل
         </a>
-        <button type="button" class="btn btn-outline-danger fw-bold rounded-3" data-bs-toggle="modal" data-bs-target="#deleteModal">
+        <button type="button" asp-permission="Delete" class="btn btn-outline-danger fw-bold rounded-3" data-bs-toggle="modal" data-bs-target="#deleteModal">
             <i class="fa-solid fa-trash-can"></i>
         </button>
     </div>

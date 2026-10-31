@@ -1,0 +1,38 @@
+@model KitchenProject.Models.Entities.Expense
+@{
+    ViewData["Title"] = "تسجيل مصروف";
+    Layout = "_DashboardLayout";
+    var fromProject = Context.Request.Query.ContainsKey("projectId") || (Context.Request.HasFormContentType && Context.Request.Form.ContainsKey("returnTo"));
+}
+
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+    <div>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-1 small text-muted">
+                <li class="breadcrumb-item"><a asp-action="Index" class="text-decoration-none">المصروفات</a></li>
+                <li class="breadcrumb-item active" aria-current="page">مصروف جديد</li>
+            </ol>
+        </nav>
+        <h2 class="page-header-title mb-0"><i class="fa-solid fa-money-bill-transfer text-primary me-2"></i> @ViewData["Title"]</h2>
+    </div>
+    <div>
+        <a asp-action="Index" class="btn btn-outline-secondary fw-bold rounded-3"><i class="fa-solid fa-arrow-right me-1"></i> المصروفات</a>
+    </div>
+</div>
+
+<div class="custom-card p-4 p-md-5">
+    <form asp-action="Create" method="post" enctype="multipart/form-data">
+        @Html.AntiForgeryToken()
+        @if (fromProject)
+        {
+            <input type="hidden" name="returnTo" value="project" />
+        }
+        <partial name="_ExpenseForm" model="Model" />
+
+        <hr class="my-4 text-muted opacity-25">
+        <div class="d-flex align-items-center justify-content-end gap-3">
+            <a asp-action="Index" class="btn btn-light border fw-bold px-4 rounded-3">إلغاء</a>
+            <button type="submit" class="btn btn-primary-custom px-5 py-2 fw-bold"><i class="fa-solid fa-floppy-disk me-1"></i> حفظ المصروف</button>
+        </div>
+    </form>
+</div>

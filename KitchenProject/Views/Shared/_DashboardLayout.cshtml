@@ -277,7 +277,7 @@
 
     <!-- Main Sidebar -->
     <aside id="sidebar">
-        <a href="@Url.Action("Index", "Customers")" class="sidebar-brand">
+        <a href="@Url.Action("Index", "Home")" class="sidebar-brand">
             <span class="brand-mark"><img src="~/images/brand/logo-mark.png" alt="Bin Gsoma" /></span>
             <span>بن قسومة <small class="d-block fw-normal opacity-75" style="font-size:0.7rem;">نظام إدارة المطابخ</small></span>
         </a>
@@ -288,6 +288,7 @@
             {
                 ("دورة العمل والتنفيذ", new[]
                 {
+                    ("Home", "Index", "fa-gauge-high", "لوحة التحكم", "Home"),
                     ("Customers", "Index", "fa-users", "إدارة العملاء", "Customers"),
                     ("Projects", "Index", "fa-diagram-project", "المشاريع والأوامر", "Projects"),
                     ("SiteVisits", "Index", "fa-ruler-combined", "المعاينة والمقاسات", "SiteVisits"),
@@ -304,7 +305,9 @@
                 }),
                 ("المالية والحسابات", new[]
                 {
-                    ("Payments", "Index", "fa-wallet", "تحصيلات العملاء", "Payments")
+                    ("Payments", "Index", "fa-wallet", "تحصيلات العملاء", "Payments"),
+                    ("Expenses", "Index", "fa-money-bill-transfer", "المصروفات", "Expenses"),
+                    ("Reports", "Profit", "fa-chart-line", "تقرير الأرباح", "Reports")
                 }),
                 ("الإدارة", new[]
                 {

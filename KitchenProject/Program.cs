@@ -20,6 +20,7 @@ builder.Services.AddControllersWithViews(options =>
 builder.Services.AddScoped(typeof(IUnitOfWork<>), typeof(UnitOfWork<>));
 builder.Services.AddScoped<LookupService>();
 builder.Services.AddScoped<StockService>();
+builder.Services.AddScoped<ProfitService>();
 
 //-------------------------------------------------
 builder.Services.AddDbContext<ApplicationDbContext>

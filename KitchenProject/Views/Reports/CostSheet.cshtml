@@ -1,0 +1,193 @@
+@model KitchenProject.Models.Entities.Project
+@using KitchenProject.Controllers
+@{
+    Layout = "_PrintLayout";
+    ViewData["Title"] = "فاتورة التكلفة " + Model.ProjectNo;
+    ViewData["DocTitle"] = "فاتورة التكلفة والمقارنة";
+    ViewData["DocNo"] = Model.ProjectNo;
+    var profit = (ProjectProfitRow?)ViewBag.Profit ?? new ProjectProfitRow();
+    var quote = ViewBag.Quote as Quote;
+    var materials = (List<CostSheetMaterial>)ViewBag.Materials;
+    var contracts = Model.Contracts.Where(c => c.Status != ContractStatuses.Cancelled).ToList();
+    var expenses = Model.Expenses.OrderBy(e => e.ExpenseDate).ToList();
+    string Pct(decimal part) => profit.SaleValue > 0 ? (part / profit.SaleValue * 100).ToString("0.#") + "%" : "-";
+}
+
+<div class="row g-2 mb-3">
+    <div class="col-5">
+        <div class="meta-box">
+            <span class="label">المشروع</span>
+            <div class="fw-bold">@Model.ProjectName</div>
+            <div class="small">@Model.KitchenType</div>
+        </div>
+    </div>
+    <div class="col-4">
+        <div class="meta-box">
+            <span class="label">العميل</span>
+            <div class="fw-bold">@Model.Customer?.Name</div>
+            <div class="small">@Model.Customer?.Phone</div>
+        </div>
+    </div>
+    <div class="col-3">
+        <div class="meta-box">
+            <span class="label">الحالة</span>
+            <div class="fw-bold">@Model.Status.GetDisplayName()</div>
+            <span class="label mt-1">تاريخ التقرير</span>
+            <div class="fw-bold">@DateTime.Today.ToString("yyyy/MM/dd")</div>
+        </div>
+    </div>
+</div>
+
+<!-- Summary -->
+<div class="section-title">ملخص المقارنة</div>
+<table class="table table-bordered print-table no-break">
+    <thead>
+        <tr>
+            <th>البيان</th>
+            <th style="width:160px;">المبلغ</th>
+            <th style="width:110px;">من قيمة البيع</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td class="fw-bold">قيمة البيع @(profit.IsEstimate ? "(تقديرية - لا يوجد عقد)" : "(العقود)")</td>
+            <td class="fw-bold">@profit.SaleValue.ToString("N2")</td>
+            <td>100%</td>
+        </tr>
+        <tr>
+            <td>تكلفة الخامات المصروفة</td>
+            <td>@profit.MaterialsCost.ToString("N2")</td>
+            <td>@Pct(profit.MaterialsCost)</td>
+        </tr>
+        <tr>
+            <td>مصروفات المشروع</td>
+            <td>@profit.Expenses.ToString("N2")</td>
+            <td>@Pct(profit.Expenses)</td>
+        </tr>
+        <tr>
+            <td class="fw-bold">إجمالي التكلفة</td>
+            <td class="fw-bold">@profit.TotalCost.ToString("N2")</td>
+            <td>@Pct(profit.TotalCost)</td>
+        </tr>
+        <tr>
+            <td class="fw-bold" style="color:var(--brand);">الربح</td>
+            <td class="fw-bold" style="color:@(profit.Profit >= 0 ? "#15803d" : "#b91c1c");">@profit.Profit.ToString("N2")</td>
+            <td class="fw-bold">@Pct(profit.Profit)</td>
+        </tr>
+        <tr>
+            <td>المحصّل من العميل / المتبقي</td>
+            <td colspan="2">@profit.Paid.ToString("N2") / <span class="fw-bold">@profit.Remaining.ToString("N2")</span></td>
+        </tr>
+    </tbody>
+</table>
+
+<!-- Sales -->
+<div class="section-title">المبيعات</div>
+@if (contracts.Any())
+{
+    <table class="table table-bordered print-table mb-2">
+        <thead>
+            <tr><th>العقد</th><th>التاريخ</th><th>الحالة</th><th style="width:160px;">القيمة</th></tr>
+        </thead>
+        <tbody>
+            @foreach (var c in contracts)
+            {
+                <tr>
+                    <td class="fw-bold">@c.ContractNo</td>
+                    <td>@c.Created.ToLocalTime().ToString("yyyy/MM/dd")</td>
+                    <td>@ContractStatuses.GetName(c.Status)</td>
+                    <td class="fw-bold">@c.TotalAmount.ToString("N2")</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+@if (quote != null && quote.Items.Any())
+{
+    <div class="small text-muted mb-1">بنود عرض السعر @quote.QuoteNo (@quote.Status.GetDisplayName())</div>
+    <table class="table table-bordered print-table">
+        <thead>
+            <tr><th style="width:36px;">#</th><th>البند</th><th style="width:90px;">الكمية</th><th style="width:120px;">سعر الوحدة</th><th style="width:130px;">الإجمالي</th></tr>
+        </thead>
+        <tbody>
+            @{ var n = 1; }
+            @foreach (var item in quote.Items.OrderBy(i => i.Created))
+            {
+                <tr>
+                    <td>@(n++)</td>
+                    <td>@item.Description</td>
+                    <td>@item.Quantity.ToString("0.##") @item.Unit</td>
+                    <td>@item.UnitPrice.ToString("N2")</td>
+                    <td>@item.Total.ToString("N2")</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+@if (!contracts.Any() && (quote == null || !quote.Items.Any()))
+{
+    <p class="small text-muted">لا توجد عقود أو عروض أسعار لهذا المشروع.</p>
+}
+
+<!-- Materials -->
+<div class="section-title">الخامات المصروفة</div>
+@if (materials.Any())
+{
+    <table class="table table-bordered print-table">
+        <thead>
+            <tr><th style="width:90px;">الرمز</th><th>الخامة</th><th style="width:110px;">الكمية</th><th style="width:120px;">متوسط التكلفة</th><th style="width:130px;">الإجمالي</th></tr>
+        </thead>
+        <tbody>
+            @foreach (var m in materials)
+            {
+                <tr>
+                    <td>@m.Code</td>
+                    <td>@m.Name</td>
+                    <td>@m.Quantity.ToString("0.##") @m.Unit</td>
+                    <td>@m.UnitCost.ToString("N2")</td>
+                    <td class="fw-bold">@m.Cost.ToString("N2")</td>
+                </tr>
+            }
+            <tr>
+                <td colspan="4" class="fw-bold text-start">إجمالي الخامات</td>
+                <td class="fw-bold">@profit.MaterialsCost.ToString("N2")</td>
+            </tr>
+        </tbody>
+    </table>
+}
+else
+{
+    <p class="small text-muted">لم تُصرف خامات لهذا المشروع بعد.</p>
+}
+
+<!-- Expenses -->
+<div class="section-title">مصروفات المشروع</div>
+@if (expenses.Any())
+{
+    <table class="table table-bordered print-table">
+        <thead>
+            <tr><th style="width:100px;">التاريخ</th><th style="width:140px;">النوع</th><th>الوصف</th><th style="width:130px;">المبلغ</th></tr>
+        </thead>
+        <tbody>
+            @foreach (var e in expenses)
+            {
+                <tr>
+                    <td>@e.ExpenseDate.ToString("yyyy/MM/dd")</td>
+                    <td>@e.ExpenseType</td>
+                    <td>@e.Description</td>
+                    <td class="fw-bold">@e.Amount.ToString("N2")</td>
+                </tr>
+            }
+            <tr>
+                <td colspan="3" class="fw-bold text-start">إجمالي المصروفات</td>
+                <td class="fw-bold">@profit.Expenses.ToString("N2")</td>
+            </tr>
+        </tbody>
+    </table>
+}
+else
+{
+    <p class="small text-muted">لا توجد مصروفات مسجلة على المشروع.</p>
+}
+
+<p class="small text-muted mt-3 mb-0">مستند داخلي للإدارة - لا يُسلَّم للعميل.</p>

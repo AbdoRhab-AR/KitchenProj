@@ -1,0 +1,185 @@
+@model List<ProjectProfitRow>
+@{
+    ViewData["Title"] = "تقرير أرباح المشاريع";
+    Layout = "_DashboardLayout";
+    DateTime? from = ViewBag.From;
+    DateTime? to = ViewBag.To;
+    bool contractedOnly = ViewBag.ContractedOnly;
+    decimal general = ViewBag.GeneralExpenses;
+
+    var sales = Model.Sum(r => r.SaleValue);
+    var materials = Model.Sum(r => r.MaterialsCost);
+    var expenses = Model.Sum(r => r.Expenses);
+    var gross = sales - materials - expenses;
+    var net = gross - general;
+    var paid = Model.Sum(r => r.Paid);
+    string Pct(decimal part) => sales > 0 ? (part / sales * 100).ToString("0.#") + "%" : "-";
+}
+
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3 d-print-none">
+    <div>
+        <h2 class="page-header-title mb-1">
+            <i class="fa-solid fa-chart-line text-primary me-2"></i> تقرير أرباح المشاريع
+        </h2>
+        <p class="text-muted mb-0">قيمة البيع (العقود) مقابل تكلفة الخامات المصروفة ومصروفات كل مشروع</p>
+    </div>
+    <div>
+        <button onclick="window.print()" class="btn btn-outline-secondary fw-bold rounded-3"><i class="fa-solid fa-print me-1"></i> طباعة التقرير</button>
+    </div>
+</div>
+
+<div class="custom-card mb-4 p-3 d-print-none">
+    <form method="get" asp-action="Profit" class="row g-3 align-items-end">
+        <div class="col-12 col-md-3">
+            <label class="form-label small fw-bold text-muted">بحث</label>
+            <input type="text" name="searchString" class="form-control" placeholder="رقم المشروع، الاسم، العميل..." value="@ViewBag.SearchString">
+        </div>
+        <div class="col-6 col-md-2">
+            <label class="form-label small fw-bold text-muted">حالة المشروع</label>
+            <select name="status" class="form-select" asp-items="ViewBag.StatusList"><option value="">الكل</option></select>
+        </div>
+        <div class="col-6 col-md-2">
+            <label class="form-label small fw-bold text-muted">من</label>
+            <input type="date" name="from" value="@from?.ToString("yyyy-MM-dd")" class="form-control" />
+        </div>
+        <div class="col-6 col-md-2">
+            <label class="form-label small fw-bold text-muted">إلى</label>
+            <input type="date" name="to" value="@to?.ToString("yyyy-MM-dd")" class="form-control" />
+        </div>
+        <div class="col-6 col-md-1">
+            <div class="form-check mb-2">
+                <input type="hidden" name="contractedOnly" value="false" />
+                <input type="checkbox" name="contractedOnly" value="true" class="form-check-input" id="contractedOnly" @(contractedOnly ? "checked" : "") />
+                <label for="contractedOnly" class="form-check-label small fw-bold">المتعاقد فقط</label>
+            </div>
+        </div>
+        <div class="col-12 col-md-2 d-flex gap-2">
+            <button type="submit" class="btn btn-primary fw-bold rounded-3 flex-grow-1"><i class="fa-solid fa-filter me-1"></i> عرض</button>
+            <a asp-action="Profit" class="btn btn-light border fw-bold text-muted" title="إلغاء الفلترة"><i class="fa-solid fa-xmark"></i></a>
+        </div>
+    </form>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-6 col-lg">
+        <div class="custom-card p-3 h-100">
+            <span class="text-muted fw-bold d-block mb-1 small">المبيعات (@Model.Count مشروع)</span>
+            <h4 class="fw-extrabold mb-0 text-dark">@sales.ToString("N2")</h4>
+            <small class="text-muted">المحصّل @paid.ToString("N2")</small>
+        </div>
+    </div>
+    <div class="col-6 col-lg">
+        <div class="custom-card p-3 h-100">
+            <span class="text-muted fw-bold d-block mb-1 small">تكلفة الخامات</span>
+            <h4 class="fw-extrabold mb-0 text-warning-emphasis">@materials.ToString("N2")</h4>
+            <small class="text-muted">@Pct(materials) من المبيعات</small>
+        </div>
+    </div>
+    <div class="col-6 col-lg">
+        <div class="custom-card p-3 h-100">
+            <span class="text-muted fw-bold d-block mb-1 small">مصروفات المشاريع</span>
+            <h4 class="fw-extrabold mb-0 text-warning-emphasis">@expenses.ToString("N2")</h4>
+            <small class="text-muted">@Pct(expenses) من المبيعات</small>
+        </div>
+    </div>
+    <div class="col-6 col-lg">
+        <div class="custom-card p-3 h-100">
+            <span class="text-muted fw-bold d-block mb-1 small">ربح المشاريع</span>
+            <h4 class="fw-extrabold mb-0 @(gross >= 0 ? "text-success" : "text-danger")">@gross.ToString("N2")</h4>
+            <small class="text-muted">هامش @Pct(gross)</small>
+        </div>
+    </div>
+    <div class="col-12 col-lg">
+        <div class="custom-card p-3 h-100 border border-2 @(net >= 0 ? "border-success" : "border-danger")">
+            <span class="text-muted fw-bold d-block mb-1 small">صافي الربح بعد المصروفات العامة</span>
+            <h4 class="fw-extrabold mb-0 @(net >= 0 ? "text-success" : "text-danger")">@net.ToString("N2")</h4>
+            <small class="text-muted">مصروفات عامة @general.ToString("N2")</small>
+        </div>
+    </div>
+</div>
+
+<div class="custom-card">
+    <div class="card-header-custom">
+        <h5 class="fw-bold mb-0 text-dark"><i class="fa-solid fa-table-list text-secondary me-2"></i> المشاريع</h5>
+        @if (from.HasValue || to.HasValue)
+        {
+            <span class="small text-muted">الفترة: @(from?.ToString("yyyy/MM/dd") ?? "البداية") - @(to?.ToString("yyyy/MM/dd") ?? "اليوم")</span>
+        }
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="bg-light text-muted" style="font-size:0.85rem;">
+                <tr>
+                    <th class="ps-4">المشروع</th>
+                    <th>الحالة</th>
+                    <th>قيمة البيع</th>
+                    <th>الخامات</th>
+                    <th>المصروفات</th>
+                    <th>الربح</th>
+                    <th>الهامش</th>
+                    <th>المتبقي على العميل</th>
+                    <th class="pe-4 d-print-none"></th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.Any())
+                {
+                    foreach (var r in Model)
+                    {
+                        <tr>
+                            <td class="ps-4">
+                                <a asp-controller="Projects" asp-action="Details" asp-route-id="@r.ProjectId" class="fw-bold text-dark text-decoration-none">@r.ProjectNo</a>
+                                <small class="d-block text-muted">@r.ProjectName · @r.CustomerName</small>
+                            </td>
+                            <td><partial name="~/Views/Projects/_StatusBadge.cshtml" model="r.Status" /></td>
+                            <td class="fw-bold">
+                                @r.SaleValue.ToString("N2")
+                                @if (r.IsEstimate)
+                                {
+                                    <small class="d-block text-muted fw-normal">تقديري</small>
+                                }
+                            </td>
+                            <td>@r.MaterialsCost.ToString("N2")</td>
+                            <td>@r.Expenses.ToString("N2")</td>
+                            <td class="fw-bold @(r.Profit >= 0 ? "text-success" : "text-danger")">@r.Profit.ToString("N2")</td>
+                            <td class="small fw-bold @(r.Profit >= 0 ? "text-success" : "text-danger")">@(r.MarginPercent.HasValue ? r.MarginPercent + "%" : "-")</td>
+                            <td class="small @(r.Remaining > 0 ? "text-danger" : "text-muted")">@r.Remaining.ToString("N2")</td>
+                            <td class="pe-4 text-end d-print-none">
+                                <a asp-action="CostSheet" asp-route-id="@r.ProjectId" target="_blank" class="btn btn-sm btn-light border" title="فاتورة التكلفة"><i class="fa-solid fa-file-invoice"></i></a>
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="9" class="text-center py-5 text-muted">
+                            <i class="fa-solid fa-chart-line display-4 mb-3 d-block text-secondary opacity-50"></i>
+                            <h5 class="fw-bold mb-1">لا توجد مشاريع في هذه الفترة</h5>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+            @if (Model.Any())
+            {
+                <tfoot class="bg-light fw-bold">
+                    <tr>
+                        <td class="ps-4" colspan="2">الإجمالي</td>
+                        <td>@sales.ToString("N2")</td>
+                        <td>@materials.ToString("N2")</td>
+                        <td>@expenses.ToString("N2")</td>
+                        <td class="@(gross >= 0 ? "text-success" : "text-danger")">@gross.ToString("N2")</td>
+                        <td>@Pct(gross)</td>
+                        <td>@((sales - paid).ToString("N2"))</td>
+                        <td class="d-print-none"></td>
+                    </tr>
+                </tfoot>
+            }
+        </table>
+    </div>
+</div>
+
+<p class="small text-muted mt-3">
+    <i class="fa-solid fa-circle-info me-1"></i>
+    تكلفة الخامات = ما صُرف للمشروع من المخزن بمتوسط سعر الشراء (ناقص المرتجع). الخامات المشتراة للمشروع ولم تُصرف بعد لا تُحسب حتى تُصرف.
+</p>

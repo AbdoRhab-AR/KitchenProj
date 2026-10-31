@@ -42,7 +42,7 @@ namespace KitchenProject.Classes
 			[Engineer] = new[] { "SiteVisits", "Stock:Index|Movements|Issue", "MaterialRequests:Index|Details|Create|Cancel" },
 			[Designer] = new[] { "SiteVisits", "Quotes", "Contracts", "MaterialRequests:Index|Details|Create|Cancel" },
 			[Warehouse] = new[] { "Items", "ItemGroups", "Stock", "Purchases", "Suppliers", "Warehouses", "MaterialRequests:Index|Details|Create|Cancel|Issue|ToPurchase" },
-			[Accountant] = new[] { "Contracts", "Payments", "Purchases", "Suppliers", "Stock:Index|Movements", "MaterialRequests:Index|Details" }
+			[Accountant] = new[] { "Contracts", "Payments", "Expenses", "Reports", "Purchases", "Suppliers", "Stock:Index|Movements", "MaterialRequests:Index|Details" }
 		};
 
 		public static bool IsFullAccess(ClaimsPrincipal user) => user.IsInRole(Prog) || user.IsInRole(Admin);

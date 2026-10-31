@@ -144,7 +144,7 @@ namespace KitchenProject.Controllers
 			{
 				return Redirect(returnUrl);
 			}
-			return RedirectToAction("Index", "Projects");
+			return RedirectToAction("Index", "Home");
 		}
 	}
 }

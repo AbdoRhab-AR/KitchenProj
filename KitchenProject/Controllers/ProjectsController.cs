@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using KitchenProject.Classes;
 using KitchenProject.Models.Entities;
 using KitchenProject.Models.Enums;
@@ -121,6 +122,17 @@ namespace KitchenProject.Controllers
 				.Where(p => p.ProjectId == project.Id && p.Status != PurchaseStatuses.Cancelled)
 				.OrderByDescending(p => p.PurchaseDate)
 				.ToListAsync();
+
+			// طلبات التوريد (المواد) الخاصة بالمشروع
+			// (المهندس والمصمم يرون طلباتهم فقط، كما في شاشة الطلبات)
+			var seesAllRequests = AppRoles.CanAccess(User, "MaterialRequests", "Issue") || User.IsInRole(AppRoles.Accountant);
+			var me = User.FindFirstValue(ClaimTypes.NameIdentifier);
+			ViewBag.MaterialRequests = AppRoles.CanAccess(User, "MaterialRequests")
+				? await _materialRequest.Entity.Include(r => r.Items)
+					.Where(r => r.ProjectId == project.Id && (seesAllRequests || r.RequestedById == me))
+					.OrderByDescending(r => r.Created)
+					.ToListAsync()
+				: new List<MaterialRequest>();
 
 			return View(project);
 		}

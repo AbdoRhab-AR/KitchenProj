@@ -20,6 +20,7 @@
     // تكلفة الخامات = المصروف للمشروع - المرتجع منه
     var materials = ViewBag.Materials as List<StockTransaction> ?? new();
     var purchases = ViewBag.Purchases as List<Purchase> ?? new();
+    var requests = ViewBag.MaterialRequests as List<MaterialRequest> ?? new();
     var materialsCost = materials.Sum(m => (m.QuantityOut - m.QuantityIn) * m.UnitCost);
     var margin = saleValue - materialsCost - expensesTotal;
     var printReceiptId = TempData["PrintReceiptId"] as string;
@@ -484,6 +485,23 @@
                                 <strong>@p.Total.ToString("N2")</strong>
                                 <partial name="~/Views/Purchases/_StatusBadge.cshtml" model="p.Status" />
                             </span>
+                        </div>
+                    }
+                </div>
+            }
+
+            @if (requests.Any())
+            {
+                <div class="border-top px-4 py-3 small">
+                    <span class="fw-bold text-muted d-block mb-2"><i class="fa-solid fa-clipboard-list me-1"></i> طلبات التوريد للمشروع</span>
+                    @foreach (var r in requests)
+                    {
+                        <div class="d-flex justify-content-between align-items-center py-1">
+                            <span>
+                                <a asp-controller="MaterialRequests" asp-action="Details" asp-route-id="@r.Id" class="fw-bold">@r.RequestNo</a>
+                                <span class="text-muted">· @r.RequestDate.ToString("yyyy/MM/dd") · @r.Items.Count صنف</span>
+                            </span>
+                            <partial name="~/Views/MaterialRequests/_StatusBadge.cshtml" model="r.Status" />
                         </div>
                     }
                 </div>

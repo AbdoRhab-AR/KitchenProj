@@ -488,7 +488,8 @@ namespace KitchenProject.Migrations
                             Id = new Guid("a1000000-0000-4000-8000-00000000000a"),
                             Code = "A",
                             Created = new DateTime(2026, 9, 5, 13, 1, 21, 0, DateTimeKind.Utc),
-                            Name = "البند A",
+                            Description = "الوحدات السفلية والعلوية والأعمدة",
+                            Name = "وحدات المطبخ",
                             SortOrder = 1
                         },
                         new
@@ -496,7 +497,8 @@ namespace KitchenProject.Migrations
                             Id = new Guid("b1000000-0000-4000-8000-00000000000b"),
                             Code = "B",
                             Created = new DateTime(2026, 9, 5, 13, 1, 21, 0, DateTimeKind.Utc),
-                            Name = "البند B",
+                            Description = "أسطح الرخام والجرانيت والكوارتز",
+                            Name = "الأسطح والرخام",
                             SortOrder = 2
                         },
                         new
@@ -504,7 +506,8 @@ namespace KitchenProject.Migrations
                             Id = new Guid("c1000000-0000-4000-8000-00000000000c"),
                             Code = "C",
                             Created = new DateTime(2026, 9, 5, 13, 1, 21, 0, DateTimeKind.Utc),
-                            Name = "البند C",
+                            Description = "الأجهزة الكهربائية والمغاسل والمقابض والإكسسوارات",
+                            Name = "الأجهزة والإكسسوارات",
                             SortOrder = 3
                         });
                 });

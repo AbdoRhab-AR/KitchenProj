@@ -60,9 +60,9 @@ namespace KitchenProject.Models
 				});
 
 			modelBuilder.Entity<ItemGroup>().HasData(
-				new ItemGroup { Id = new Guid("a1000000-0000-4000-8000-00000000000a"), Code = "A", Name = "البند A", SortOrder = 1, Created = SeedDate },
-				new ItemGroup { Id = new Guid("b1000000-0000-4000-8000-00000000000b"), Code = "B", Name = "البند B", SortOrder = 2, Created = SeedDate },
-				new ItemGroup { Id = new Guid("c1000000-0000-4000-8000-00000000000c"), Code = "C", Name = "البند C", SortOrder = 3, Created = SeedDate });
+				new ItemGroup { Id = new Guid("a1000000-0000-4000-8000-00000000000a"), Code = "A", Name = "وحدات المطبخ", Description = "الوحدات السفلية والعلوية والأعمدة", SortOrder = 1, Created = SeedDate },
+				new ItemGroup { Id = new Guid("b1000000-0000-4000-8000-00000000000b"), Code = "B", Name = "الأسطح والرخام", Description = "أسطح الرخام والجرانيت والكوارتز", SortOrder = 2, Created = SeedDate },
+				new ItemGroup { Id = new Guid("c1000000-0000-4000-8000-00000000000c"), Code = "C", Name = "الأجهزة والإكسسوارات", Description = "الأجهزة الكهربائية والمغاسل والمقابض والإكسسوارات", SortOrder = 3, Created = SeedDate });
 
 			//--------------------Roles-----------------------------
 			var progRoleId = AppRoles.ProgRoleId;

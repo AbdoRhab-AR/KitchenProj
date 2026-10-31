@@ -398,15 +398,27 @@
                     <span class="badge bg-light text-dark border ms-1">@materialsCost.ToString("N2")</span>
                 </h5>
                 <div class="d-flex gap-2">
-                    <a asp-controller="Stock" asp-action="Issue" asp-route-projectId="@Model.Id" class="btn btn-sm btn-outline-danger fw-bold">
-                        <i class="fa-solid fa-dolly me-1"></i> صرف
-                    </a>
-                    <a asp-controller="Stock" asp-action="Issue" asp-route-projectId="@Model.Id" asp-route-type="Return" class="btn btn-sm btn-outline-info fw-bold">
-                        <i class="fa-solid fa-rotate-left me-1"></i> مرتجع
-                    </a>
-                    <a asp-controller="Purchases" asp-action="Create" asp-route-projectId="@Model.Id" class="btn btn-sm btn-outline-success fw-bold" title="شراء خامات لهذا المشروع">
-                        <i class="fa-solid fa-cart-plus"></i>
-                    </a>
+                    @if (AppRoles.CanAccess(User, "MaterialRequests", "Create"))
+                    {
+                        <a asp-controller="MaterialRequests" asp-action="Create" asp-route-projectId="@Model.Id" class="btn btn-sm btn-outline-primary fw-bold" title="طلب مواد للاعتماد">
+                            <i class="fa-solid fa-clipboard-list me-1"></i> طلب مواد
+                        </a>
+                    }
+                    @if (AppRoles.CanAccess(User, "Stock", "Issue"))
+                    {
+                        <a asp-controller="Stock" asp-action="Issue" asp-route-projectId="@Model.Id" class="btn btn-sm btn-outline-danger fw-bold">
+                            <i class="fa-solid fa-dolly me-1"></i> صرف
+                        </a>
+                        <a asp-controller="Stock" asp-action="Issue" asp-route-projectId="@Model.Id" asp-route-type="Return" class="btn btn-sm btn-outline-info fw-bold">
+                            <i class="fa-solid fa-rotate-left me-1"></i> مرتجع
+                        </a>
+                    }
+                    @if (AppRoles.CanAccess(User, "Purchases", "Create"))
+                    {
+                        <a asp-controller="Purchases" asp-action="Create" asp-route-projectId="@Model.Id" class="btn btn-sm btn-outline-success fw-bold" title="شراء خامات لهذا المشروع">
+                            <i class="fa-solid fa-cart-plus"></i>
+                        </a>
+                    }
                 </div>
             </div>
             @if (materials.Any())

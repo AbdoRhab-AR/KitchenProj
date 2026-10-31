@@ -16,14 +16,17 @@ namespace KitchenProject.Controllers
 		private readonly IUnitOfWork<QuoteItem> _item;
 		private readonly IUnitOfWork<Project> _project;
 		private readonly IUnitOfWork<Contract> _contract;
+		private readonly IUnitOfWork<SiteInfo> _siteInfo;
 		private readonly LookupService _lookup;
 
 		public QuotesController(IUnitOfWork<Quote> quote,
 								IUnitOfWork<QuoteItem> item,
 								IUnitOfWork<Project> project,
 								IUnitOfWork<Contract> contract,
+								IUnitOfWork<SiteInfo> siteInfo,
 								LookupService lookup)
 		{
+			_siteInfo = siteInfo;
 			_quote = quote;
 			_item = item;
 			_project = project;
@@ -121,6 +124,7 @@ namespace KitchenProject.Controllers
 				ProjectId = projectId ?? Guid.Empty,
 				ValidUntil = DateTime.Today.AddDays(15),
 				Status = DesignStatus.Draft,
+				Notes = await _siteInfo.Entity.GetAll().Select(s => s.DefaultQuoteTerms).FirstOrDefaultAsync(),
 				Items = { new QuoteItem() }
 			};
 
@@ -146,11 +150,13 @@ namespace KitchenProject.Controllers
 			{
 				quote.Id = Guid.NewGuid();
 				quote.Created = DateTime.UtcNow;
+				// فرق tick بين البنود يحفظ ترتيبها عند العرض والطباعة
+				var order = 0;
 				foreach (var item in quote.Items)
 				{
 					item.Id = Guid.NewGuid();
 					item.QuoteId = quote.Id;
-					item.Created = quote.Created;
+					item.Created = quote.Created.AddTicks(order++);
 				}
 				quote.Recalculate();
 
@@ -181,6 +187,7 @@ namespace KitchenProject.Controllers
 				return NotFound();
 			}
 
+			quote.Items = quote.Items.OrderBy(i => i.Created).ToList();
 			if (quote.Items.Count == 0)
 			{
 				quote.Items.Add(new QuoteItem());
@@ -221,11 +228,13 @@ namespace KitchenProject.Controllers
 
 				_quote.Entity.Update(quote);
 
+				var now = DateTime.UtcNow;
+				var order = 0;
 				foreach (var item in newItems)
 				{
 					item.Id = Guid.NewGuid();
 					item.QuoteId = quote.Id;
-					item.Created = DateTime.UtcNow;
+					item.Created = now.AddTicks(order++);
 					_item.Entity.Insert(item);
 				}
 

@@ -29,6 +29,18 @@ namespace KitchenProject.Classes
 				.ToDictionaryAsync(x => x.Key, x => x.Balance);
 		}
 
+		// الرصيد لكل مخزن ثم لكل صنف (لعرض المتوفر فور تغيير المخزن في الشاشة)
+		public async Task<Dictionary<Guid, Dictionary<Guid, decimal>>> BalancesByWarehouseAsync()
+		{
+			var rows = await _tx.Entity.GetAll()
+				.GroupBy(t => new { t.WarehouseId, t.ItemId })
+				.Select(g => new { g.Key.WarehouseId, g.Key.ItemId, Balance = g.Sum(t => t.QuantityIn - t.QuantityOut) })
+				.ToListAsync();
+
+			return rows.GroupBy(r => r.WarehouseId)
+				.ToDictionary(g => g.Key, g => g.ToDictionary(r => r.ItemId, r => r.Balance));
+		}
+
 		public async Task<decimal> BalanceAsync(Guid itemId, Guid warehouseId)
 		{
 			return await _tx.Entity.GetWhere(t => t.ItemId == itemId && t.WarehouseId == warehouseId)

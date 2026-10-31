@@ -13,12 +13,25 @@
     </div>
     <div class="d-flex flex-wrap gap-2">
         <a asp-action="Movements" class="btn btn-outline-secondary fw-bold rounded-3"><i class="fa-solid fa-right-left me-1"></i> كشف الحركات</a>
-        <a asp-action="Adjust" class="btn btn-outline-warning fw-bold rounded-3"><i class="fa-solid fa-scale-balanced me-1"></i> تسوية جرد</a>
-        <a asp-controller="Purchases" asp-action="Create" class="btn btn-outline-success fw-bold rounded-3"><i class="fa-solid fa-cart-plus me-1"></i> شراء</a>
-        <a asp-action="Issue" class="btn btn-primary-custom d-inline-flex align-items-center gap-2">
-            <i class="fa-solid fa-dolly"></i>
-            <span>صرف لمشروع</span>
-        </a>
+        @if (AppRoles.CanAccess(User, "Stock", "Transfer"))
+        {
+            <a asp-action="Transfer" class="btn btn-outline-primary fw-bold rounded-3"><i class="fa-solid fa-truck-arrow-right me-1"></i> تحويل بين المخازن</a>
+        }
+        @if (AppRoles.CanAccess(User, "Stock", "Adjust"))
+        {
+            <a asp-action="Adjust" class="btn btn-outline-warning fw-bold rounded-3"><i class="fa-solid fa-scale-balanced me-1"></i> تسوية جرد</a>
+        }
+        @if (AppRoles.CanAccess(User, "Purchases", "Create"))
+        {
+            <a asp-controller="Purchases" asp-action="Create" class="btn btn-outline-success fw-bold rounded-3"><i class="fa-solid fa-cart-plus me-1"></i> شراء</a>
+        }
+        @if (AppRoles.CanAccess(User, "Stock", "Issue"))
+        {
+            <a asp-action="Issue" class="btn btn-primary-custom d-inline-flex align-items-center gap-2">
+                <i class="fa-solid fa-dolly"></i>
+                <span>صرف لمشروع</span>
+            </a>
+        }
     </div>
 </div>
 
@@ -132,8 +145,9 @@
                             <td class="text-center pe-4">
                                 <div class="btn-group btn-group-sm" role="group">
                                     <a asp-action="Movements" asp-route-itemId="@r.Item.Id" class="btn btn-light border text-info" title="كشف الحركات"><i class="fa-solid fa-right-left"></i></a>
-                                    <a asp-action="Issue" asp-route-itemId="@r.Item.Id" class="btn btn-light border text-danger" title="صرف لمشروع"><i class="fa-solid fa-dolly"></i></a>
-                                    <a asp-action="Adjust" asp-route-itemId="@r.Item.Id" class="btn btn-light border text-warning" title="تسوية جرد"><i class="fa-solid fa-scale-balanced"></i></a>
+                                    @if (AppRoles.CanAccess(User, "Stock", "Issue")) { <a asp-action="Issue" asp-route-itemId="@r.Item.Id" class="btn btn-light border text-danger" title="صرف لمشروع"><i class="fa-solid fa-dolly"></i></a> }
+                                    @if (AppRoles.CanAccess(User, "Stock", "Transfer")) { <a asp-action="Transfer" asp-route-itemId="@r.Item.Id" class="btn btn-light border text-primary" title="تحويل لمخزن آخر"><i class="fa-solid fa-truck-arrow-right"></i></a> }
+                                    @if (AppRoles.CanAccess(User, "Stock", "Adjust")) { <a asp-action="Adjust" asp-route-itemId="@r.Item.Id" class="btn btn-light border text-warning" title="تسوية جرد"><i class="fa-solid fa-scale-balanced"></i></a> }
                                 </div>
                             </td>
                         </tr>

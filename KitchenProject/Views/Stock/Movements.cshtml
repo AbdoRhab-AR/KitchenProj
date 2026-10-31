@@ -27,13 +27,17 @@
 
 <div class="custom-card mb-4 p-3">
     <form method="get" asp-action="Movements" class="row g-3 align-items-end">
-        <div class="col-12 col-md-3">
+        <div class="col-12 col-md-2">
             <label class="form-label small fw-bold text-muted">الخامة</label>
             <select name="itemId" class="form-select" asp-items="ViewBag.Items"><option value="">كل الخامات</option></select>
         </div>
-        <div class="col-12 col-md-3">
+        <div class="col-12 col-md-2">
             <label class="form-label small fw-bold text-muted">المشروع</label>
             <select name="projectId" class="form-select" asp-items="ViewBag.Projects"><option value="">كل المشاريع</option></select>
+        </div>
+        <div class="col-6 col-md-2">
+            <label class="form-label small fw-bold text-muted">المخزن</label>
+            <select name="warehouseId" class="form-select" asp-items="ViewBag.Warehouses"><option value="">كل المخازن</option></select>
         </div>
         <div class="col-6 col-md-2">
             <label class="form-label small fw-bold text-muted">نوع الحركة</label>
@@ -100,7 +104,8 @@
                                     <small class="d-block text-muted text-truncate" style="max-width:180px;" title="@m.Notes">@m.Notes</small>
                                 }
                             </td>
-                            <td><a asp-controller="Items" asp-action="Details" asp-route-id="@m.ItemId" class="text-dark fw-semibold text-decoration-none">@m.Items?.Name</a></td>
+                            <td><a asp-controller="Items" asp-action="Details" asp-route-id="@m.ItemId" class="text-dark fw-semibold text-decoration-none">@m.Items?.Name</a>
+                                <small class="d-block text-muted"><i class="fa-solid fa-warehouse me-1"></i>@m.Warehouses?.Name</small></td>
                             <td class="small">
                                 @if (m.Projects != null)
                                 {
@@ -111,7 +116,7 @@
                             <td class="text-danger fw-bold">@(m.QuantityOut > 0 ? m.QuantityOut.ToString("0.##") : "")</td>
                             <td class="small">@m.TotalCost.ToString("N2")<small class="d-block text-muted">@m.UnitCost.ToString("N2") للوحدة</small></td>
                             <td class="pe-4 text-end">
-                                @if (!m.PurchaseId.HasValue)
+                                @if (!m.PurchaseId.HasValue && AppRoles.CanAccess(User, "Stock", "DeleteMovement"))
                                 {
                                     <form asp-action="DeleteMovement" asp-route-id="@m.Id" asp-route-returnUrl="@returnUrl" method="post" onsubmit="return confirm('حذف هذه الحركة؟')">
                                         @Html.AntiForgeryToken()
@@ -143,6 +148,7 @@
         {
             ["itemId"] = ViewBag.ItemId?.ToString(),
             ["projectId"] = ViewBag.ProjectId?.ToString(),
+            ["warehouseId"] = ViewBag.WarehouseId?.ToString(),
             ["type"] = type?.ToString(),
             ["from"] = from?.ToString("yyyy-MM-dd"),
             ["to"] = to?.ToString("yyyy-MM-dd")

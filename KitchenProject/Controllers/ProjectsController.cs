@@ -16,18 +16,21 @@ namespace KitchenProject.Controllers
 		private readonly IUnitOfWork<Project> _project;
 		private readonly IUnitOfWork<Customer> _customer;
 		private readonly IUnitOfWork<Purchase> _purchase;
+		private readonly IUnitOfWork<MaterialRequest> _materialRequest;
 		private readonly IUnitOfWork<StockTransaction> _tx;
 		private readonly LookupService _lookup;
 
 		public ProjectsController(IUnitOfWork<Project> project,
 								  IUnitOfWork<Customer> customer,
 								  IUnitOfWork<Purchase> purchase,
+								  IUnitOfWork<MaterialRequest> materialRequest,
 								  IUnitOfWork<StockTransaction> tx,
 								  LookupService lookup)
 		{
 			_project = project;
 			_customer = customer;
 			_purchase = purchase;
+			_materialRequest = materialRequest;
 			_tx = tx;
 			_lookup = lookup;
 		}
@@ -307,6 +310,7 @@ namespace KitchenProject.Controllers
 				.AnyAsync(p => p.Contracts.Any() || p.CustomerPayments.Any()
 							|| p.StockTransactions.Any() || p.Expenses.Any() || p.Quotes.Any());
 			hasLinkedRecords = hasLinkedRecords || await _purchase.Entity.GetAll().AnyAsync(p => p.ProjectId == id);
+			hasLinkedRecords = hasLinkedRecords || await _materialRequest.Entity.GetAll().AnyAsync(r => r.ProjectId == id);
 
 			if (hasLinkedRecords)
 			{

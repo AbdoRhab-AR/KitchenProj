@@ -8,9 +8,9 @@ namespace KitchenProject.Models.Enums
 		Purchase = 1,
 		[Display(Name = "اصدار")]
 		Issue = 2,
-		[Display(Name = "حوالة الى ")]
+		[Display(Name = "تحويل وارد")]
 		TransferIn = 3,
-		[Display(Name = "حوالة من")]
+		[Display(Name = "تحويل صادر")]
 		TransferOut = 4,
 		[Display(Name = "استرجاع")]
 		Return = 5,

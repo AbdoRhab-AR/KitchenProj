@@ -1,0 +1,15 @@
+@model MaterialRequestStatus
+@{
+    var (css, icon) = Model switch
+    {
+        MaterialRequestStatus.Pending   => ("bg-warning-subtle text-warning-emphasis", "fa-hourglass-half"),
+        MaterialRequestStatus.Approved  => ("bg-primary-subtle text-primary", "fa-circle-check"),
+        MaterialRequestStatus.Rejected  => ("bg-danger-subtle text-danger", "fa-circle-xmark"),
+        MaterialRequestStatus.Ordered   => ("bg-info-subtle text-info-emphasis", "fa-cart-shopping"),
+        MaterialRequestStatus.Issued    => ("bg-success-subtle text-success", "fa-dolly"),
+        _                               => ("bg-secondary-subtle text-secondary", "fa-ban")
+    };
+}
+<span class="badge @css rounded-pill px-2 py-1 fw-bold">
+    <i class="fa-solid @icon me-1"></i>@Model.GetDisplayName()
+</span>

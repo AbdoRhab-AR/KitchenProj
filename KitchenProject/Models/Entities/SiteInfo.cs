@@ -24,6 +24,10 @@ namespace KitchenProject.Models.Entities
         [Display(Name = "Letterhead")]
         public string? LetterheadUrl { get; set; }
 
+        // الشروط الافتراضية التي تُعبأ تلقائياً في كل عرض سعر جديد
+        [StringLength(4000)]
+        public string? DefaultQuoteTerms { get; set; }
+
         [NotMapped]
         public IFormFile? Logo { get; set; }
 

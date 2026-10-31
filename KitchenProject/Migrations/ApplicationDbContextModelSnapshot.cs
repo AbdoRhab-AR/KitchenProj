@@ -505,6 +505,118 @@ namespace KitchenProject.Migrations
                         });
                 });
 
+            modelBuilder.Entity("KitchenProject.Models.Entities.MaterialRequest", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier")
+                        .HasDefaultValueSql("NEWID()");
+
+                    b.Property<DateTime>("Created")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("DecidedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("DecidedById")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("DecisionNotes")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("IssueRef")
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<DateTime?>("Modified")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("NeededBy")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<Guid>("ProjectId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("PurchaseId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("RequestDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("RequestNo")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<string>("RequestedById")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("WarehouseId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DecidedById");
+
+                    b.HasIndex("ProjectId");
+
+                    b.HasIndex("PurchaseId");
+
+                    b.HasIndex("RequestNo")
+                        .IsUnique();
+
+                    b.HasIndex("RequestedById");
+
+                    b.HasIndex("WarehouseId");
+
+                    b.ToTable("MaterialRequests");
+                });
+
+            modelBuilder.Entity("KitchenProject.Models.Entities.MaterialRequestItem", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier")
+                        .HasDefaultValueSql("NEWID()");
+
+                    b.Property<DateTime>("Created")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("ItemId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("MaterialRequestId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("Modified")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(250)
+                        .HasColumnType("nvarchar(250)");
+
+                    b.Property<decimal>("Quantity")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ItemId");
+
+                    b.HasIndex("MaterialRequestId");
+
+                    b.ToTable("MaterialRequestItems");
+                });
+
             modelBuilder.Entity("KitchenProject.Models.Entities.Project", b =>
                 {
                     b.Property<Guid>("Id")
@@ -763,6 +875,10 @@ namespace KitchenProject.Migrations
                     b.Property<DateTime?>("Modified")
                         .HasColumnType("datetime2");
 
+                    b.Property<string>("Notes")
+                        .HasMaxLength(250)
+                        .HasColumnType("nvarchar(250)");
+
                     b.Property<decimal>("Quantity")
                         .HasColumnType("decimal(18,2)");
 
@@ -808,6 +924,10 @@ namespace KitchenProject.Migrations
 
                     b.Property<DateTime>("Created")
                         .HasColumnType("datetime2");
+
+                    b.Property<string>("DefaultQuoteTerms")
+                        .HasMaxLength(4000)
+                        .HasColumnType("nvarchar(4000)");
 
                     b.Property<string>("LetterheadUrl")
                         .HasColumnType("nvarchar(max)");
@@ -1180,6 +1300,48 @@ namespace KitchenProject.Migrations
                             ConcurrencyStamp = "43dccabf-992f-42c2-8ea0-e023ce5ad8dc",
                             Name = "Prog",
                             NormalizedName = "PROG"
+                        },
+                        new
+                        {
+                            Id = "2f1d6c3a-0b7e-4a51-9d0e-1a2b3c4d5e01",
+                            ConcurrencyStamp = "a7c1e3f5-1111-4a00-8000-000000000001",
+                            Name = "Admin",
+                            NormalizedName = "ADMIN"
+                        },
+                        new
+                        {
+                            Id = "2f1d6c3a-0b7e-4a51-9d0e-1a2b3c4d5e02",
+                            ConcurrencyStamp = "a7c1e3f5-1111-4a00-8000-000000000002",
+                            Name = "Sales",
+                            NormalizedName = "SALES"
+                        },
+                        new
+                        {
+                            Id = "2f1d6c3a-0b7e-4a51-9d0e-1a2b3c4d5e03",
+                            ConcurrencyStamp = "a7c1e3f5-1111-4a00-8000-000000000003",
+                            Name = "Engineer",
+                            NormalizedName = "ENGINEER"
+                        },
+                        new
+                        {
+                            Id = "2f1d6c3a-0b7e-4a51-9d0e-1a2b3c4d5e04",
+                            ConcurrencyStamp = "a7c1e3f5-1111-4a00-8000-000000000004",
+                            Name = "Designer",
+                            NormalizedName = "DESIGNER"
+                        },
+                        new
+                        {
+                            Id = "2f1d6c3a-0b7e-4a51-9d0e-1a2b3c4d5e05",
+                            ConcurrencyStamp = "a7c1e3f5-1111-4a00-8000-000000000005",
+                            Name = "Warehouse",
+                            NormalizedName = "WAREHOUSE"
+                        },
+                        new
+                        {
+                            Id = "2f1d6c3a-0b7e-4a51-9d0e-1a2b3c4d5e06",
+                            ConcurrencyStamp = "a7c1e3f5-1111-4a00-8000-000000000006",
+                            Name = "Accountant",
+                            NormalizedName = "ACCOUNTANT"
                         });
                 });
 
@@ -1349,6 +1511,65 @@ namespace KitchenProject.Migrations
                         .OnDelete(DeleteBehavior.Restrict);
 
                     b.Navigation("Group");
+                });
+
+            modelBuilder.Entity("KitchenProject.Models.Entities.MaterialRequest", b =>
+                {
+                    b.HasOne("KitchenProject.Models.Entities.ApplicationUser", "DecidedBy")
+                        .WithMany()
+                        .HasForeignKey("DecidedById")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("KitchenProject.Models.Entities.Project", "Project")
+                        .WithMany()
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("KitchenProject.Models.Entities.Purchase", "Purchase")
+                        .WithMany()
+                        .HasForeignKey("PurchaseId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("KitchenProject.Models.Entities.ApplicationUser", "RequestedBy")
+                        .WithMany()
+                        .HasForeignKey("RequestedById")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("KitchenProject.Models.Entities.Warehouse", "Warehouse")
+                        .WithMany()
+                        .HasForeignKey("WarehouseId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("DecidedBy");
+
+                    b.Navigation("Project");
+
+                    b.Navigation("Purchase");
+
+                    b.Navigation("RequestedBy");
+
+                    b.Navigation("Warehouse");
+                });
+
+            modelBuilder.Entity("KitchenProject.Models.Entities.MaterialRequestItem", b =>
+                {
+                    b.HasOne("KitchenProject.Models.Entities.Item", "Item")
+                        .WithMany()
+                        .HasForeignKey("ItemId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("KitchenProject.Models.Entities.MaterialRequest", "MaterialRequest")
+                        .WithMany("Items")
+                        .HasForeignKey("MaterialRequestId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Item");
+
+                    b.Navigation("MaterialRequest");
                 });
 
             modelBuilder.Entity("KitchenProject.Models.Entities.Project", b =>
@@ -1618,6 +1839,11 @@ namespace KitchenProject.Migrations
                 });
 
             modelBuilder.Entity("KitchenProject.Models.Entities.ItemGroup", b =>
+                {
+                    b.Navigation("Items");
+                });
+
+            modelBuilder.Entity("KitchenProject.Models.Entities.MaterialRequest", b =>
                 {
                     b.Navigation("Items");
                 });

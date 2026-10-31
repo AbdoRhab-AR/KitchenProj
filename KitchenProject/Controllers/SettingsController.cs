@@ -44,6 +44,7 @@ namespace KitchenProject.Controllers
 				About = site.About,
 				LogoUrl = site.LogoUrl,
 				LetterheadUrl = site.LetterheadUrl,
+				DefaultQuoteTerms = site.DefaultQuoteTerms,
 				Email = contact.Email,
 				Phone = contact.Phone
 			});
@@ -96,6 +97,7 @@ namespace KitchenProject.Controllers
 			site.Name = model.Name.Trim();
 			site.Activity = model.Activity.Trim();
 			site.About = model.About.Trim();
+			site.DefaultQuoteTerms = string.IsNullOrWhiteSpace(model.DefaultQuoteTerms) ? null : model.DefaultQuoteTerms.Trim();
 			site.Modified = DateTime.UtcNow;
 			_siteInfo.Entity.Update(site);
 

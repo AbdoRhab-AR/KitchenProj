@@ -25,6 +25,9 @@ namespace KitchenProject.ViewModels
 		[RegularExpression(@"^\d{14}$", ErrorMessage = "رقم الهاتف يجب أن يكون 14 رقماً (مثال: 00218910997500)")]
 		public string Phone { get; set; } = "";
 
+		[StringLength(4000)]
+		public string? DefaultQuoteTerms { get; set; }
+
 		public string? LogoUrl { get; set; }
 		public string? LetterheadUrl { get; set; }
 

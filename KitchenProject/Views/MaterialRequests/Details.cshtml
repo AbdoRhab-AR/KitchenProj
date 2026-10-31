@@ -1,0 +1,183 @@
+@model KitchenProject.Models.Entities.MaterialRequest
+@using System.Security.Claims
+@{
+    ViewData["Title"] = "طلب المواد " + Model.RequestNo;
+    Layout = "_DashboardLayout";
+    var balances = (Dictionary<Guid, decimal>)ViewBag.Balances;
+    var isOpen = Model.Status is MaterialRequestStatus.Approved or MaterialRequestStatus.Ordered;
+    var canDecide = Model.Status == MaterialRequestStatus.Pending && AppRoles.CanAccess(User, "MaterialRequests", "Approve");
+    var canIssue = isOpen && AppRoles.CanAccess(User, "MaterialRequests", "Issue");
+    var canBuy = Model.Status == MaterialRequestStatus.Approved && AppRoles.CanAccess(User, "MaterialRequests", "ToPurchase");
+    var isOwner = Model.RequestedById == User.FindFirstValue(ClaimTypes.NameIdentifier);
+    var canCancel = Model.Status is MaterialRequestStatus.Pending or MaterialRequestStatus.Approved
+                    && (isOwner || AppRoles.IsFullAccess(User));
+    var shortCount = Model.Items.Count(l => l.Quantity > balances.GetValueOrDefault(l.ItemId));
+}
+
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+    <div>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-1 small text-muted">
+                <li class="breadcrumb-item"><a asp-action="Index" class="text-decoration-none">طلبات المواد</a></li>
+                <li class="breadcrumb-item active" aria-current="page">@Model.RequestNo</li>
+            </ol>
+        </nav>
+        <h2 class="page-header-title mb-0 d-flex align-items-center gap-2">
+            <i class="fa-solid fa-clipboard-list text-primary"></i> @Model.RequestNo
+            <partial name="_StatusBadge" model="Model.Status" />
+        </h2>
+    </div>
+    <div class="d-flex flex-wrap gap-2">
+        @if (canIssue)
+        {
+            <form asp-action="Issue" asp-route-id="@Model.Id" method="post" onsubmit="return confirm('صرف كل أصناف الطلب على المشروع؟')">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="btn btn-primary-custom fw-bold" @(shortCount > 0 ? "disabled title=\"الرصيد لا يكفي\"" : "")>
+                    <i class="fa-solid fa-dolly me-1"></i> صرف من المخزن
+                </button>
+            </form>
+        }
+        @if (canCancel)
+        {
+            <form asp-action="Cancel" asp-route-id="@Model.Id" method="post" onsubmit="return confirm('إلغاء الطلب؟')">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="btn btn-outline-danger fw-bold"><i class="fa-solid fa-ban me-1"></i> إلغاء الطلب</button>
+            </form>
+        }
+        <a asp-action="Index" class="btn btn-outline-secondary fw-bold rounded-3"><i class="fa-solid fa-arrow-right me-1"></i> الطلبات</a>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-12 col-lg-8">
+        <div class="custom-card">
+            <div class="card-header-custom">
+                <h5 class="fw-bold mb-0 text-dark"><i class="fa-solid fa-cubes text-secondary me-2"></i> الخامات المطلوبة</h5>
+                <span class="small text-muted">المتوفر في @Model.Warehouse?.Name</span>
+            </div>
+            <div class="table-responsive">
+                <table class="table align-middle mb-0">
+                    <thead class="bg-light text-muted" style="font-size:0.85rem;">
+                        <tr>
+                            <th class="ps-4">#</th>
+                            <th>الخامة</th>
+                            <th>المطلوب</th>
+                            @if (Model.Status != MaterialRequestStatus.Issued)
+                            {
+                                <th class="pe-4">المتوفر</th>
+                            }
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @{ var n = 1; }
+                        @foreach (var line in Model.Items.OrderBy(l => l.Created))
+                        {
+                            var available = balances.GetValueOrDefault(line.ItemId);
+                            <tr>
+                                <td class="ps-4 text-muted fw-bold">@(n++)</td>
+                                <td>
+                                    <a asp-controller="Items" asp-action="Details" asp-route-id="@line.ItemId" class="fw-semibold text-dark text-decoration-none">@line.Item?.Name</a>
+                                    <small class="text-muted ms-1">@line.Item?.Code</small>
+                                    @if (!string.IsNullOrEmpty(line.Notes))
+                                    {
+                                        <div class="small text-muted">@line.Notes</div>
+                                    }
+                                </td>
+                                <td class="fw-bold">@line.Quantity.ToString("0.##") @line.Item?.Unit</td>
+                                @if (Model.Status != MaterialRequestStatus.Issued)
+                                {
+                                    <td class="pe-4 fw-bold @(line.Quantity > available ? "text-danger" : "text-success")">
+                                        @available.ToString("0.##")
+                                        @if (line.Quantity > available)
+                                        {
+                                            <small class="d-block fw-normal">نقص @((line.Quantity - Math.Max(0, available)).ToString("0.##"))</small>
+                                        }
+                                    </td>
+                                }
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        @if (canDecide)
+        {
+            <div class="custom-card p-4 mt-4">
+                <h6 class="fw-bold mb-3"><i class="fa-solid fa-gavel text-primary me-2"></i> قرار المدير</h6>
+                <form method="post">
+                    @Html.AntiForgeryToken()
+                    <textarea name="decisionNotes" class="form-control mb-3" rows="2" maxlength="500" placeholder="ملاحظة على الاعتماد، أو سبب الرفض (مطلوب عند الرفض)"></textarea>
+                    <div class="d-flex gap-2">
+                        <button type="submit" asp-action="Approve" asp-route-id="@Model.Id" class="btn btn-success fw-bold px-4"><i class="fa-solid fa-check me-1"></i> اعتماد</button>
+                        <button type="submit" asp-action="Reject" asp-route-id="@Model.Id" class="btn btn-outline-danger fw-bold px-4"><i class="fa-solid fa-xmark me-1"></i> رفض</button>
+                    </div>
+                </form>
+            </div>
+        }
+
+        @if (canBuy && shortCount > 0)
+        {
+            <div class="custom-card p-4 mt-4">
+                <h6 class="fw-bold mb-1"><i class="fa-solid fa-cart-plus text-success me-2"></i> شراء النقص</h6>
+                <p class="small text-muted mb-3">@shortCount صنف رصيده لا يكفي. تُنشأ فاتورة شراء مسودة بالكميات الناقصة فقط على هذا المشروع، وبعد استلامها بالمخزن يُصرف الطلب.</p>
+                <form asp-action="ToPurchase" asp-route-id="@Model.Id" method="post" class="d-flex flex-column flex-md-row gap-2">
+                    @Html.AntiForgeryToken()
+                    <select name="supplierId" asp-items="ViewBag.Suppliers" class="form-select" required>
+                        <option value="">-- اختر المورد --</option>
+                    </select>
+                    <button type="submit" class="btn btn-outline-success fw-bold text-nowrap"><i class="fa-solid fa-file-invoice me-1"></i> إنشاء فاتورة شراء</button>
+                </form>
+            </div>
+        }
+    </div>
+
+    <div class="col-12 col-lg-4">
+        <div class="custom-card p-4">
+            <h6 class="fw-bold text-muted mb-3">بيانات الطلب</h6>
+            <dl class="row small mb-0">
+                <dt class="col-5 text-muted">المشروع</dt>
+                <dd class="col-7"><a asp-controller="Projects" asp-action="Details" asp-route-id="@Model.ProjectId" class="fw-bold">@Model.Project?.ProjectNo</a><br />@Model.Project?.ProjectName</dd>
+                <dt class="col-5 text-muted">العميل</dt>
+                <dd class="col-7">@Model.Project?.Customer?.Name</dd>
+                <dt class="col-5 text-muted">المخزن</dt>
+                <dd class="col-7">@Model.Warehouse?.Name</dd>
+                <dt class="col-5 text-muted">مقدم الطلب</dt>
+                <dd class="col-7">@(Model.RequestedBy?.UserProfile?.DisplayName ?? Model.RequestedBy?.UserName ?? "-")</dd>
+                <dt class="col-5 text-muted">تاريخ الطلب</dt>
+                <dd class="col-7">@Model.RequestDate.ToString("yyyy/MM/dd")</dd>
+                @if (Model.NeededBy.HasValue)
+                {
+                    <dt class="col-5 text-muted">مطلوب قبل</dt>
+                    <dd class="col-7 fw-bold">@Model.NeededBy.Value.ToString("yyyy/MM/dd")</dd>
+                }
+                @if (Model.DecidedAt.HasValue)
+                {
+                    <dt class="col-5 text-muted">@(Model.Status == MaterialRequestStatus.Rejected ? "رفضه" : "اعتمده")</dt>
+                    <dd class="col-7">@(Model.DecidedBy?.UserProfile?.DisplayName ?? Model.DecidedBy?.UserName)<br /><small class="text-muted">@Model.DecidedAt.Value.ToLocalTime().ToString("yyyy/MM/dd hh:mm tt")</small></dd>
+                }
+                @if (Model.Purchase != null)
+                {
+                    <dt class="col-5 text-muted">فاتورة الشراء</dt>
+                    <dd class="col-7"><a asp-controller="Purchases" asp-action="Details" asp-route-id="@Model.PurchaseId" class="fw-bold">@Model.Purchase.PurchaseNo</a> <small class="text-muted">(@PurchaseStatuses.GetName(Model.Purchase.Status))</small></dd>
+                }
+                @if (!string.IsNullOrEmpty(Model.IssueRef))
+                {
+                    <dt class="col-5 text-muted">إذن الصرف</dt>
+                    <dd class="col-7"><a asp-controller="Stock" asp-action="Movements" asp-route-projectId="@Model.ProjectId" class="fw-bold">@Model.IssueRef</a></dd>
+                }
+            </dl>
+            @if (!string.IsNullOrEmpty(Model.Notes))
+            {
+                <hr class="opacity-25" />
+                <div class="small"><span class="text-muted fw-bold">ملاحظات:</span> @Model.Notes</div>
+            }
+            @if (!string.IsNullOrEmpty(Model.DecisionNotes))
+            {
+                <div class="alert @(Model.Status == MaterialRequestStatus.Rejected ? "alert-danger" : "alert-light border") small mt-3 mb-0">
+                    <span class="fw-bold">ملاحظة المدير:</span> @Model.DecisionNotes
+                </div>
+            }
+        </div>
+    </div>
+</div>

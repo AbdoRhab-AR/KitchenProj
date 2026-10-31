@@ -19,6 +19,10 @@ namespace KitchenProject.Models.Entities
 		[MaxLength(250)]
 		public string Description { get; set; } = "";
 
+		// ملاحظة قصيرة تُطبع تحت وصف البند (مقاسات، لون، خامة...)
+		[MaxLength(250)]
+		public string? Notes { get; set; }
+
 		[MaxLength(30)]
 		public string Unit { get; set; } = "قطعة";
 

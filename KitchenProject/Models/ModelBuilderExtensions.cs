@@ -65,7 +65,7 @@ namespace KitchenProject.Models
 				new ItemGroup { Id = new Guid("c1000000-0000-4000-8000-00000000000c"), Code = "C", Name = "البند C", SortOrder = 3, Created = SeedDate });
 
 			//--------------------Roles-----------------------------
-			var progRoleId = "109400b7-ee44-4b6c-bef8-0cc59de1543e";
+			var progRoleId = AppRoles.ProgRoleId;
 
 			modelBuilder.Entity<IdentityRole>().HasData(
 				new IdentityRole
@@ -76,6 +76,15 @@ namespace KitchenProject.Models
 					ConcurrencyStamp = "43dccabf-992f-42c2-8ea0-e023ce5ad8dc"
 				}
 			);
+
+			// أدوار الموظفين (المدير، المبيعات، المهندس...) - انظر Classes/AppRoles
+			modelBuilder.Entity<IdentityRole>().HasData(AppRoles.Seed.Select(r => new IdentityRole
+			{
+				Id = r.Id,
+				Name = r.Name,
+				NormalizedName = r.Name.ToUpperInvariant(),
+				ConcurrencyStamp = r.Stamp
+			}).ToArray());
 
 			//-------------------Programmer-----------------------------
 

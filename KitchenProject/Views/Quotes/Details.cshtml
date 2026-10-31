@@ -59,7 +59,13 @@
                         {
                             <tr>
                                 <td class="ps-4 text-muted">@(n++)</td>
-                                <td class="fw-semibold">@item.Description</td>
+                                <td>
+                                    <div class="fw-semibold">@item.Description</div>
+                                    @if (!string.IsNullOrEmpty(item.Notes))
+                                    {
+                                        <div class="small text-muted">@item.Notes</div>
+                                    }
+                                </td>
                                 <td>@item.Unit</td>
                                 <td>@item.Quantity.ToString("0.##")</td>
                                 <td>@item.UnitPrice.ToString("N2")</td>

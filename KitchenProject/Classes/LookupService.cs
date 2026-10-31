@@ -1,6 +1,7 @@
 using KitchenProject.Models.Entities;
 using KitchenProject.Models.Enums;
 using KitchenProject.Models.Interfaces;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 
@@ -15,13 +16,15 @@ namespace KitchenProject.Classes
 		private readonly IUnitOfWork<Warehouse> _warehouse;
 		private readonly IUnitOfWork<Item> _item;
 		private readonly IUnitOfWork<ItemGroup> _group;
+		private readonly IUnitOfWork<IdentityUserRole<string>> _userRole;
 
 		public LookupService(IUnitOfWork<Project> project,
 							 IUnitOfWork<ApplicationUser> user,
 							 IUnitOfWork<Supplier> supplier,
 							 IUnitOfWork<Warehouse> warehouse,
 							 IUnitOfWork<Item> item,
-							 IUnitOfWork<ItemGroup> group)
+							 IUnitOfWork<ItemGroup> group,
+							 IUnitOfWork<IdentityUserRole<string>> userRole)
 		{
 			_project = project;
 			_user = user;
@@ -29,6 +32,7 @@ namespace KitchenProject.Classes
 			_warehouse = warehouse;
 			_item = item;
 			_group = group;
+			_userRole = userRole;
 		}
 
 		// المشاريع غير المغلقة/الملغاة، مع إبقاء المشروع المختار ظاهراً حتى لو أُغلق
@@ -43,9 +47,14 @@ namespace KitchenProject.Classes
 			return new SelectList(projects, "Id", "Text", selected);
 		}
 
+		// الموظفون الفعالون (بدون حساب المبرمج)، مع إبقاء المختار ظاهراً حتى لو أُوقف
 		public async Task<SelectList> UsersAsync(string? selected)
 		{
+			var progUserIds = _userRole.Entity.GetWhere(r => r.RoleId == AppRoles.ProgRoleId).Select(r => r.UserId);
+
 			var users = await _user.Entity.Include(u => u.UserProfile)
+				.Where(u => u.Id == selected
+						 || (!progUserIds.Contains(u.Id) && (u.LockoutEnd == null || u.LockoutEnd < DateTimeOffset.MaxValue)))
 				.OrderBy(u => u.UserName)
 				.Select(u => new { u.Id, Text = u.UserProfile != null ? u.UserProfile.DisplayName : u.UserName })
 				.ToListAsync();

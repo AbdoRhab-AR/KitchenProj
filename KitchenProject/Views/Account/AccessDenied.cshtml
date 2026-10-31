@@ -1,0 +1,15 @@
+@{
+    ViewData["Title"] = "غير مسموح";
+    Layout = "_DashboardLayout";
+}
+
+<div class="custom-card p-5 text-center mx-auto" style="max-width:560px;">
+    <div class="bg-danger-subtle text-danger rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width:80px; height:80px;">
+        <i class="fa-solid fa-lock fs-2"></i>
+    </div>
+    <h4 class="fw-bold mb-2">هذه الشاشة غير متاحة لك</h4>
+    <p class="text-muted mb-4">صلاحيات دورك (<strong>@User.RoleName()</strong>) لا تشمل هذه الصفحة. إذا كنت تحتاجها تواصل مع مدير النظام.</p>
+    <a asp-controller="Projects" asp-action="Index" class="btn btn-primary-custom px-4 fw-bold">
+        <i class="fa-solid fa-arrow-right me-1"></i> العودة للمشاريع
+    </a>
+</div>

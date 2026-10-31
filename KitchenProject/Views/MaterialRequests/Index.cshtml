@@ -1,0 +1,120 @@
+@model IEnumerable<KitchenProject.Models.Entities.MaterialRequest>
+@{
+    ViewData["Title"] = "طلبات المواد";
+    Layout = "_DashboardLayout";
+    MaterialRequestStatus? status = ViewBag.Status;
+}
+
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+    <div>
+        <h2 class="page-header-title mb-1">
+            <i class="fa-solid fa-clipboard-list text-primary me-2"></i> طلبات المواد الداخلية
+        </h2>
+        <p class="text-muted mb-0">طلب خامات لمشروع ← اعتماد المدير ← صرف من المخزن أو شراء النقص</p>
+    </div>
+    <div>
+        <a asp-action="Create" class="btn btn-primary-custom d-inline-flex align-items-center gap-2">
+            <i class="fa-solid fa-plus"></i>
+            <span>طلب مواد جديد</span>
+        </a>
+    </div>
+</div>
+
+<div class="custom-card mb-4 p-3">
+    <form method="get" asp-action="Index" class="row g-3 align-items-end">
+        <div class="col-12 col-md-5">
+            <label class="form-label small fw-bold text-muted">المشروع</label>
+            <select name="projectId" class="form-select" asp-items="ViewBag.Projects"><option value="">كل المشاريع</option></select>
+        </div>
+        <div class="col-6 col-md-3">
+            <label class="form-label small fw-bold text-muted">الحالة</label>
+            <select name="status" class="form-select" asp-items="ViewBag.StatusList"><option value="">الكل</option></select>
+        </div>
+        <div class="col-6 col-md-2 d-flex gap-2">
+            <button type="submit" class="btn btn-primary fw-bold rounded-3 flex-grow-1"><i class="fa-solid fa-filter me-1"></i> عرض</button>
+            <a asp-action="Index" class="btn btn-light border fw-bold text-muted" title="إلغاء الفلترة"><i class="fa-solid fa-xmark"></i></a>
+        </div>
+    </form>
+</div>
+
+<div class="custom-card">
+    <div class="card-header-custom">
+        <h5 class="fw-bold mb-0 text-dark"><i class="fa-solid fa-list text-secondary me-2"></i> الطلبات</h5>
+        <span class="small text-muted">@ViewBag.TotalCount طلب</span>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="bg-light text-muted" style="font-size:0.85rem;">
+                <tr>
+                    <th class="ps-4">رقم الطلب</th>
+                    <th>المشروع</th>
+                    <th>مقدم الطلب</th>
+                    <th>التاريخ</th>
+                    <th>الأصناف</th>
+                    <th>الحالة</th>
+                    <th class="pe-4"></th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.Any())
+                {
+                    foreach (var r in Model)
+                    {
+                        <tr>
+                            <td class="ps-4 fw-bold"><a asp-action="Details" asp-route-id="@r.Id" class="text-decoration-none">@r.RequestNo</a></td>
+                            <td class="small">
+                                <a asp-controller="Projects" asp-action="Details" asp-route-id="@r.ProjectId" class="fw-semibold">@r.Project?.ProjectNo</a>
+                                <small class="d-block text-muted">@r.Project?.ProjectName</small>
+                            </td>
+                            <td class="small">@(r.RequestedBy?.UserProfile?.DisplayName ?? r.RequestedBy?.UserName ?? "-")</td>
+                            <td class="small">
+                                @r.RequestDate.ToString("yyyy/MM/dd")
+                                @if (r.NeededBy.HasValue)
+                                {
+                                    <small class="d-block text-muted">مطلوب قبل @r.NeededBy.Value.ToString("yyyy/MM/dd")</small>
+                                }
+                            </td>
+                            <td class="small">@r.Items.Count صنف</td>
+                            <td><partial name="_StatusBadge" model="r.Status" /></td>
+                            <td class="pe-4 text-end">
+                                <a asp-action="Details" asp-route-id="@r.Id" class="btn btn-sm btn-light border text-primary" title="التفاصيل"><i class="fa-solid fa-eye"></i></a>
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="7" class="text-center py-5 text-muted">
+                            <i class="fa-solid fa-clipboard-list display-4 mb-3 d-block text-secondary opacity-50"></i>
+                            <h5 class="fw-bold mb-1">لا توجد طلبات</h5>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    @{
+        int current = ViewBag.CurrentPage;
+        int total = ViewBag.TotalPages;
+        var route = new Dictionary<string, string?>
+        {
+            ["projectId"] = ViewBag.ProjectId?.ToString(),
+            ["status"] = status?.ToString()
+        };
+        Dictionary<string, string?> PageRoute(int p) => new(route) { ["page"] = p.ToString() };
+    }
+    @if (total > 1)
+    {
+        <div class="card-footer bg-white border-top-0 d-flex align-items-center justify-content-between py-3 px-4">
+            <small class="text-muted">الصفحة @current من @total</small>
+            <nav>
+                <ul class="pagination pagination-sm mb-0">
+                    <li class="page-item @(current == 1 ? "disabled" : "")"><a class="page-link" asp-action="Index" asp-all-route-data="PageRoute(current - 1)">السابق</a></li>
+                    <li class="page-item @(current == total ? "disabled" : "")"><a class="page-link" asp-action="Index" asp-all-route-data="PageRoute(current + 1)">التالي</a></li>
+                </ul>
+            </nav>
+        </div>
+    }
+</div>

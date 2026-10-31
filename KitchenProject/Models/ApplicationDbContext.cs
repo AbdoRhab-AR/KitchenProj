@@ -34,6 +34,8 @@ namespace KitchenProject.Models
 		public DbSet<Purchase> Purchases { get; set; }
 		public DbSet<PurchaseItem> PurchaseItems { get; set; }
 		public DbSet<SupplierPayment> SupplierPayments { get; set; }
+		public DbSet<MaterialRequest> MaterialRequests { get; set; }
+		public DbSet<MaterialRequestItem> MaterialRequestItems { get; set; }
 		public DbSet<UserProfile> UserProfiles { get; set; }
 
 		protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -59,6 +61,8 @@ namespace KitchenProject.Models
 			modelBuilder.Entity<Purchase>().Property(x => x.Id).HasDefaultValueSql("NEWID()");
 			modelBuilder.Entity<PurchaseItem>().Property(x => x.Id).HasDefaultValueSql("NEWID()");
 			modelBuilder.Entity<SupplierPayment>().Property(x => x.Id).HasDefaultValueSql("NEWID()");
+			modelBuilder.Entity<MaterialRequest>().Property(x => x.Id).HasDefaultValueSql("NEWID()");
+			modelBuilder.Entity<MaterialRequestItem>().Property(x => x.Id).HasDefaultValueSql("NEWID()");
 			modelBuilder.Entity<UserProfile>().Property(x => x.Id).HasDefaultValueSql("NEWID()");
 			modelBuilder.Seed(_serviceProvider);
 
@@ -148,6 +152,16 @@ namespace KitchenProject.Models
 			modelBuilder.Entity<Item>()
 				.HasOne(x => x.Group).WithMany(x => x.Items)
 				.HasForeignKey(x => x.ItemGroupId).OnDelete(DeleteBehavior.Restrict);
+
+			// طلبات المواد الداخلية: لا يُحذف مشروع أو مخزن أو مستخدم مرتبط بطلب
+			modelBuilder.Entity<MaterialRequest>().HasOne(x => x.Project).WithMany().HasForeignKey(x => x.ProjectId).OnDelete(DeleteBehavior.Restrict);
+			modelBuilder.Entity<MaterialRequest>().HasOne(x => x.Warehouse).WithMany().HasForeignKey(x => x.WarehouseId).OnDelete(DeleteBehavior.Restrict);
+			modelBuilder.Entity<MaterialRequest>().HasOne(x => x.RequestedBy).WithMany().HasForeignKey(x => x.RequestedById).OnDelete(DeleteBehavior.Restrict);
+			modelBuilder.Entity<MaterialRequest>().HasOne(x => x.DecidedBy).WithMany().HasForeignKey(x => x.DecidedById).OnDelete(DeleteBehavior.Restrict);
+			modelBuilder.Entity<MaterialRequest>().HasOne(x => x.Purchase).WithMany().HasForeignKey(x => x.PurchaseId).OnDelete(DeleteBehavior.SetNull);
+			modelBuilder.Entity<MaterialRequest>().HasIndex(x => x.RequestNo).IsUnique();
+			modelBuilder.Entity<MaterialRequestItem>().HasOne(x => x.MaterialRequest).WithMany(x => x.Items).HasForeignKey(x => x.MaterialRequestId).OnDelete(DeleteBehavior.Cascade);
+			modelBuilder.Entity<MaterialRequestItem>().HasOne(x => x.Item).WithMany().HasForeignKey(x => x.ItemId).OnDelete(DeleteBehavior.Restrict);
 
 			modelBuilder.Entity<Item>().HasIndex(x => x.Code).IsUnique();
 			modelBuilder.Entity<ItemGroup>().HasIndex(x => x.Code).IsUnique();

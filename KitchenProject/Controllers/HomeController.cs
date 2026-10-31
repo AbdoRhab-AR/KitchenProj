@@ -1,5 +1,6 @@
 using KitchenProject.Models.Entities;
 using KitchenProject.Models.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -16,7 +17,8 @@ namespace KitchenProject.Controllers
 
         public IActionResult Index()
         {
-            return View();
+            // لا توجد صفحة رئيسية مستقلة بعد، المشاريع هي نقطة البداية
+            return RedirectToAction("Index", "Projects");
         }
 
         public IActionResult Privacy()
@@ -24,7 +26,8 @@ namespace KitchenProject.Controllers
             return View();
         }
 
-        // GET: Home/Closing
+        // GET: Home/Closing  (تظهر حتى لغير المسجلين)
+        [AllowAnonymous]
         public async Task<IActionResult> Closing()
         {
             var siteState = await _siteState.Entity.GetAll().FirstOrDefaultAsync();

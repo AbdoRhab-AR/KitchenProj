@@ -4,12 +4,17 @@ using KitchenProject.Models.Entities;
 using KitchenProject.Models.Interfaces;
 using KitchenProject.Models.Repositories;
 using KitchenProject.Models.UnitOfWork;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 
 var builder = WebApplication.CreateBuilder(args);
-builder.Services.AddControllersWithViews(options => options.UseArabicValidationMessages());
+builder.Services.AddControllersWithViews(options =>
+{
+	options.UseArabicValidationMessages();
+	options.Filters.Add<RoleAccessFilter>(); // role -> allowed screens, see Classes/AppRoles.cs
+});
 
 
 builder.Services.AddScoped(typeof(IUnitOfWork<>), typeof(UnitOfWork<>));
@@ -27,7 +32,7 @@ builder.Services.Configure<ProgrammerSettings>
 
 builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
 {
-	options.Password.RequiredLength = 3; // ÇáØæá ÇáÃÏäì 3 ÃÍÑİ
+	options.Password.RequiredLength = 6; // minimum 6 characters
 	options.Password.RequiredUniqueChars = 1; // ÍÑİ İÑíÏ æÇÍÏ Úáì ÇáÃŞá
 	options.Password.RequireNonAlphanumeric = false; // ÚäÏ ÊİÚíáåÇ ÓÊÊØáÈ ßáãÇÊ ÇáãÑæÑ ÑãÒ ÎÇÕ æÇÍÏ Úáì ÇáÃŞá
 	options.Password.RequireDigit = true; //íÌÈ Ãä ÊÍÊæí Úáì ÑŞã
@@ -35,18 +40,28 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
 	options.Password.RequireUppercase = false; //áÇ íáÒã ÃÍÑİ ßÈíÑÉ
 	options.Lockout.MaxFailedAccessAttempts = 5; // ÇŞİÇá ÇáÍÓÇÈ ÈÚÏ 5 ãÍÇæáÇÊ ÏÎæá İÇÔáÉ
 	options.Lockout.DefaultLockoutTimeSpan =
-			 TimeSpan.FromMinutes(1); //ÇŞİÇá ÇáÍÓÇÈ áãÏÉ ÎãÓÉ ÚÔÑ ÏŞíŞÉ 
+			 TimeSpan.FromMinutes(15); //ÇŞİÇá ÇáÍÓÇÈ áãÏÉ ÎãÓÉ ÚÔÑ ÏŞíŞÉ 
 	options.SignIn.RequireConfirmedAccount = true; // ÊÓÌíá ÇáÏÎæá íÊØáÈ ÊÃßíÏ ÇáÍÓÇÈ
-	options.User.RequireUniqueEmail = true; // ÚäÏ ÇäÔÇÁ ÇáãÓÊÎÏã íÌÈ ÇÓÊÎÏÇã ÈÑíÏ ÅáßÊÑæäí İÑíÏ
+	options.User.RequireUniqueEmail = false; // staff may have no email; login is by user name
 })
 	   .AddEntityFrameworkStores<ApplicationDbContext>()
 	//ÈŞÇÚÏÉ ÇáÈíÇäÇÊ ááæÕæá Çáì ÇáÌÏÇæá æÇÏÑÇÁ ÇáÅÓÊÚáÇãÇÊ Identity ÑÈØ
-	.AddDefaultTokenProviders(); //íõÓÊÎÏã ãæİÑ ÇáÑãæÒ ÇáÅİÊÑÇÖí áÅäÔÇÁ ÑãæÒ ÅÚÇÏÉ ÊÚííä ßáãÉ ÇáãÑæÑ æÊÛííÑ ÇáÈÑíÏ ÇáÅáßÊÑæäí æÅÑÓÇáåÇ Åáì ÇáÈÑíÏ ÇáÅáßÊÑæäí æÇáåÇÊİ æÇáãÕÇÏŞÉ ÇáËäÇÆíÉ .
+	.AddDefaultTokenProviders()
+	.AddClaimsPrincipalFactory<AppClaimsPrincipalFactory>(); //íõÓÊÎÏã ãæİÑ ÇáÑãæÒ ÇáÅİÊÑÇÖí áÅäÔÇÁ ÑãæÒ ÅÚÇÏÉ ÊÚííä ßáãÉ ÇáãÑæÑ æÊÛííÑ ÇáÈÑíÏ ÇáÅáßÊÑæäí æÅÑÓÇáåÇ Åáì ÇáÈÑíÏ ÇáÅáßÊÑæäí æÇáåÇÊİ æÇáãÕÇÏŞÉ ÇáËäÇÆíÉ .
 
 
 //ÕÇáÍÉ ÅáÇ áãÏÉ ÇáÏŞÇÆŞ Çæ ÇáÓÇÚÇÊ ÇáãÍÏÏÉ ÈÚÏ ÅäÔÇÆåÇ//DataProtectorTokenProvider//áä Êßæä ÇáÑãæÒ ÇáÊí íÊã ÅäÔÇÄåÇ ÈæÇÓØÉ ãæİÑ ÇáÑãæÒ
 builder.Services.Configure<DataProtectionTokenProviderOptions>(options =>
 							   options.TokenLifespan = TimeSpan.FromMinutes(15));
+
+builder.Services.ConfigureApplicationCookie(options =>
+{
+	options.LoginPath = "/Account/Login";
+	options.LogoutPath = "/Account/Logout";
+	options.AccessDeniedPath = "/Account/AccessDenied";
+	options.ExpireTimeSpan = TimeSpan.FromHours(12);
+	options.SlidingExpiration = true;
+});
 //opt.TokenLifespan = TimeSpan.FromDays(1));
 
 
@@ -55,6 +70,9 @@ builder.Services.Configure<DataProtectionTokenProviderOptions>(options =>
 
 builder.Services.AddAuthorization(options =>
 {
+	// every page requires login unless marked [AllowAnonymous]
+	options.FallbackPolicy = new AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build();
+
 	options.AddPolicy("CreatePolicy", policy => policy.RequireClaim("Create", "true"));
 	options.AddPolicy("EditPolicy", policy => policy.RequireClaim("Edit", "true"));
 	options.AddPolicy("DeletePolicy", policy => policy.RequireClaim("Delete", "true"));

@@ -46,6 +46,22 @@ namespace KitchenProject.ViewModels
 		public string? Notes { get; set; }
 	}
 
+	// تحويل خامات بين مخزنين: يُسجل كحركتين (صادر من المصدر ووارد للوجهة) برقم TRF- واحد
+	public class StockTransferViewModel
+	{
+		[Required(ErrorMessage = "يجب اختيار المخزن المحوَّل منه")]
+		public Guid FromWarehouseId { get; set; }
+
+		[Required(ErrorMessage = "يجب اختيار المخزن المحوَّل إليه")]
+		public Guid ToWarehouseId { get; set; }
+
+		public DateTime Date { get; set; } = DateTime.Today;
+
+		public string? Notes { get; set; }
+
+		public List<StockIssueLine> Lines { get; set; } = new();
+	}
+
 	// سطر في شاشة أرصدة المخزن
 	public class StockRow
 	{

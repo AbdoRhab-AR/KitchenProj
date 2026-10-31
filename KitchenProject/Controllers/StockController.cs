@@ -81,11 +81,12 @@ namespace KitchenProject.Controllers
 		}
 
 		// GET: Stock/Movements  كشف الحركات
-		public async Task<IActionResult> Movements(Guid? itemId, Guid? projectId, StockTransactionType? type, DateTime? from, DateTime? to, int page = 1)
+		public async Task<IActionResult> Movements(Guid? itemId, Guid? projectId, Guid? warehouseId, StockTransactionType? type, DateTime? from, DateTime? to, int page = 1)
 		{
 			ViewBag.ActivePage = "Stock";
 			ViewBag.ItemId = itemId;
 			ViewBag.ProjectId = projectId;
+			ViewBag.WarehouseId = warehouseId;
 			ViewBag.Type = type;
 			ViewBag.From = from;
 			ViewBag.To = to;
@@ -94,6 +95,7 @@ namespace KitchenProject.Controllers
 
 			if (itemId.HasValue) query = query.Where(t => t.ItemId == itemId.Value);
 			if (projectId.HasValue) query = query.Where(t => t.ProjectId == projectId.Value);
+			if (warehouseId.HasValue) query = query.Where(t => t.WarehouseId == warehouseId.Value);
 			if (type.HasValue) query = query.Where(t => t.TransactionType == type.Value);
 			if (from.HasValue) query = query.Where(t => t.TransactionDate >= from.Value.Date);
 			if (to.HasValue) query = query.Where(t => t.TransactionDate <= to.Value.Date);
@@ -114,6 +116,7 @@ namespace KitchenProject.Controllers
 
 			ViewBag.Items = new Microsoft.AspNetCore.Mvc.Rendering.SelectList(
 				await _lookup.ItemOptionsAsync(ItemType.Raw), "Id", "Name", itemId);
+			ViewBag.Warehouses = await _lookup.WarehousesAsync(warehouseId);
 			ViewBag.Projects = await _lookup.ProjectsAsync(projectId);
 			ViewBag.TypeList = LookupService.EnumList(type);
 
@@ -306,6 +309,84 @@ namespace KitchenProject.Controllers
 			return View(model);
 		}
 
+		// GET: Stock/Transfer?itemId=5
+		public async Task<IActionResult> Transfer(Guid? itemId)
+		{
+			ViewBag.ActivePage = "Stock";
+
+			var model = new StockTransferViewModel
+			{
+				FromWarehouseId = await _lookup.DefaultWarehouseIdAsync(),
+				Lines = { new StockIssueLine { ItemId = itemId ?? Guid.Empty } }
+			};
+
+			await FillTransferListsAsync(model);
+			return View(model);
+		}
+
+		// POST: Stock/Transfer
+		[HttpPost]
+		[ValidateAntiForgeryToken]
+		public async Task<IActionResult> Transfer(StockTransferViewModel model)
+		{
+			ViewBag.ActivePage = "Stock";
+
+			model.Lines = model.Lines.Where(l => l.ItemId != Guid.Empty).ToList();
+			foreach (var key in ModelState.Keys.Where(k => k.StartsWith("Lines[")).ToList())
+			{
+				ModelState.Remove(key);
+			}
+
+			if (model.FromWarehouseId == model.ToWarehouseId)
+				ModelState.AddModelError(nameof(model.ToWarehouseId), "لا يمكن التحويل إلى نفس المخزن");
+			if (model.Lines.Count == 0)
+				ModelState.AddModelError("", "يجب إضافة صنف واحد على الأقل");
+			if (model.Lines.Any(l => l.Quantity <= 0))
+				ModelState.AddModelError("", "الكميات يجب أن تكون أكبر من صفر");
+			if (model.Lines.GroupBy(l => l.ItemId).Any(g => g.Count() > 1))
+				ModelState.AddModelError("", "الصنف مكرر في أكثر من سطر، اجمع الكمية في سطر واحد");
+
+			var ids = model.Lines.Select(l => l.ItemId).ToList();
+			var items = await _item.Entity.GetWhere(i => ids.Contains(i.Id) && i.Type == ItemType.Raw)
+				.ToDictionaryAsync(i => i.Id);
+			if (items.Count != ids.Distinct().Count())
+				ModelState.AddModelError("", "التحويل يكون للأصناف الخام فقط");
+
+			if (ModelState.IsValid)
+			{
+				var balances = await _stock.BalancesAsync(model.FromWarehouseId);
+				foreach (var line in model.Lines)
+				{
+					var available = balances.GetValueOrDefault(line.ItemId);
+					if (line.Quantity > available)
+						ModelState.AddModelError("", $"الكمية المحوّلة من ({items[line.ItemId].Name}) أكبر من المتوفر في المخزن ({available:0.##} {items[line.ItemId].Unit})");
+				}
+			}
+
+			if (ModelState.IsValid)
+			{
+				var refNo = await DocumentNumbers.NextAsync(
+					_tx.Entity.GetWhere(t => t.ReferenceNo != null).Select(t => t.ReferenceNo!), "TRF-");
+				var costs = await _stock.AverageCostsAsync();
+				var now = DateTime.UtcNow;
+
+				foreach (var line in model.Lines)
+				{
+					var cost = costs.GetValueOrDefault(line.ItemId, items[line.ItemId].PurchasePrice);
+					_tx.Entity.Insert(NewTransferSide(line, model, model.FromWarehouseId, StockTransactionType.TransferOut, cost, refNo, now));
+					_tx.Entity.Insert(NewTransferSide(line, model, model.ToWarehouseId, StockTransactionType.TransferIn, cost, refNo, now));
+				}
+
+				await _tx.SaveAsync();
+
+				TempData["Success"] = $"تم تحويل {model.Lines.Count} صنف بين المخازن (رقم {refNo})";
+				return RedirectToAction(nameof(Movements), new { type = StockTransactionType.TransferIn });
+			}
+
+			await FillTransferListsAsync(model);
+			return View(model);
+		}
+
 		// POST: Stock/DeleteMovement/5  (حركات الشراء تُلغى من فاتورة الشراء نفسها)
 		[HttpPost]
 		[ValidateAntiForgeryToken]
@@ -317,20 +398,43 @@ namespace KitchenProject.Controllers
 				return NotFound();
 			}
 
+			// التحويل حركتان (صادر ووارد) تُحذفان معاً حتى لا يختل رصيد أحد المخزنين
+			var related = new List<StockTransaction> { movement };
+			var isTransfer = movement.TransactionType is StockTransactionType.TransferIn or StockTransactionType.TransferOut;
+			if (isTransfer && movement.ReferenceNo != null)
+			{
+				related = await _tx.Entity.GetWhere(t => t.ReferenceNo == movement.ReferenceNo && t.ItemId == movement.ItemId
+						&& (t.TransactionType == StockTransactionType.TransferIn || t.TransactionType == StockTransactionType.TransferOut))
+					.ToListAsync();
+			}
+
+			var spent = false;
+			foreach (var side in related.Where(t => t.QuantityIn > 0))
+			{
+				if (await _stock.BalanceAsync(side.ItemId, side.WarehouseId) - side.QuantityIn < 0)
+					spent = true;
+			}
+
 			if (movement.PurchaseId.HasValue)
 			{
 				TempData["Error"] = "هذه الحركة تابعة لفاتورة شراء، ألغِ الفاتورة بدلاً من حذف الحركة";
 			}
-			else if (movement.QuantityIn > 0
-					 && await _stock.BalanceAsync(movement.ItemId, movement.WarehouseId) - movement.QuantityIn < 0)
+			else if (spent)
 			{
 				TempData["Error"] = "لا يمكن حذف هذه الحركة لأن الكمية الواردة بها صُرفت بالفعل";
 			}
 			else
 			{
+				// GetWhere غير متتبع، فنحذف الحركة المتتبعة نفسها ونرفق الباقي
 				_tx.Entity.Delete(movement);
+				foreach (var side in related.Where(t => t.Id != movement.Id))
+				{
+					_tx.Entity.Delete(side);
+				}
 				await _tx.SaveAsync();
-				TempData["Success"] = $"تم حذف الحركة {movement.ReferenceNo}";
+				TempData["Success"] = isTransfer
+					? $"تم حذف التحويل {movement.ReferenceNo} من المخزنين"
+					: $"تم حذف الحركة {movement.ReferenceNo}";
 			}
 
 			if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
@@ -348,6 +452,30 @@ namespace KitchenProject.Controllers
 			ViewBag.Warehouses = await _lookup.WarehousesAsync(model.WarehouseId);
 			ViewBag.ItemOptions = await _lookup.ItemOptionsAsync(ItemType.Raw);
 			ViewBag.Balances = await _stock.BalancesAsync(model.WarehouseId);
+		}
+
+		private static StockTransaction NewTransferSide(StockIssueLine line, StockTransferViewModel model, Guid warehouseId,
+														StockTransactionType type, decimal cost, string refNo, DateTime now) => new()
+		{
+			Id = Guid.NewGuid(),
+			Created = now,
+			ItemId = line.ItemId,
+			WarehouseId = warehouseId,
+			TransactionType = type,
+			TransactionDate = model.Date,
+			QuantityIn = type == StockTransactionType.TransferIn ? line.Quantity : 0,
+			QuantityOut = type == StockTransactionType.TransferOut ? line.Quantity : 0,
+			UnitCost = cost,
+			ReferenceNo = refNo,
+			Notes = model.Notes
+		};
+
+		private async Task FillTransferListsAsync(StockTransferViewModel model)
+		{
+			ViewBag.FromWarehouses = await _lookup.WarehousesAsync(model.FromWarehouseId);
+			ViewBag.ToWarehouses = await _lookup.WarehousesAsync(model.ToWarehouseId);
+			ViewBag.ItemOptions = await _lookup.ItemOptionsAsync(ItemType.Raw);
+			ViewBag.BalancesByWarehouse = await _stock.BalancesByWarehouseAsync();
 		}
 
 		private async Task FillAdjustListsAsync(StockAdjustViewModel model)

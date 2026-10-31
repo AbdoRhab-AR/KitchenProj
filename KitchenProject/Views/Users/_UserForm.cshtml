@@ -1,0 +1,70 @@
+@model UserFormViewModel
+@{
+    var isEdit = !string.IsNullOrEmpty(Model.Id);
+}
+
+<div asp-validation-summary="ModelOnly" class="alert alert-danger rounded-3 mb-4" role="alert"></div>
+
+<div class="row g-4">
+    <div class="col-12 col-md-6">
+        <label asp-for="DisplayName" class="form-label fw-bold">الاسم الظاهر <span class="text-danger">*</span></label>
+        <input asp-for="DisplayName" class="form-control" placeholder="مثال: أحمد المهندس" />
+        <span asp-validation-for="DisplayName" class="text-danger small"></span>
+    </div>
+    <div class="col-12 col-md-6">
+        <label asp-for="UserName" class="form-label fw-bold">اسم الدخول <span class="text-danger">*</span></label>
+        <input asp-for="UserName" class="form-control" dir="ltr" placeholder="ahmed" autocomplete="off" />
+        <small class="text-muted">بالإنجليزي، يُستخدم لتسجيل الدخول</small>
+        <span asp-validation-for="UserName" class="text-danger small d-block"></span>
+    </div>
+    <div class="col-12 col-md-6">
+        <label asp-for="Role" class="form-label fw-bold">الدور <span class="text-danger">*</span></label>
+        @if (Model.Role == AppRoles.Prog)
+        {
+            <input class="form-control bg-light" value="@AppRoles.GetName(AppRoles.Prog)" readonly />
+            <input type="hidden" asp-for="Role" />
+        }
+        else
+        {
+            <select asp-for="Role" asp-items="ViewBag.Roles" class="form-select"></select>
+        }
+        <span asp-validation-for="Role" class="text-danger small"></span>
+    </div>
+    <div class="col-12 col-md-6">
+        <label asp-for="Password" class="form-label fw-bold">
+            @(isEdit ? "كلمة مرور جديدة" : "كلمة المرور") @if (!isEdit) { <span class="text-danger">*</span> }
+        </label>
+        <input asp-for="Password" class="form-control" dir="ltr" autocomplete="new-password" />
+        <small class="text-muted">@(isEdit ? "اتركها فارغة إذا لا تريد تغييرها" : "6 أحرف على الأقل وتحتوي على رقم")</small>
+        <span asp-validation-for="Password" class="text-danger small d-block"></span>
+    </div>
+    <div class="col-12 col-md-6">
+        <label asp-for="PhoneNumber" class="form-label fw-bold">الهاتف</label>
+        <input asp-for="PhoneNumber" class="form-control" dir="ltr" />
+        <span asp-validation-for="PhoneNumber" class="text-danger small"></span>
+    </div>
+    <div class="col-12 col-md-6">
+        <label asp-for="Email" class="form-label fw-bold">البريد الإلكتروني (اختياري)</label>
+        <input asp-for="Email" class="form-control" dir="ltr" />
+        <span asp-validation-for="Email" class="text-danger small"></span>
+    </div>
+    <div class="col-12">
+        <div class="form-check form-switch">
+            <input asp-for="IsActive" class="form-check-input" type="checkbox" role="switch" />
+            <label asp-for="IsActive" class="form-check-label fw-bold">الحساب فعال (يمكنه تسجيل الدخول)</label>
+        </div>
+        <span asp-validation-for="IsActive" class="text-danger small"></span>
+    </div>
+</div>
+
+<div class="bg-light rounded-3 p-3 mt-4 small">
+    <span class="fw-bold d-block mb-2"><i class="fa-solid fa-shield-halved text-primary me-1"></i> صلاحيات الأدوار</span>
+    <ul class="mb-0 ps-3">
+        <li><strong>المدير:</strong> كل الشاشات، بما فيها المستخدمين والإعدادات</li>
+        <li><strong>المبيعات:</strong> العملاء، المشاريع، المعاينات، عروض الأسعار، العقود، التحصيلات</li>
+        <li><strong>مهندس:</strong> العملاء، المشاريع، المعاينات، المخزن (صرف الخامات)</li>
+        <li><strong>مصمم:</strong> العملاء، المشاريع، المعاينات، عروض الأسعار، العقود</li>
+        <li><strong>أمين المخزن:</strong> العملاء، المشاريع، الأصناف، المخزن، المخازن، المشتريات، الموردين</li>
+        <li><strong>المحاسب:</strong> العملاء، المشاريع، العقود، التحصيلات، المشتريات، الموردين، المخزن</li>
+    </ul>
+</div>

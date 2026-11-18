@@ -1,0 +1,85 @@
+﻿@model List<AccountNode>
+@{
+    ViewData["Title"] = "الميزانية العمومية";
+    Layout = "_DashboardLayout";
+    DateTime? asOf = ViewBag.AsOf;
+
+    var rows = Model.Where(n => n.Account.IsPostable && n.Balance != 0).ToList();
+    var assets = rows.Where(n => n.Account.Type == AccountType.Asset).ToList();
+    var liabilities = rows.Where(n => n.Account.Type == AccountType.Liability).ToList();
+    var equity = rows.Where(n => n.Account.Type == AccountType.Equity).ToList();
+
+    // أرباح الفترات غير المقفلة: ما زالت في حسابات الإيرادات والمصروفات
+    var openResult = rows.Where(n => n.Account.Type == AccountType.Revenue).Sum(n => n.Balance)
+                   - rows.Where(n => n.Account.Type == AccountType.Expense).Sum(n => n.Balance);
+
+    var totalAssets = assets.Sum(n => n.Balance);
+    var totalLiabilities = liabilities.Sum(n => n.Balance);
+    var totalEquity = equity.Sum(n => n.Balance) + openResult;
+    var balanced = totalAssets == totalLiabilities + totalEquity;
+
+    async Task Block(string title, List<AccountNode> list, decimal total, AccountNode? extra = null)
+    {
+        <tr class="table-light"><td colspan="2" class="ps-4 fw-bold">@title</td></tr>
+        foreach (var n in list)
+        {
+            <tr>
+                <td class="ps-5"><a asp-action="Ledger" asp-route-accountId="@n.Account.Id" asp-route-to="@asOf?.ToString("yyyy-MM-dd")"><span class="font-monospace text-muted">@n.Account.Code</span> @n.Account.Name</a></td>
+                <td class="@(n.Balance < 0 ? "text-danger" : "")">@n.Balance.ToString("N2")</td>
+            </tr>
+        }
+        if (title == "حقوق الملكية" && openResult != 0)
+        {
+            <tr><td class="ps-5">@(openResult >= 0 ? "أرباح الفترة الحالية (غير مقفلة)" : "خسائر الفترة الحالية (غير مقفلة)")</td><td class="@(openResult < 0 ? "text-danger" : "")">@openResult.ToString("N2")</td></tr>
+        }
+        <tr class="fw-bold"><td class="ps-4">إجمالي @title</td><td>@total.ToString("N2")</td></tr>
+    }
+}
+
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+    <div>
+        <h2 class="page-header-title mb-1"><i class="fa-solid fa-building-columns text-primary me-2"></i> الميزانية العمومية</h2>
+        <p class="text-muted mb-0">الأصول = الخصوم + حقوق الملكية في تاريخ معين</p>
+    </div>
+    <a asp-action="BalanceSheetPrint" asp-route-asOf="@asOf?.ToString("yyyy-MM-dd")" target="_blank" class="btn btn-light border"><i class="fa-solid fa-print me-1"></i> طباعة (A4)</a>
+</div>
+
+<div class="custom-card mb-4 p-3">
+    <form method="get" asp-action="BalanceSheet" class="row g-3 align-items-end">
+        <div class="col-8 col-md-3">
+            <label class="form-label small fw-bold text-muted">كما في تاريخ</label>
+            <input type="date" name="asOf" value="@asOf?.ToString("yyyy-MM-dd")" class="form-control" />
+        </div>
+        <div class="col-4 col-md-2">
+            <button type="submit" class="btn btn-primary fw-bold rounded-3 w-100"><i class="fa-solid fa-search me-1"></i> عرض</button>
+        </div>
+    </form>
+</div>
+
+<div class="custom-card">
+    <div class="card-header-custom">
+        <h5 class="fw-bold mb-0">كما في @asOf?.ToString("yyyy/MM/dd")</h5>
+        @if (balanced)
+        {
+            <span class="badge bg-success-subtle text-success"><i class="fa-solid fa-circle-check me-1"></i>الميزانية متزنة</span>
+        }
+        else
+        {
+            <span class="badge bg-danger-subtle text-danger"><i class="fa-solid fa-triangle-exclamation me-1"></i>غير متزنة (فرق @((totalAssets - totalLiabilities - totalEquity).ToString("N2")))</span>
+        }
+    </div>
+    <div class="table-responsive">
+        <table class="table align-middle mb-0">
+            <tbody>
+                @{ await Block("الأصول", assets, totalAssets); }
+                @{ await Block("الخصوم", liabilities, totalLiabilities); }
+                @{ await Block("حقوق الملكية", equity, totalEquity); }
+                <tr class="table-primary fw-bold">
+                    <td class="ps-4">إجمالي الخصوم وحقوق الملكية</td>
+                    <td>@((totalLiabilities + totalEquity).ToString("N2"))</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+

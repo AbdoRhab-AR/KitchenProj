@@ -6,7 +6,9 @@
     var movements = ViewBag.Movements as List<StockTransaction> ?? new();
     var quoteLines = ViewBag.QuoteLines as List<QuoteItem> ?? new();
     decimal balance = isRaw ? ViewBag.Balance : 0;
-    decimal avgCost = isRaw ? ViewBag.AverageCost : 0;
+    decimal avgCost = isRaw ? ViewBag.AverageCost : Model.PurchasePrice;
+    decimal effectiveCost = Math.Max(Model.PurchasePrice, avgCost);
+    decimal effectiveSale = Math.Max(Model.SalePrice, effectiveCost);
     var low = isRaw && Model.MinQuantity > 0 && balance <= Model.MinQuantity;
 }
 
@@ -57,15 +59,15 @@
             <h6 class="fw-bold mb-3"><i class="fa-solid fa-circle-info text-primary me-2"></i> البيانات</h6>
             <div class="d-flex flex-column gap-2 small">
                 <span>الوحدة: <strong>@Model.Unit</strong></span>
+                <span>سعر الشراء / التكلفة: <strong>@Model.PurchasePrice.ToString("N2")</strong></span>
                 @if (isRaw)
                 {
-                    <span>آخر سعر شراء: <strong>@Model.PurchasePrice.ToString("N2")</strong></span>
                     <span>متوسط التكلفة: <strong>@avgCost.ToString("N2")</strong></span>
-                    <span>حد إعادة الطلب: <strong>@(Model.MinQuantity > 0 ? Model.MinQuantity.ToString("0.##") : "بدون")</strong></span>
                 }
-                else
+                <span>سعر البيع المعتمد: <strong class="text-primary">@effectiveSale.ToString("N2")</strong></span>
+                @if (isRaw)
                 {
-                    <span>سعر البيع: <strong>@Model.SalePrice.ToString("N2")</strong></span>
+                    <span>حد إعادة الطلب: <strong>@(Model.MinQuantity > 0 ? Model.MinQuantity.ToString("0.##") : "بدون")</strong></span>
                 }
                 <span>تاريخ الإضافة: <strong>@Model.Created.ToLocalTime().ToString("yyyy/MM/dd")</strong></span>
             </div>
@@ -95,7 +97,7 @@
     <div class="col-12 col-lg-8">
         @if (isRaw)
         {
-            <div class="custom-card">
+            <div class="custom-card @(quoteLines.Any() ? "mb-4" : "")">
                 <div class="card-header-custom">
                     <h5 class="fw-bold mb-0 text-dark"><i class="fa-solid fa-right-left text-secondary me-2"></i> آخر الحركات</h5>
                     <a asp-controller="Stock" asp-action="Movements" asp-route-itemId="@Model.Id" class="btn btn-sm btn-light border fw-bold">كشف كامل</a>
@@ -144,7 +146,7 @@
                 }
             </div>
         }
-        else
+        @if (!isRaw || quoteLines.Any())
         {
             <div class="custom-card">
                 <div class="card-header-custom">

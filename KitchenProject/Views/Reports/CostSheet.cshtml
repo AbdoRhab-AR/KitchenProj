@@ -13,7 +13,7 @@
     string Pct(decimal part) => profit.SaleValue > 0 ? (part / profit.SaleValue * 100).ToString("0.#") + "%" : "-";
 }
 
-<div class="row g-2 mb-3">
+<div class="row g-2 mb-2">
     <div class="col-5">
         <div class="meta-box">
             <span class="label">المشروع</span>
@@ -50,7 +50,17 @@
     </thead>
     <tbody>
         <tr>
-            <td class="fw-bold">قيمة البيع @(profit.IsEstimate ? "(تقديرية - لا يوجد عقد)" : "(العقود)")</td>
+            <td class="fw-bold">
+                قيمة البيع
+                @if (Model.Status == ProjectStatus.Cancelled)
+                {
+                    @(contracts.Any() ? "(العقود)" : profit.SaleValue > 0 ? "(رسوم إلغاء على العميل)" : "(مشروع ملغى - بدون رسوم)")
+                }
+                else
+                {
+                    @(profit.IsEstimate ? "(تقديرية - لا يوجد عقد)" : "(العقود)")
+                }
+            </td>
             <td class="fw-bold">@profit.SaleValue.ToString("N2")</td>
             <td>100%</td>
         </tr>

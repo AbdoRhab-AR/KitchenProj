@@ -48,9 +48,9 @@ namespace KitchenProject.Controllers
 			name = name?.Trim();
 			location = string.IsNullOrWhiteSpace(location) ? null : location.Trim();
 
-			if (string.IsNullOrEmpty(name) || name.Length > 100)
+			if (string.IsNullOrEmpty(name) || name.Length > 100 || !SearchValidator.IsSafeEntityName(name))
 			{
-				TempData["Error"] = "اسم المخزن مطلوب (100 حرف كحد أقصى)";
+				TempData["Error"] = "اسم المخزن غير صالح أو يحتوي على رموز/أوامر غير مسموح بها";
 				return RedirectToAction(nameof(Index));
 			}
 

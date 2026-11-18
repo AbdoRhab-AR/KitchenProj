@@ -17,18 +17,21 @@ namespace KitchenProject.Controllers
 		private readonly IUnitOfWork<StockTransaction> _tx;
 		private readonly IUnitOfWork<Item> _item;
 		private readonly IUnitOfWork<Project> _project;
+		private readonly IUnitOfWork<Quote> _quote;
 		private readonly LookupService _lookup;
 		private readonly StockService _stock;
 
 		public StockController(IUnitOfWork<StockTransaction> tx,
 							   IUnitOfWork<Item> item,
 							   IUnitOfWork<Project> project,
+							   IUnitOfWork<Quote> quote,
 							   LookupService lookup,
 							   StockService stock)
 		{
 			_tx = tx;
 			_item = item;
 			_project = project;
+			_quote = quote;
 			_lookup = lookup;
 			_stock = stock;
 		}
@@ -47,8 +50,16 @@ namespace KitchenProject.Controllers
 			var query = _item.Entity.GetWhere(i => i.Type == ItemType.Raw);
 			if (!string.IsNullOrWhiteSpace(searchString))
 			{
-				searchString = searchString.Trim();
-				query = query.Where(i => i.Name.Contains(searchString) || i.Code.Contains(searchString));
+				if (!SearchValidator.TryValidateNameSearch(searchString, out var validName, out var searchError))
+				{
+					TempData["Error"] = searchError;
+					ViewBag.SearchError = searchError;
+					query = query.Where(_ => false);
+				}
+				else
+				{
+					query = query.Where(i => i.Name.Contains(validName));
+				}
 			}
 
 			var rows = (await query.OrderBy(i => i.Name).ToListAsync())
@@ -101,7 +112,7 @@ namespace KitchenProject.Controllers
 			if (to.HasValue) query = query.Where(t => t.TransactionDate <= to.Value.Date);
 
 			var totalCount = await query.CountAsync();
-			int pageSize = 20;
+			int pageSize = await _lookup.PageSizeAsync();
 			var movements = await query.OrderByDescending(t => t.TransactionDate).ThenByDescending(t => t.Created)
 									   .Skip((page - 1) * pageSize)
 									   .Take(pageSize)
@@ -123,8 +134,8 @@ namespace KitchenProject.Controllers
 			return View(movements);
 		}
 
-		// GET: Stock/Issue?projectId=5&type=Return
-		public async Task<IActionResult> Issue(Guid? projectId, Guid? itemId, StockTransactionType type = StockTransactionType.Issue)
+		// GET: Stock/Issue?projectId=5&type=Return  أو  ?projectId=5&quoteId=5 / &fromQuote=true
+		public async Task<IActionResult> Issue(Guid? projectId, Guid? itemId, Guid? quoteId = null, bool fromQuote = false, StockTransactionType type = StockTransactionType.Issue)
 		{
 			ViewBag.ActivePage = "Stock";
 
@@ -132,9 +143,42 @@ namespace KitchenProject.Controllers
 			{
 				ProjectId = projectId,
 				WarehouseId = await _lookup.DefaultWarehouseIdAsync(),
-				Type = type == StockTransactionType.Return ? StockTransactionType.Return : StockTransactionType.Issue,
-				Lines = { new StockIssueLine { ItemId = itemId ?? Guid.Empty } }
+				Type = type == StockTransactionType.Return ? StockTransactionType.Return : StockTransactionType.Issue
 			};
+
+			if (model.Type == StockTransactionType.Issue && (quoteId.HasValue || (fromQuote && projectId.HasValue)))
+			{
+				var quoteQuery = _quote.Entity.Include(q => q.Items);
+				var quote = quoteId.HasValue
+					? await quoteQuery.FirstOrDefaultAsync(q => q.Id == quoteId.Value)
+					: await quoteQuery.Where(q => q.ProjectId == projectId!.Value && q.Status != DesignStatus.Rejected)
+						.OrderByDescending(q => q.Status == DesignStatus.Approved)
+						.ThenByDescending(q => q.Created)
+						.FirstOrDefaultAsync();
+
+				if (quote != null)
+				{
+					model.ProjectId = quote.ProjectId;
+					model.Notes = $"صرف أصناف عرض السعر {quote.QuoteNo}";
+					var qItemIds = quote.Items.Where(i => i.ItemId.HasValue).Select(i => i.ItemId!.Value).Distinct().ToList();
+					var rawIds = (await _item.Entity.GetWhere(i => qItemIds.Contains(i.Id) && i.Type == ItemType.Raw).Select(i => i.Id).ToListAsync()).ToHashSet();
+
+					foreach (var g in quote.Items.Where(i => i.ItemId.HasValue && rawIds.Contains(i.ItemId.Value)).GroupBy(i => i.ItemId!.Value))
+					{
+						model.Lines.Add(new StockIssueLine { ItemId = g.Key, Quantity = g.Sum(x => x.Quantity) });
+					}
+
+					if (model.Lines.Count == 0)
+					{
+						TempData["Error"] = $"عرض السعر {quote.QuoteNo} لا يحتوي على أصناف مخزنية مسجلة، يمكنك اختيار الخامات يدوياً أدناه";
+					}
+				}
+			}
+
+			if (model.Lines.Count == 0)
+			{
+				model.Lines.Add(new StockIssueLine { ItemId = itemId ?? Guid.Empty });
+			}
 
 			await FillIssueListsAsync(model);
 			return View(model);
@@ -307,6 +351,112 @@ namespace KitchenProject.Controllers
 
 			await FillAdjustListsAsync(model);
 			return View(model);
+		}
+
+		// ------------------------------------------------------------------ جرد المخزن كاملاً
+
+		private async Task<(Guid WarehouseId, List<StockRow> Rows)> StocktakeRowsAsync(Guid? warehouseId)
+		{
+			var wid = warehouseId ?? await _lookup.DefaultWarehouseIdAsync();
+			var balances = await _stock.BalancesAsync(wid);
+			var costs = await _stock.AverageCostsAsync();
+
+			var rows = (await _item.Entity.GetWhere(i => i.Type == ItemType.Raw).OrderBy(i => i.Name).ToListAsync())
+				.Select(i => new StockRow
+				{
+					Item = i,
+					Balance = balances.GetValueOrDefault(i.Id),
+					AverageCost = costs.GetValueOrDefault(i.Id, i.PurchasePrice)
+				})
+				.Where(r => r.Item.IsActive || r.Balance != 0)
+				.ToList();
+
+			return (wid, rows);
+		}
+
+		// GET: Stock/Stocktake  جرد المخزن: عدّ كل الأصناف وتسوية الفروقات دفعة واحدة
+		public async Task<IActionResult> Stocktake(Guid? warehouseId)
+		{
+			ViewBag.ActivePage = "Stocktake";
+			var (wid, rows) = await StocktakeRowsAsync(warehouseId);
+			ViewBag.WarehouseId = wid;
+			ViewBag.Warehouses = await _lookup.WarehousesAsync(wid);
+			return View(rows);
+		}
+
+		// POST: Stock/Stocktake   الأصناف التي تُترك كميتها فارغة لا تُجرد ولا تتأثر
+		[HttpPost]
+		[ValidateAntiForgeryToken]
+		public async Task<IActionResult> Stocktake(Guid warehouseId, DateTime date, string? notes, [Bind(Prefix = "counts")] Dictionary<Guid, decimal?> counts)
+		{
+			counts = counts.Where(c => c.Value.HasValue).ToDictionary(c => c.Key, c => c.Value);
+			if (counts.Count == 0)
+			{
+				TempData["Error"] = "أدخل الكمية الفعلية لصنف واحد على الأقل";
+				return RedirectToAction(nameof(Stocktake), new { warehouseId });
+			}
+			if (counts.Any(c => c.Value < 0))
+			{
+				TempData["Error"] = "الكميات لا تكون سالبة";
+				return RedirectToAction(nameof(Stocktake), new { warehouseId });
+			}
+
+			var (_, rows) = await StocktakeRowsAsync(warehouseId);
+			var refNo = await DocumentNumbers.NextAsync(
+				_tx.Entity.GetWhere(t => t.ReferenceNo != null).Select(t => t.ReferenceNo!), "CNT-");
+
+			int matched = 0, surplus = 0, shortage = 0;
+			decimal surplusValue = 0, shortageValue = 0;
+			var now = DateTime.UtcNow;
+
+			foreach (var row in rows.Where(r => counts.ContainsKey(r.Item.Id)))
+			{
+				var counted = counts[row.Item.Id]!.Value;
+				var diff = counted - row.Balance;
+				if (diff == 0)
+				{
+					matched++;
+					continue;
+				}
+
+				_tx.Entity.Insert(new StockTransaction
+				{
+					Id = Guid.NewGuid(),
+					Created = now,
+					ItemId = row.Item.Id,
+					WarehouseId = warehouseId,
+					TransactionType = StockTransactionType.Adjustment,
+					TransactionDate = date.Date,
+					QuantityIn = diff > 0 ? diff : 0,
+					QuantityOut = diff < 0 ? -diff : 0,
+					UnitCost = row.AverageCost,
+					ReferenceNo = refNo,
+					Notes = $"جرد {refNo}: الرصيد {row.Balance:0.##} والفعلي {counted:0.##}" + (string.IsNullOrWhiteSpace(notes) ? "" : " - " + notes.Trim())
+				});
+
+				if (diff > 0) { surplus++; surplusValue += diff * row.AverageCost; }
+				else { shortage++; shortageValue += -diff * row.AverageCost; }
+			}
+
+			if (surplus + shortage > 0)
+			{
+				await _tx.SaveAsync();
+			}
+
+			TempData["Success"] = surplus + shortage == 0
+				? $"تم جرد {matched} صنف وكلها مطابقة، لم تُسجل أي تسوية"
+				: $"جرد {refNo}: {matched} مطابق، {surplus} زيادة (قيمة {surplusValue:N2})، {shortage} عجز (قيمة {shortageValue:N2})";
+			return RedirectToAction(nameof(Index), new { warehouseId });
+		}
+
+		// GET: Stock/StocktakeSheet  ورقة جرد مطبوعة للعد اليدوي (A4)
+		public async Task<IActionResult> StocktakeSheet(Guid? warehouseId, bool showBalance = false)
+		{
+			var (wid, rows) = await StocktakeRowsAsync(warehouseId);
+			var warehouses = await _lookup.WarehousesAsync(wid);
+			ViewBag.WarehouseName = warehouses.FirstOrDefault(w => w.Value == wid.ToString())?.Text ?? "";
+			ViewBag.ShowBalance = showBalance;
+			return View(rows);
 		}
 
 		// GET: Stock/Transfer?itemId=5

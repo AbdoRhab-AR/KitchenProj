@@ -1,0 +1,142 @@
+@model JournalFormVm
+@{
+    var isEdit = Model.Id.HasValue;
+    ViewData["Title"] = isEdit ? $"تعديل قيد {Model.EntryNo}" : "قيد يدوي";
+    Layout = "_DashboardLayout";
+    DateTime? closed = ViewBag.ClosedThrough;
+    var accounts = ((IEnumerable<SelectListItem>)ViewBag.Accounts).ToList();
+}
+
+<div class="mb-4">
+    <h2 class="page-header-title mb-1"><i class="fa-solid fa-pen-to-square text-primary me-2"></i> @ViewData["Title"]</h2>
+    <p class="text-muted mb-0">للأرصدة الافتتاحية والتسويات ورأس المال والقروض وما لا يغطيه النظام تلقائياً. يجب أن يتساوى المدين والدائن
+        @if (closed.HasValue) { <span class="text-warning-emphasis">(التاريخ بعد @closed.Value.ToString("yyyy/MM/dd"))</span> }
+    </p>
+</div>
+
+<form method="post" asp-action="@(isEdit ? "EditJournal" : "CreateJournal")" asp-route-id="@Model.Id">
+    <div asp-validation-summary="All" class="alert alert-danger rounded-3 mb-3"></div>
+    <div class="custom-card p-4 mb-3">
+        <div class="row g-3">
+            <div class="col-md-3">
+                <label class="form-label fw-bold">التاريخ</label>
+                <input type="date" name="EntryDate" value="@Model.EntryDate.ToString("yyyy-MM-dd")" class="form-control" required />
+            </div>
+            <div class="col-md-9">
+                <label class="form-label fw-bold">البيان</label>
+                <input type="text" name="Description" value="@Model.Description" maxlength="500" class="form-control" required />
+            </div>
+        </div>
+    </div>
+
+    <div class="custom-card mb-3">
+        <div class="table-responsive">
+            <table class="table align-middle mb-0" id="lines">
+                <thead class="bg-light text-muted" style="font-size:0.85rem;">
+                    <tr>
+                        <th class="ps-4" style="width:34%">الحساب</th>
+                        <th style="width:22%">بيان السطر</th>
+                        <th style="width:16%">مدين</th>
+                        <th style="width:16%">دائن</th>
+                        <th style="width:5%"></th>
+                    </tr>
+                </thead>
+                <tbody id="lines-body">
+                    @for (int i = 0; i < Model.Lines.Count; i++)
+                    {
+                        var line = Model.Lines[i];
+                        <tr>
+                            <td class="ps-4">
+                                <select name="Lines[@i].AccountId" class="form-select">
+                                    <option value="">— اختر الحساب —</option>
+                                    @foreach (var a in accounts)
+                                    {
+                                        <option value="@a.Value" selected="@(a.Value == line.AccountId.ToString())">@a.Text</option>
+                                    }
+                                </select>
+                            </td>
+                            <td><input type="text" name="Lines[@i].Description" value="@line.Description" class="form-control" maxlength="300" /></td>
+                            <td><input type="number" step="0.01" min="0" name="Lines[@i].Debit" value="@(line.Debit == 0 ? "" : line.Debit.ToString("0.##"))" class="form-control debit" /></td>
+                            <td><input type="number" step="0.01" min="0" name="Lines[@i].Credit" value="@(line.Credit == 0 ? "" : line.Credit.ToString("0.##"))" class="form-control credit" /></td>
+                            <td><button type="button" class="btn btn-sm btn-light border text-danger remove" title="حذف السطر"><i class="fa-solid fa-xmark"></i></button></td>
+                        </tr>
+                    }
+                </tbody>
+                <tfoot class="bg-light fw-bold">
+                    <tr>
+                        <td class="ps-4" colspan="2">
+                            <button type="button" id="add-line" class="btn btn-sm btn-light border"><i class="fa-solid fa-plus me-1"></i> إضافة سطر</button>
+                        </td>
+                        <td id="total-debit">0.00</td>
+                        <td id="total-credit">0.00</td>
+                        <td></td>
+                    </tr>
+                    <tr>
+                        <td colspan="5" class="ps-4"><span id="diff" class="small"></span></td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+
+    <div class="d-flex gap-2">
+        <button type="submit" class="btn btn-primary-custom"><i class="fa-solid fa-floppy-disk me-1"></i> حفظ القيد</button>
+        <a asp-action="Index" class="btn btn-light border">إلغاء</a>
+    </div>
+</form>
+
+@section Scripts {
+    <script>
+        (function () {
+            const body = document.getElementById('lines-body');
+
+            function reindex() {
+                [...body.rows].forEach((row, i) => {
+                    row.querySelectorAll('[name]').forEach(el => {
+                        el.name = el.name.replace(/Lines\[\d+\]/, 'Lines[' + i + ']');
+                    });
+                });
+            }
+
+            function totals() {
+                let d = 0, c = 0;
+                body.querySelectorAll('.debit').forEach(el => d += parseFloat(el.value) || 0);
+                body.querySelectorAll('.credit').forEach(el => c += parseFloat(el.value) || 0);
+                document.getElementById('total-debit').textContent = d.toFixed(2);
+                document.getElementById('total-credit').textContent = c.toFixed(2);
+                const diff = Math.round((d - c) * 100) / 100;
+                const el = document.getElementById('diff');
+                el.textContent = diff === 0 ? (d > 0 ? 'القيد متزن' : '') : 'الفرق: ' + Math.abs(diff).toFixed(2) + (diff > 0 ? ' (يلزم دائن)' : ' (يلزم مدين)');
+                el.className = 'small ' + (diff === 0 ? 'text-success' : 'text-danger');
+            }
+
+            // سطر إما مدين أو دائن: كتابة أحدهما تفرّغ الآخر
+            body.addEventListener('input', e => {
+                if (e.target.matches('.debit,.credit') && e.target.value) {
+                    const other = e.target.closest('tr').querySelector(e.target.classList.contains('debit') ? '.credit' : '.debit');
+                    other.value = '';
+                }
+                totals();
+            });
+
+            body.addEventListener('click', e => {
+                const btn = e.target.closest('.remove');
+                if (btn && body.rows.length > 2) {
+                    btn.closest('tr').remove();
+                    reindex();
+                    totals();
+                }
+            });
+
+            document.getElementById('add-line').addEventListener('click', () => {
+                const row = body.rows[body.rows.length - 1].cloneNode(true);
+                row.querySelectorAll('input').forEach(el => el.value = '');
+                row.querySelector('select').value = '';
+                body.appendChild(row);
+                reindex();
+            });
+
+            totals();
+        })();
+    </script>
+}

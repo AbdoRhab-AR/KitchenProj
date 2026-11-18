@@ -67,6 +67,7 @@ namespace KitchenProject.Controllers
             model.ActiveProjects = model.ProjectsByStatus
                 .Where(s => s.Key is not (ProjectStatus.Closed or ProjectStatus.Cancelled or ProjectStatus.Delivered))
                 .Sum(s => s.Value);
+            model.CancelledProjects = model.ProjectsByStatus.GetValueOrDefault(ProjectStatus.Cancelled);
 
             model.RecentProjects = await _project.Entity.Include(p => p.Customer)
                 .OrderByDescending(p => p.Created).Take(6).ToListAsync();
@@ -91,7 +92,9 @@ namespace KitchenProject.Controllers
             model.ShowFinance = AppRoles.CanAccess(User, "Payments");
             if (model.ShowFinance)
             {
-                model.MonthCollections = await _payment.Entity.GetWhere(p => p.PaymentDate >= monthStart).SumAsync(p => (decimal?)p.Amount) ?? 0;
+                model.MonthCollections = await _payment.Entity
+                    .GetWhere(p => p.PaymentDate >= monthStart && !(p.Payment == PaymentMethod.Chek && p.ChequeStatus == ChequeStatus.Bounced))
+                    .SumAsync(p => (decimal?)(p.IsRefund ? -p.Amount : p.Amount)) ?? 0;
                 model.MonthExpenses = await _expense.Entity.GetWhere(e => e.ExpenseDate >= monthStart).SumAsync(e => (decimal?)e.Amount) ?? 0;
                 model.Outstanding = await _contract.Entity
                     .GetWhere(c => c.Status == ContractStatuses.Active || c.Status == ContractStatuses.Completed)
@@ -146,6 +149,17 @@ namespace KitchenProject.Controllers
 
         public IActionResult Privacy()
         {
+            return RedirectToAction(nameof(Index));
+        }
+
+        [AllowAnonymous]
+        [Route("Home/Error")]
+        [Route("Error/{statusCode:int?}")]
+        [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
+        public IActionResult Error(int? statusCode = null)
+        {
+            if (statusCode == 404)
+                return View("NotFound");
             return View();
         }
 

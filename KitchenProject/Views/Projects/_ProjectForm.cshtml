@@ -28,8 +28,8 @@
     <!-- Customer -->
     <div class="col-12 col-md-6">
         <label asp-for="CustomerId" class="form-label fw-bold">العميل <span class="text-danger">*</span></label>
-        <select asp-for="CustomerId" asp-items="ViewBag.Customers" class="form-select">
-            <option value="">-- اختر العميل --</option>
+        <select asp-for="CustomerId" asp-items="ViewBag.Customers" class="form-select" id="customerIdSelect" data-searchable="true" data-search-placeholder="اكتب اسم العميل للبحث...">
+            <option value="">-- اكتب اسم العميل للبحث أو اختر من القائمة --</option>
         </select>
         <span asp-validation-for="CustomerId" class="text-danger small"></span>
     </div>
@@ -78,18 +78,21 @@
         <select asp-for="SalesUserId" asp-items="ViewBag.SalesUsers" class="form-select">
             <option value="">-- غير محدد --</option>
         </select>
+        <span asp-validation-for="SalesUserId" class="text-danger small"></span>
     </div>
     <div class="col-12 col-md-4">
         <label asp-for="EngineerUserId" class="form-label fw-bold">مهندس المعاينة</label>
         <select asp-for="EngineerUserId" asp-items="ViewBag.EngineerUsers" class="form-select">
             <option value="">-- غير محدد --</option>
         </select>
+        <span asp-validation-for="EngineerUserId" class="text-danger small"></span>
     </div>
     <div class="col-12 col-md-4">
         <label asp-for="DesignerUserId" class="form-label fw-bold">المصمم</label>
         <select asp-for="DesignerUserId" asp-items="ViewBag.DesignerUsers" class="form-select">
             <option value="">-- غير محدد --</option>
         </select>
+        <span asp-validation-for="DesignerUserId" class="text-danger small"></span>
     </div>
 </div>
 
@@ -123,4 +126,37 @@
         <textarea asp-for="Notes" class="form-control" rows="3" placeholder="الألوان، الخامات المطلوبة، ملاحظات خاصة بالتركيب..."></textarea>
         <span asp-validation-for="Notes" class="text-danger small"></span>
     </div>
+
+    @if (Model.Status == ProjectStatus.Cancelled)
+    {
+        <div class="col-12 col-md-4">
+            <label asp-for="CancellationFee" class="form-label fw-bold text-danger">رسوم الإلغاء على العميل</label>
+            <input asp-for="CancellationFee" type="number" step="0.01" min="0" class="form-control" />
+            <span asp-validation-for="CancellationFee" class="text-danger small"></span>
+        </div>
+        <div class="col-12 col-md-8">
+            <label asp-for="CancellationReason" class="form-label fw-bold text-danger">سبب الإلغاء</label>
+            <input asp-for="CancellationReason" class="form-control" maxlength="500" placeholder="سبب إلغاء المشروع..." />
+            <span asp-validation-for="CancellationReason" class="text-danger small"></span>
+        </div>
+    }
 </div>
+
+@if (ViewBag.CustomerAddresses != null)
+{
+    <script>
+        (function () {
+            const addresses = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(ViewBag.CustomerAddresses));
+            const customerSelect = document.getElementById('customerIdSelect');
+            const addressInput = document.getElementById('Address');
+            if (customerSelect && addressInput) {
+                customerSelect.addEventListener('change', function () {
+                    const selectedId = customerSelect.value;
+                    if (selectedId && addresses[selectedId] && !addressInput.value.trim()) {
+                        addressInput.value = addresses[selectedId];
+                    }
+                });
+            }
+        })();
+    </script>
+}

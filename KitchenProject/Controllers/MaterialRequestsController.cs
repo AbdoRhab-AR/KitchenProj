@@ -18,6 +18,7 @@ namespace KitchenProject.Controllers
 		private readonly IUnitOfWork<StockTransaction> _tx;
 		private readonly IUnitOfWork<Purchase> _purchase;
 		private readonly IUnitOfWork<Project> _project;
+		private readonly IUnitOfWork<Quote> _quote;
 		private readonly LookupService _lookup;
 		private readonly StockService _stock;
 
@@ -26,6 +27,7 @@ namespace KitchenProject.Controllers
 										  IUnitOfWork<StockTransaction> tx,
 										  IUnitOfWork<Purchase> purchase,
 										  IUnitOfWork<Project> project,
+										  IUnitOfWork<Quote> quote,
 										  LookupService lookup,
 										  StockService stock)
 		{
@@ -34,6 +36,7 @@ namespace KitchenProject.Controllers
 			_tx = tx;
 			_purchase = purchase;
 			_project = project;
+			_quote = quote;
 			_lookup = lookup;
 			_stock = stock;
 		}
@@ -44,23 +47,39 @@ namespace KitchenProject.Controllers
 		private bool SeesAll => AppRoles.CanAccess(User, "MaterialRequests", "Issue") || User.IsInRole(AppRoles.Accountant);
 
 		// GET: MaterialRequests
-		public async Task<IActionResult> Index(MaterialRequestStatus? status, Guid? projectId, int page = 1)
+		public async Task<IActionResult> Index(string? searchString, MaterialRequestStatus? status, Guid? projectId, int page = 1)
 		{
 			ViewBag.ActivePage = "MaterialRequests";
+			ViewBag.SearchString = searchString;
 			ViewBag.Status = status;
 			ViewBag.ProjectId = projectId;
 
-			var query = _request.Entity.Include(r => r.Project, r => r.Warehouse, r => r.RequestedBy!, r => r.RequestedBy!.UserProfile, r => r.Items);
+			var query = _request.Entity.Include(r => r.Project, r => r.Project.Customer, r => r.Warehouse, r => r.RequestedBy!, r => r.RequestedBy!.UserProfile, r => r.Items);
 			if (!SeesAll)
 			{
 				var me = CurrentUserId;
 				query = query.Where(r => r.RequestedById == me);
 			}
+			if (!string.IsNullOrWhiteSpace(searchString))
+			{
+				if (!SearchValidator.TryValidateNameSearch(searchString, out var validName, out var searchError))
+				{
+					TempData["Error"] = searchError;
+					ViewBag.SearchError = searchError;
+					query = query.Where(_ => false);
+				}
+				else
+				{
+					query = query.Where(r => r.Project.ProjectName.Contains(validName)
+										  || r.Project.Customer.Name.Contains(validName)
+										  || (r.RequestedBy != null && r.RequestedBy.UserProfile != null && r.RequestedBy.UserProfile.DisplayName.Contains(validName)));
+				}
+			}
 			if (status.HasValue) query = query.Where(r => r.Status == status.Value);
 			if (projectId.HasValue) query = query.Where(r => r.ProjectId == projectId.Value);
 
 			var totalCount = await query.CountAsync();
-			int pageSize = 15;
+			int pageSize = await _lookup.PageSizeAsync();
 			var requests = await query.OrderByDescending(r => r.Created)
 									  .Skip((page - 1) * pageSize)
 									  .Take(pageSize)
@@ -91,17 +110,41 @@ namespace KitchenProject.Controllers
 			return View(request);
 		}
 
-		// GET: MaterialRequests/Create?projectId=5
-		public async Task<IActionResult> Create(Guid? projectId)
+		// GET: MaterialRequests/Create?projectId=5&quoteId=5
+		public async Task<IActionResult> Create(Guid? projectId, Guid? quoteId)
 		{
 			ViewBag.ActivePage = "MaterialRequests";
 
 			var model = new MaterialRequest
 			{
 				ProjectId = projectId ?? Guid.Empty,
-				WarehouseId = await _lookup.DefaultWarehouseIdAsync(),
-				Items = { new MaterialRequestItem() }
+				WarehouseId = await _lookup.DefaultWarehouseIdAsync()
 			};
+
+			if (quoteId.HasValue)
+			{
+				var quote = await _quote.Entity.Include(q => q.Items).FirstOrDefaultAsync(q => q.Id == quoteId.Value);
+				if (quote != null)
+				{
+					model.ProjectId = quote.ProjectId;
+					model.Notes = $"توريد مواد عرض السعر {quote.QuoteNo}";
+					var itemIds = quote.Items.Where(i => i.ItemId.HasValue).Select(i => i.ItemId!.Value).Distinct().ToList();
+					var rawIds = (await _item.Entity.GetWhere(i => itemIds.Contains(i.Id) && i.Type == ItemType.Raw).Select(i => i.Id).ToListAsync()).ToHashSet();
+					foreach (var g in quote.Items.Where(i => i.ItemId.HasValue && rawIds.Contains(i.ItemId.Value)).GroupBy(i => i.ItemId!.Value))
+					{
+						model.Items.Add(new MaterialRequestItem { ItemId = g.Key, Quantity = g.Sum(x => x.Quantity) });
+					}
+					if (model.Items.Count == 0)
+					{
+						TempData["Error"] = "عرض السعر لا يحتوي على أصناف خام مرتبطة، يمكنك إضافتها يدوياً أدناه";
+					}
+				}
+			}
+
+			if (model.Items.Count == 0)
+			{
+				model.Items.Add(new MaterialRequestItem());
+			}
 
 			await FillFormListsAsync(model);
 			return View(model);

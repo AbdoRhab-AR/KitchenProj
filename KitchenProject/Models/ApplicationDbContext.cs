@@ -33,10 +33,16 @@ namespace KitchenProject.Models
 		public DbSet<StockTransaction> StockTransactions { get; set; }
 		public DbSet<Purchase> Purchases { get; set; }
 		public DbSet<PurchaseItem> PurchaseItems { get; set; }
+		public DbSet<PurchaseReturn> PurchaseReturns { get; set; }
+		public DbSet<PurchaseReturnItem> PurchaseReturnItems { get; set; }
 		public DbSet<SupplierPayment> SupplierPayments { get; set; }
 		public DbSet<MaterialRequest> MaterialRequests { get; set; }
 		public DbSet<MaterialRequestItem> MaterialRequestItems { get; set; }
 		public DbSet<UserProfile> UserProfiles { get; set; }
+		public DbSet<Account> Accounts { get; set; }
+		public DbSet<JournalEntry> JournalEntries { get; set; }
+		public DbSet<JournalLine> JournalLines { get; set; }
+		public DbSet<PeriodClose> PeriodCloses { get; set; }
 
 		protected override void OnModelCreating(ModelBuilder modelBuilder)
 		{
@@ -64,7 +70,54 @@ namespace KitchenProject.Models
 			modelBuilder.Entity<MaterialRequest>().Property(x => x.Id).HasDefaultValueSql("NEWID()");
 			modelBuilder.Entity<MaterialRequestItem>().Property(x => x.Id).HasDefaultValueSql("NEWID()");
 			modelBuilder.Entity<UserProfile>().Property(x => x.Id).HasDefaultValueSql("NEWID()");
+			modelBuilder.Entity<Account>().Property(x => x.Id).HasDefaultValueSql("NEWID()");
+			modelBuilder.Entity<JournalEntry>().Property(x => x.Id).HasDefaultValueSql("NEWID()");
+			modelBuilder.Entity<JournalLine>().Property(x => x.Id).HasDefaultValueSql("NEWID()");
+			modelBuilder.Entity<PeriodClose>().Property(x => x.Id).HasDefaultValueSql("NEWID()");
+			modelBuilder.Entity<PurchaseReturn>().Property(x => x.Id).HasDefaultValueSql("NEWID()");
+			modelBuilder.Entity<PurchaseReturnItem>().Property(x => x.Id).HasDefaultValueSql("NEWID()");
 			modelBuilder.Seed(_serviceProvider);
+
+			// المحاسبة: شجرة الحسابات والقيود اليومية
+			modelBuilder.Entity<Account>().HasIndex(x => x.Code).IsUnique();
+			modelBuilder.Entity<Account>().HasIndex(x => x.SystemKey).IsUnique().HasFilter("[SystemKey] IS NOT NULL");
+			modelBuilder.Entity<Account>()
+				.HasOne(x => x.Parent).WithMany(x => x.Children)
+				.HasForeignKey(x => x.ParentId).OnDelete(DeleteBehavior.Restrict);
+
+			modelBuilder.Entity<JournalEntry>().HasIndex(x => x.EntryNo).IsUnique();
+			modelBuilder.Entity<JournalEntry>().HasIndex(x => x.EntryDate);
+			// قيد تلقائي واحد فقط لكل مستند مصدر
+			modelBuilder.Entity<JournalEntry>().HasIndex(x => new { x.SourceType, x.SourceId })
+				.IsUnique().HasFilter("[SourceType] IS NOT NULL AND [SourceId] IS NOT NULL");
+
+			modelBuilder.Entity<JournalLine>()
+				.HasOne(x => x.JournalEntry).WithMany(x => x.Lines)
+				.HasForeignKey(x => x.JournalEntryId).OnDelete(DeleteBehavior.Cascade);
+			modelBuilder.Entity<JournalLine>()
+				.HasOne(x => x.Account).WithMany(x => x.Lines)
+				.HasForeignKey(x => x.AccountId).OnDelete(DeleteBehavior.Restrict);
+
+			// مرتجعات المشتريات
+			modelBuilder.Entity<PurchaseReturn>().HasIndex(x => x.ReturnNo).IsUnique();
+			modelBuilder.Entity<PurchaseReturn>()
+				.HasOne(x => x.Purchase).WithMany()
+				.HasForeignKey(x => x.PurchaseId).OnDelete(DeleteBehavior.Restrict);
+			modelBuilder.Entity<PurchaseReturn>()
+				.HasOne(x => x.Supplier).WithMany()
+				.HasForeignKey(x => x.SupplierId).OnDelete(DeleteBehavior.Restrict);
+			modelBuilder.Entity<PurchaseReturn>()
+				.HasOne(x => x.Warehouse).WithMany()
+				.HasForeignKey(x => x.WarehouseId).OnDelete(DeleteBehavior.Restrict);
+			modelBuilder.Entity<PurchaseReturnItem>()
+				.HasOne(x => x.PurchaseReturn).WithMany(x => x.Items)
+				.HasForeignKey(x => x.PurchaseReturnId).OnDelete(DeleteBehavior.Cascade);
+			modelBuilder.Entity<PurchaseReturnItem>()
+				.HasOne(x => x.Item).WithMany()
+				.HasForeignKey(x => x.ItemId).OnDelete(DeleteBehavior.Restrict);
+			modelBuilder.Entity<StockTransaction>()
+				.HasOne(x => x.PurchaseReturn).WithMany()
+				.HasForeignKey(x => x.PurchaseReturnId).OnDelete(DeleteBehavior.Restrict);
 
 
 			modelBuilder.Entity<ApplicationUser>()

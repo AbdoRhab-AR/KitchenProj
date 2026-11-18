@@ -1,0 +1,51 @@
+@model List<PartyStatementRow>
+@{
+    Layout = "_PrintLayout";
+    var supplier = (Supplier)ViewBag.Supplier;
+    DateTime? from = ViewBag.From;
+    DateTime? to = ViewBag.To;
+    decimal opening = ViewBag.Opening;
+    ViewData["Title"] = "كشف حساب مورد - " + supplier.Name;
+    ViewData["DocTitle"] = "كشف حساب مورد";
+    ViewData["DocNo"] = supplier.SupplierNo;
+    var closing = Model.Any() ? Model.Last().Balance : opening;
+}
+
+<div class="row g-2 mb-2">
+    <div class="col-5"><div class="meta-box"><span class="label">المورد</span><div class="fw-bold">@supplier.Name</div><div class="small">@supplier.Phone</div></div></div>
+    <div class="col-4"><div class="meta-box"><span class="label">الفترة</span><div class="fw-bold small">@(from?.ToString("yyyy/MM/dd") ?? "البداية") - @(to?.ToString("yyyy/MM/dd") ?? "اليوم")</div></div></div>
+    <div class="col-3"><div class="meta-box"><span class="label">المستحق للمورد (د.ل)</span><div class="fw-bold" style="color:var(--brand);">@closing.ToString("N2")</div></div></div>
+</div>
+
+<table class="table table-bordered print-table">
+    <thead><tr><th style="width:11%">التاريخ</th><th style="width:12%">النوع</th><th style="width:12%">المرجع</th><th>البيان</th><th style="width:13%">مدين</th><th style="width:13%">دائن</th><th style="width:14%">الرصيد</th></tr></thead>
+    <tbody>
+        @if (from.HasValue)
+        {
+            <tr class="table-light"><td colspan="6">رصيد ما قبل @from.Value.ToString("yyyy/MM/dd")</td><td class="text-start fw-bold">@opening.ToString("N2")</td></tr>
+        }
+        @foreach (var r in Model)
+        {
+            <tr>
+                <td class="small">@r.Date.ToString("yyyy/MM/dd")</td>
+                <td class="small">@r.DocType</td>
+                <td class="font-monospace small">@r.DocNo</td>
+                <td class="small">@r.Description</td>
+                <td class="text-start">@(r.Debit == 0 ? "" : r.Debit.ToString("N2"))</td>
+                <td class="text-start">@(r.Credit == 0 ? "" : r.Credit.ToString("N2"))</td>
+                <td class="text-start fw-bold">@r.Balance.ToString("N2")</td>
+            </tr>
+        }
+    </tbody>
+    <tfoot>
+        <tr class="fw-bold bg-light">
+            <td colspan="4">الإجمالي</td>
+            <td class="text-start">@Model.Sum(r => r.Debit).ToString("N2")</td>
+            <td class="text-start">@Model.Sum(r => r.Credit).ToString("N2")</td>
+            <td class="text-start">@closing.ToString("N2")</td>
+        </tr>
+    </tfoot>
+</table>
+
+<div class="small text-muted mt-2">طُبع بتاريخ @DateTime.Now.ToString("yyyy/MM/dd HH:mm") بواسطة @ViewBag.PrintedBy</div>
+<div class="signatures mt-4"><div>المحاسب</div><div>مصادقة المورد</div></div>

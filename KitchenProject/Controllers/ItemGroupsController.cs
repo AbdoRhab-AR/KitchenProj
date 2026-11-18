@@ -46,9 +46,9 @@ namespace KitchenProject.Controllers
 			model.Code = (model.Code ?? "").Trim().ToUpperInvariant();
 			model.Name = (model.Name ?? "").Trim();
 
-			if (string.IsNullOrEmpty(model.Code) || string.IsNullOrEmpty(model.Name))
+			if (string.IsNullOrEmpty(model.Code) || string.IsNullOrEmpty(model.Name) || !SearchValidator.IsSafeEntityName(model.Name))
 			{
-				TempData["Error"] = "رمز البند واسمه مطلوبان";
+				TempData["Error"] = "رمز البند واسمه مطلوبان ويجب ألا يحتوي الاسم على رموز أو أوامر غير مسموح بها";
 				return RedirectToAction(nameof(Index));
 			}
 

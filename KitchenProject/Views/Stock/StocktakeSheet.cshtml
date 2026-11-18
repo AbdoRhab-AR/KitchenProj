@@ -1,0 +1,50 @@
+@model List<StockRow>
+@{
+    Layout = "_PrintLayout";
+    ViewData["Title"] = "ورقة جرد";
+    ViewData["DocTitle"] = "ورقة جرد المخزن";
+    ViewData["DocNo"] = DateTime.Today.ToString("yyyy/MM/dd");
+    bool showBalance = ViewBag.ShowBalance;
+    int n = 0;
+}
+
+<div class="row g-2 mb-2">
+    <div class="col-4"><div class="meta-box"><span class="label">المخزن</span><div class="fw-bold">@ViewBag.WarehouseName</div></div></div>
+    <div class="col-4"><div class="meta-box"><span class="label">تاريخ الجرد</span><div class="fw-bold">@DateTime.Today.ToString("yyyy/MM/dd")</div></div></div>
+    <div class="col-4"><div class="meta-box"><span class="label">عدد الأصناف</span><div class="fw-bold">@Model.Count</div></div></div>
+</div>
+
+<table class="table table-bordered print-table">
+    <thead>
+        <tr>
+            <th style="width:5%">#</th>
+            <th style="width:14%">الكود</th>
+            <th>الصنف</th>
+            <th style="width:9%">الوحدة</th>
+            @if (showBalance) { <th style="width:12%">رصيد النظام</th> }
+            <th style="width:16%">الكمية الفعلية</th>
+            <th style="width:16%">ملاحظات</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var r in Model)
+        {
+            n++;
+            <tr style="height:9mm;">
+                <td>@n</td>
+                <td class="font-monospace small">@r.Item.Code</td>
+                <td class="fw-semibold">@r.Item.Name</td>
+                <td class="small">@r.Item.Unit</td>
+                @if (showBalance) { <td class="fw-bold">@r.Balance.ToString("0.##")</td> }
+                <td></td>
+                <td></td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<div class="signatures mt-4">
+    <div>أمين المخزن</div>
+    <div>العاد / المراجع</div>
+    <div>اعتماد الإدارة</div>
+</div>

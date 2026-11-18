@@ -24,6 +24,11 @@ namespace KitchenProject.Models.Entities
 		public Purchase? Purchase { get; set; }
 		public Guid? PurchaseId { get; set; }
 
+		// مرتجع الشراء الذي أنشأ الحركة
+		[ValidateNever]
+		public PurchaseReturn? PurchaseReturn { get; set; }
+		public Guid? PurchaseReturnId { get; set; }
+
 		public StockTransactionType TransactionType { get; set; }
 
 		public DateTime TransactionDate { get; set; } = DateTime.Today;

@@ -28,6 +28,10 @@ namespace KitchenProject.Models.Entities
         [StringLength(4000)]
         public string? DefaultQuoteTerms { get; set; }
 
+        // عدد الصفوف في كل صفحة بجداول النظام (نظام الصفحات)
+        [Range(5, 200, ErrorMessage = "عدد الصفوف في الصفحة يجب أن يكون بين {1} و {2}")]
+        public int PageSize { get; set; } = 10;
+
         [NotMapped]
         public IFormFile? Logo { get; set; }
 

@@ -44,11 +44,17 @@ namespace KitchenProject.Controllers
 
 			if (!string.IsNullOrWhiteSpace(searchString))
 			{
-				searchString = searchString.Trim();
-				query = query.Where(p => p.ReceiptNo.Contains(searchString)
-									  || p.Project.ProjectName.Contains(searchString)
-									  || p.Project.ProjectNo.Contains(searchString)
-									  || p.Project.Customer.Name.Contains(searchString));
+				if (!SearchValidator.TryValidateNameSearch(searchString, out var validName, out var searchError))
+				{
+					TempData["Error"] = searchError;
+					ViewBag.SearchError = searchError;
+					query = query.Where(_ => false);
+				}
+				else
+				{
+					query = query.Where(p => p.Project.ProjectName.Contains(validName)
+										  || p.Project.Customer.Name.Contains(validName));
+				}
 			}
 
 			if (method.HasValue) query = query.Where(p => p.Payment == method.Value);
@@ -63,9 +69,11 @@ namespace KitchenProject.Controllers
 			}
 
 			var totalCount = await query.CountAsync();
-			ViewBag.FilteredTotal = await query.SumAsync(p => (decimal?)p.Amount) ?? 0;
+			ViewBag.FilteredTotal = await query
+				.Where(p => !(p.Payment == PaymentMethod.Chek && p.ChequeStatus == ChequeStatus.Bounced))
+				.SumAsync(p => (decimal?)(p.IsRefund ? -p.Amount : p.Amount)) ?? 0;
 
-			int pageSize = 15;
+			int pageSize = await _lookup.PageSizeAsync();
 			var payments = await query.OrderByDescending(p => p.PaymentDate).ThenByDescending(p => p.Created)
 									  .Skip((page - 1) * pageSize)
 									  .Take(pageSize)
@@ -77,8 +85,12 @@ namespace KitchenProject.Controllers
 
 			// Metrics for Dashboard header cards
 			var monthStart = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1);
-			ViewBag.MonthTotal = await _payment.Entity.GetWhere(p => p.PaymentDate >= monthStart).SumAsync(p => (decimal?)p.Amount) ?? 0;
-			ViewBag.TodayTotal = await _payment.Entity.GetWhere(p => p.PaymentDate == DateTime.Today).SumAsync(p => (decimal?)p.Amount) ?? 0;
+			ViewBag.MonthTotal = await _payment.Entity
+				.GetWhere(p => p.PaymentDate >= monthStart && !(p.Payment == PaymentMethod.Chek && p.ChequeStatus == ChequeStatus.Bounced))
+				.SumAsync(p => (decimal?)(p.IsRefund ? -p.Amount : p.Amount)) ?? 0;
+			ViewBag.TodayTotal = await _payment.Entity
+				.GetWhere(p => p.PaymentDate == DateTime.Today && !(p.Payment == PaymentMethod.Chek && p.ChequeStatus == ChequeStatus.Bounced))
+				.SumAsync(p => (decimal?)(p.IsRefund ? -p.Amount : p.Amount)) ?? 0;
 			ViewBag.Outstanding = await _contract.Entity
 				.GetWhere(c => c.Status == ContractStatuses.Active || c.Status == ContractStatuses.Completed)
 				.SumAsync(c => (decimal?)(c.TotalAmount - c.PaidAmount)) ?? 0;
@@ -97,14 +109,21 @@ namespace KitchenProject.Controllers
 				return NotFound();
 			}
 
+			if (!payment.IsPrinted)
+			{
+				payment.IsPrinted = true;
+				await _payment.SaveAsync();
+			}
+
 			return View(payment);
 		}
 
-		// GET: Payments/Create?projectId=5  أو  ?contractId=5
-		public async Task<IActionResult> Create(Guid? projectId, Guid? contractId)
+		// GET: Payments/Create?projectId=5  أو  ?contractId=5  أو  ?isRefund=true
+		public async Task<IActionResult> Create(Guid? projectId, Guid? contractId, bool isRefund = false)
 		{
 			ViewBag.ActivePage = "Payments";
 
+			string? defaultNotes = null;
 			if (contractId.HasValue)
 			{
 				var contract = await _contract.Entity.GetWhere(c => c.Id == contractId.Value)
@@ -112,10 +131,10 @@ namespace KitchenProject.Controllers
 				if (contract != null)
 				{
 					projectId = contract.ProjectId;
-					ViewBag.SuggestedAmount = Math.Max(0, contract.Remaining);
+					if (!isRefund) ViewBag.SuggestedAmount = Math.Max(0, contract.Remaining);
 				}
 			}
-			else if (projectId.HasValue)
+			else if (projectId.HasValue && !isRefund)
 			{
 				// عقد واحد ساري على المشروع: نختاره تلقائياً
 				var contracts = await ProjectContracts(projectId.Value).Select(c => c.Id).Take(2).ToListAsync();
@@ -123,13 +142,30 @@ namespace KitchenProject.Controllers
 				{
 					contractId = contracts[0];
 				}
+				else if (contracts.Count == 0)
+				{
+					// مشروع ملغى برسوم إلغاء على العميل: نقترح المتبقي من رسوم الإلغاء
+					var cancelled = await _project.Entity.GetWhere(p => p.Id == projectId.Value && p.Status == ProjectStatus.Cancelled)
+						.Select(p => new { p.CancellationFee })
+						.FirstOrDefaultAsync();
+					if (cancelled != null && cancelled.CancellationFee > 0)
+					{
+						var paid = await _payment.Entity
+							.GetWhere(p => p.ProjectId == projectId.Value && !(p.Payment == PaymentMethod.Chek && p.ChequeStatus == ChequeStatus.Bounced))
+							.SumAsync(p => (decimal?)(p.IsRefund ? -p.Amount : p.Amount)) ?? 0;
+						ViewBag.SuggestedAmount = Math.Max(0, cancelled.CancellationFee - paid);
+						defaultNotes = "رسوم إلغاء المشروع";
+					}
+				}
 			}
 
 			var model = new CustomerPayment
 			{
-				ReceiptNo = await GenerateNoAsync(),
+				ReceiptNo = await GenerateNoAsync(isRefund),
 				ProjectId = projectId ?? Guid.Empty,
-				ContractId = contractId
+				ContractId = contractId,
+				IsRefund = isRefund,
+				Notes = isRefund ? "إرجاع مبلغ للعميل" : defaultNotes
 			};
 
 			await FillSelectListsAsync(model);
@@ -139,54 +175,71 @@ namespace KitchenProject.Controllers
 		// POST: Payments/Create
 		[HttpPost]
 		[ValidateAntiForgeryToken]
-		public async Task<IActionResult> Create(CustomerPayment payment)
+		public async Task<IActionResult> Create(CustomerPayment model)
 		{
 			ViewBag.ActivePage = "Payments";
 
-			if (payment.ProjectId == Guid.Empty)
+			if (model.ProjectId == Guid.Empty)
 				ModelState.AddModelError(nameof(CustomerPayment.ProjectId), "يجب اختيار المشروع");
 
-			if (payment.ContractId.HasValue)
+			if (model.ContractId.HasValue)
 			{
-				var contract = await _contract.Entity.GetWhere(c => c.Id == payment.ContractId.Value).FirstOrDefaultAsync();
-				if (contract == null || contract.ProjectId != payment.ProjectId)
+				var contract = await _contract.Entity.GetWhere(c => c.Id == model.ContractId.Value).FirstOrDefaultAsync();
+				if (contract == null || contract.ProjectId != model.ProjectId)
 				{
 					ModelState.AddModelError(nameof(CustomerPayment.ContractId), "العقد المختار لا يتبع هذا المشروع");
 				}
-				else if (contract.Status == ContractStatuses.Cancelled)
+				else if (!model.IsRefund && contract.Status == ContractStatuses.Cancelled)
 				{
 					ModelState.AddModelError(nameof(CustomerPayment.ContractId), "لا يمكن التحصيل على عقد ملغى");
 				}
-				else if (payment.Amount > contract.RemainingAmount)
+				else if (!model.IsRefund && model.Amount > contract.RemainingAmount)
 				{
 					ModelState.AddModelError(nameof(CustomerPayment.Amount), $"المبلغ أكبر من المتبقي على العقد ({contract.RemainingAmount:N2})");
 				}
+				else if (model.IsRefund && model.Amount > contract.PaidAmount)
+				{
+					ModelState.AddModelError(nameof(CustomerPayment.Amount), $"مبلغ الإرجاع أكبر من المدفوع على العقد ({contract.PaidAmount:N2})");
+				}
 			}
 
-			if (await _payment.Entity.GetAll().AnyAsync(p => p.ReceiptNo == payment.ReceiptNo))
+			if (await _payment.Entity.GetAll().AnyAsync(p => p.ReceiptNo == model.ReceiptNo))
 			{
-				payment.ReceiptNo = await GenerateNoAsync();
+				model.ReceiptNo = await GenerateNoAsync(model.IsRefund);
+			}
+
+			if (model.Payment == PaymentMethod.Chek)
+			{
+				model.ChequeStatus ??= ChequeStatus.Pending;
+			}
+			else
+			{
+				model.ChequeStatus = null;
+				model.ChequeDueDate = null;
 			}
 
 			if (ModelState.IsValid)
 			{
-				payment.Id = Guid.NewGuid();
-				payment.Created = DateTime.UtcNow;
-				_payment.Entity.Insert(payment);
+				model.Id = Guid.NewGuid();
+				model.Created = DateTime.UtcNow;
+				model.CreatedBy = User.Identity?.Name;
+				_payment.Entity.Insert(model);
 				await _payment.SaveAsync();
 
-				if (payment.ContractId.HasValue)
+				if (model.ContractId.HasValue)
 				{
-					await SyncContractPaidAsync(payment.ContractId.Value);
+					await SyncContractPaidAsync(model.ContractId.Value);
 				}
 
-				TempData["Success"] = $"تم تسجيل الإيصال {payment.ReceiptNo} بمبلغ {payment.Amount:N2}";
-				TempData["PrintReceiptId"] = payment.Id.ToString();
-				return RedirectToAction("Details", "Projects", new { id = payment.ProjectId });
+				TempData["Success"] = model.IsRefund
+					? $"تم تسجيل سند إرجاع للعميل {model.ReceiptNo} بمبلغ {model.Amount:N2}"
+					: $"تم تسجيل الإيصال {model.ReceiptNo} بمبلغ {model.Amount:N2}";
+				TempData["PrintReceiptId"] = model.Id.ToString();
+				return RedirectToAction("Details", "Projects", new { id = model.ProjectId });
 			}
 
-			await FillSelectListsAsync(payment);
-			return View(payment);
+			await FillSelectListsAsync(model);
+			return View(model);
 		}
 
 		// POST: Payments/Delete/5
@@ -199,6 +252,20 @@ namespace KitchenProject.Controllers
 			{
 				TempData["Error"] = "تعذر العثور على الإيصال المراد حذفه";
 				return RedirectToAction(nameof(Index));
+			}
+
+			if (!AppRoles.IsFullAccess(User))
+			{
+				if (payment.IsPrinted)
+				{
+					TempData["Error"] = "لا يمكن حذف إيصال بعد طباعته، تواصل مع المدير";
+					return RedirectToAction(nameof(Index));
+				}
+				if (!string.IsNullOrEmpty(payment.CreatedBy) && !string.Equals(payment.CreatedBy, User.Identity?.Name, StringComparison.OrdinalIgnoreCase))
+				{
+					TempData["Error"] = "لا يمكنك حذف إيصال أنشأه مستخدم آخر";
+					return RedirectToAction(nameof(Index));
+				}
 			}
 
 			_payment.Entity.Delete(payment);
@@ -222,7 +289,7 @@ namespace KitchenProject.Controllers
 		private IQueryable<Contract> ProjectContracts(Guid projectId) =>
 			_contract.Entity.GetWhere(c => c.ProjectId == projectId && c.Status != ContractStatuses.Cancelled);
 
-		// المدفوع في العقد = مجموع إيصالاته (يُعاد حسابه بدلاً من الجمع والطرح حتى لا يختل)
+		// المدفوع في العقد = مجموع إيصالات القبض مطروحاً منها سندات الإرجاع
 		private async Task SyncContractPaidAsync(Guid contractId)
 		{
 			var contract = await _contract.Entity.GetByIdAsync(contractId);
@@ -231,18 +298,22 @@ namespace KitchenProject.Controllers
 				return;
 			}
 
-			contract.PaidAmount = await _payment.Entity.GetWhere(p => p.ContractId == contractId).SumAsync(p => (decimal?)p.Amount) ?? 0;
+			contract.PaidAmount = await _payment.Entity
+				.GetWhere(p => p.ContractId == contractId && !(p.Payment == PaymentMethod.Chek && p.ChequeStatus == ChequeStatus.Bounced))
+				.SumAsync(p => (decimal?)(p.IsRefund ? -p.Amount : p.Amount)) ?? 0;
 			contract.Modified = DateTime.UtcNow;
 			await _contract.SaveAsync();
 		}
 
-		private Task<string> GenerateNoAsync() =>
-			DocumentNumbers.NextAsync(_payment.Entity.GetAll().Select(p => p.ReceiptNo), "RC-");
+		private Task<string> GenerateNoAsync(bool isRefund = false) =>
+			DocumentNumbers.NextAsync(_payment.Entity.GetAll().Select(p => p.ReceiptNo), isRefund ? "RF-" : "RC-");
 
 		private async Task FillSelectListsAsync(CustomerPayment payment)
 		{
 			ViewBag.Projects = await _lookup.ProjectsAsync(payment.ProjectId == Guid.Empty ? null : payment.ProjectId);
 			ViewBag.MethodList = LookupService.EnumList(payment.Payment);
+			ViewBag.CashAccounts = await _lookup.CashAndBankAccountsAsync(payment.CashAccountId);
+			ViewBag.ChequeStatuses = LookupService.EnumList(payment.ChequeStatus ?? ChequeStatus.Pending);
 
 			// كل العقود غير الملغاة، والنموذج يعرض فقط عقود المشروع المختار
 			ViewBag.Contracts = await _contract.Entity.GetWhere(c => c.Status != ContractStatuses.Cancelled || c.Id == payment.ContractId)

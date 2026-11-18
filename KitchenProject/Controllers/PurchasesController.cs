@@ -19,6 +19,7 @@ namespace KitchenProject.Controllers
 		private readonly IUnitOfWork<StockTransaction> _tx;
 		private readonly IUnitOfWork<SupplierPayment> _payment;
 		private readonly IUnitOfWork<Project> _project;
+		private readonly IUnitOfWork<PurchaseReturn> _return;
 		private readonly LookupService _lookup;
 		private readonly StockService _stock;
 
@@ -28,6 +29,7 @@ namespace KitchenProject.Controllers
 								   IUnitOfWork<StockTransaction> tx,
 								   IUnitOfWork<SupplierPayment> payment,
 								   IUnitOfWork<Project> project,
+								   IUnitOfWork<PurchaseReturn> purchaseReturn,
 								   LookupService lookup,
 								   StockService stock)
 		{
@@ -37,6 +39,7 @@ namespace KitchenProject.Controllers
 			_tx = tx;
 			_payment = payment;
 			_project = project;
+			_return = purchaseReturn;
 			_lookup = lookup;
 			_stock = stock;
 		}
@@ -50,14 +53,21 @@ namespace KitchenProject.Controllers
 			ViewBag.SupplierId = supplierId;
 			ViewBag.ProjectId = projectId;
 
-			var query = _purchase.Entity.Include(p => p.Suppliers, p => p.Projects!);
+			var query = _purchase.Entity.Include(p => p.Suppliers, p => p.Projects!, p => p.Projects!.Customer);
 
 			if (!string.IsNullOrWhiteSpace(searchString))
 			{
-				searchString = searchString.Trim();
-				query = query.Where(p => p.PurchaseNo.Contains(searchString)
-									  || (p.InvoiceNo != null && p.InvoiceNo.Contains(searchString))
-									  || p.Suppliers.Name.Contains(searchString));
+				if (!SearchValidator.TryValidateNameSearch(searchString, out var validName, out var searchError))
+				{
+					TempData["Error"] = searchError;
+					ViewBag.SearchError = searchError;
+					query = query.Where(_ => false);
+				}
+				else
+				{
+					query = query.Where(p => p.Suppliers.Name.Contains(validName)
+										  || (p.Projects != null && (p.Projects.ProjectName.Contains(validName) || p.Projects.Customer.Name.Contains(validName))));
+				}
 			}
 
 			if (!string.IsNullOrEmpty(status))
@@ -78,7 +88,7 @@ namespace KitchenProject.Controllers
 			}
 
 			var totalCount = await query.CountAsync();
-			int pageSize = 10;
+			int pageSize = await _lookup.PageSizeAsync();
 			var purchases = await query.OrderByDescending(p => p.PurchaseDate).ThenByDescending(p => p.Created)
 									   .Skip((page - 1) * pageSize)
 									   .Take(pageSize)
@@ -112,7 +122,157 @@ namespace KitchenProject.Controllers
 			}
 
 			ViewBag.PaymentMethods = LookupService.EnumList(PaymentMethod.Cash);
+			ViewBag.Returns = await _return.Entity.Include(r => r.Items)
+				.Where(r => r.PurchaseId == purchase.Id)
+				.OrderByDescending(r => r.ReturnDate)
+				.ToListAsync();
 			return View(purchase);
+		}
+
+		// GET: Purchases/CreateReturn/5  مرتجع مشتريات جزئي/كلي لفاتورة مستلمة
+		public async Task<IActionResult> CreateReturn(Guid id)
+		{
+			ViewBag.ActivePage = "Purchases";
+			var purchase = await LoadFullAsync(id);
+			if (purchase == null) return NotFound();
+			if (purchase.Status != PurchaseStatuses.Received)
+			{
+				TempData["Error"] = "لا يمكن عمل مرتجع إلا لفاتورة مستلمة";
+				return RedirectToAction(nameof(Details), new { id });
+			}
+
+			var returnedByItem = await _return.Entity.Include(r => r.Items)
+				.Where(r => r.PurchaseId == id)
+				.SelectMany(r => r.Items)
+				.GroupBy(i => i.ItemId)
+				.Select(g => new { g.Key, Qty = g.Sum(x => x.Quantity) })
+				.ToDictionaryAsync(x => x.Key, x => x.Qty);
+
+			ViewBag.ReturnedByItem = returnedByItem;
+			ViewBag.Balances = await _stock.BalancesAsync(purchase.WarehouseId);
+			return View(purchase);
+		}
+
+		// POST: Purchases/CreateReturn/5
+		[HttpPost]
+		[ValidateAntiForgeryToken]
+		public async Task<IActionResult> CreateReturn(Guid id, DateTime returnDate, string? notes, [Bind(Prefix = "quantities")] Dictionary<Guid, decimal> quantities)
+		{
+			var purchase = await LoadFullAsync(id);
+			if (purchase == null) return NotFound();
+			if (purchase.Status != PurchaseStatuses.Received)
+			{
+				TempData["Error"] = "لا يمكن عمل مرتجع إلا لفاتورة مستلمة";
+				return RedirectToAction(nameof(Details), new { id });
+			}
+
+			var lines = (quantities ?? new()).Where(q => q.Value > 0).ToDictionary(q => q.Key, q => q.Value);
+			if (lines.Count == 0)
+			{
+				TempData["Error"] = "أدخل كمية مرتجعة لصنف واحد على الأقل";
+				return RedirectToAction(nameof(CreateReturn), new { id });
+			}
+
+			var returnedByItem = await _return.Entity.Include(r => r.Items)
+				.Where(r => r.PurchaseId == id)
+				.SelectMany(r => r.Items)
+				.GroupBy(i => i.ItemId)
+				.Select(g => new { g.Key, Qty = g.Sum(x => x.Quantity) })
+				.ToDictionaryAsync(x => x.Key, x => x.Qty);
+			var balances = await _stock.BalancesAsync(purchase.WarehouseId);
+
+			var discountFactor = purchase.Subtotal > 0 ? (purchase.Subtotal - purchase.Discount) / purchase.Subtotal : 1m;
+			var netBeforeTax = purchase.Subtotal - purchase.Discount;
+			var taxRatio = netBeforeTax > 0 ? purchase.Tax / netBeforeTax : 0m;
+
+			var now = DateTime.UtcNow;
+			var ret = new PurchaseReturn
+			{
+				Id = Guid.NewGuid(),
+				Created = now,
+				ReturnNo = await DocumentNumbers.NextAsync(_return.Entity.GetAll().Select(r => r.ReturnNo), "PR-"),
+				PurchaseId = purchase.Id,
+				SupplierId = purchase.SupplierId,
+				WarehouseId = purchase.WarehouseId,
+				ReturnDate = returnDate == default ? DateTime.Today : returnDate.Date,
+				Notes = notes?.Trim(),
+				CreatedBy = User.Identity?.Name
+			};
+
+			foreach (var pItem in purchase.Items)
+			{
+				if (!lines.TryGetValue(pItem.ItemId, out var qty)) continue;
+				var maxReturnable = pItem.Quantity - returnedByItem.GetValueOrDefault(pItem.ItemId);
+				var stockAvail = balances.GetValueOrDefault(pItem.ItemId);
+				if (qty > maxReturnable)
+				{
+					TempData["Error"] = $"الكمية المرتجعة للصنف {pItem.Items?.Name} أكبر من المتاح للإرجاع ({maxReturnable:0.##})";
+					return RedirectToAction(nameof(CreateReturn), new { id });
+				}
+				if (!purchase.DirectToProject && qty > stockAvail)
+				{
+					TempData["Error"] = $"رصيد المخزن الحالي للصنف {pItem.Items?.Name} ({stockAvail:0.##}) لا يكفي للإرجاع";
+					return RedirectToAction(nameof(CreateReturn), new { id });
+				}
+
+				var unitCost = Math.Round(pItem.UnitPrice * discountFactor, 2);
+				ret.Items.Add(new PurchaseReturnItem
+				{
+					Id = Guid.NewGuid(),
+					Created = now,
+					PurchaseReturnId = ret.Id,
+					ItemId = pItem.ItemId,
+					Quantity = qty,
+					UnitPrice = unitCost
+				});
+
+				_tx.Entity.Insert(new StockTransaction
+				{
+					Id = Guid.NewGuid(),
+					Created = now,
+					ItemId = pItem.ItemId,
+					WarehouseId = purchase.WarehouseId,
+					PurchaseId = purchase.Id,
+					PurchaseReturnId = ret.Id,
+					TransactionType = StockTransactionType.Return,
+					TransactionDate = ret.ReturnDate,
+					QuantityOut = qty,
+					UnitCost = unitCost,
+					ReferenceNo = ret.ReturnNo,
+					Notes = $"مرتجع شراء من فاتورة {purchase.PurchaseNo}"
+				});
+			}
+
+			ret.Subtotal = ret.Items.Sum(i => i.Total);
+			ret.Tax = Math.Round(ret.Subtotal * taxRatio, 2);
+			ret.Total = ret.Subtotal + ret.Tax;
+
+			_return.Entity.Insert(ret);
+			await _return.SaveAsync();
+
+			TempData["Success"] = $"تم تسجيل مرتجع الشراء {ret.ReturnNo} بمبلغ {ret.Total:N2}";
+			return RedirectToAction(nameof(Details), new { id = purchase.Id });
+		}
+
+		// POST: Purchases/DeleteReturn/5
+		[HttpPost]
+		[ValidateAntiForgeryToken]
+		public async Task<IActionResult> DeleteReturn(Guid id)
+		{
+			var ret = await _return.Entity.GetByIdAsync(id);
+			if (ret == null)
+			{
+				TempData["Error"] = "تعذر العثور على المرتجع";
+				return RedirectToAction(nameof(Index));
+			}
+
+			var txs = await _tx.Entity.GetWhere(t => t.PurchaseReturnId == id).ToListAsync();
+			foreach (var t in txs) _tx.Entity.Delete(t);
+			_return.Entity.Delete(ret);
+			await _return.SaveAsync();
+
+			TempData["Success"] = $"تم حذف مرتجع الشراء {ret.ReturnNo}";
+			return RedirectToAction(nameof(Details), new { id = ret.PurchaseId });
 		}
 
 		// GET: Purchases/Create?supplierId=5&projectId=5
@@ -398,7 +558,7 @@ namespace KitchenProject.Controllers
 		// POST: Purchases/AddPayment/5  سداد للمورد على هذه الفاتورة
 		[HttpPost]
 		[ValidateAntiForgeryToken]
-		public async Task<IActionResult> AddPayment(Guid id, decimal amount, PaymentMethod paymentMethod, DateTime? paymentDate, string? notes)
+		public async Task<IActionResult> AddPayment(Guid id, decimal amount, PaymentMethod paymentMethod, DateTime? paymentDate, string? referenceNo, string? notes)
 		{
 			var purchase = await _purchase.Entity.GetByIdAsync(id);
 			if (purchase == null)
@@ -418,15 +578,20 @@ namespace KitchenProject.Controllers
 				return RedirectToAction(nameof(Details), new { id });
 			}
 
+			var receiptNo = await DocumentNumbers.NextAsync(_payment.Entity.GetAll().Select(p => p.ReceiptNo), "SP-");
+			var paymentId = Guid.NewGuid();
+
 			_payment.Entity.Insert(new SupplierPayment
 			{
-				Id = Guid.NewGuid(),
+				Id = paymentId,
 				Created = DateTime.UtcNow,
 				SupplierId = purchase.SupplierId,
 				PurchaseId = purchase.Id,
+				ReceiptNo = receiptNo,
 				Amount = amount,
 				PaymentMethod = paymentMethod,
 				PaymentDate = paymentDate ?? DateTime.Today,
+				ReferenceNo = string.IsNullOrWhiteSpace(referenceNo) ? null : referenceNo.Trim(),
 				Notes = notes
 			});
 
@@ -434,7 +599,8 @@ namespace KitchenProject.Controllers
 			purchase.Modified = DateTime.UtcNow;
 			await _purchase.SaveAsync();
 
-			TempData["Success"] = $"تم تسجيل سداد {amount:N2} للمورد على الفاتورة {purchase.PurchaseNo}";
+			TempData["Success"] = $"تم تسجيل إيصال الصرف {receiptNo} بمبلغ {amount:N2} للمورد على الفاتورة {purchase.PurchaseNo}";
+			TempData["PrintSupplierReceiptId"] = paymentId.ToString();
 			return RedirectToAction(nameof(Details), new { id });
 		}
 
@@ -492,8 +658,8 @@ namespace KitchenProject.Controllers
 			var now = DateTime.UtcNow;
 			var directProject = purchase.DirectToProject ? purchase.ProjectId : null;
 
-			// الخصم يُوزع على تكلفة الأصناف بنسبة قيمتها، والضريبة تُضاف لها
-			var factor = purchase.Subtotal > 0 ? (purchase.Subtotal - purchase.Discount + purchase.Tax) / purchase.Subtotal : 1;
+			// الخصم يُوزع على تكلفة الأصناف بنسبة قيمتها، والضريبة تُسجل في حساب ضريبة المدخلات
+			var factor = purchase.Subtotal > 0 ? (purchase.Subtotal - purchase.Discount) / purchase.Subtotal : 1;
 
 			foreach (var line in lines)
 			{
@@ -537,6 +703,11 @@ namespace KitchenProject.Controllers
 				if (item != null)
 				{
 					item.PurchasePrice = line.UnitPrice;
+					var minSale = Math.Max(line.UnitPrice, unitCost);
+					if (item.SalePrice < minSale)
+					{
+						item.SalePrice = minSale;
+					}
 					item.Modified = now;
 				}
 			}

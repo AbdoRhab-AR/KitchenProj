@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
+using KitchenProject.Models.Entities;
 using KitchenProject.Models.Interfaces;
 using System.Linq.Expressions;
 
@@ -25,7 +26,12 @@ namespace KitchenProject.Models.Repositories
         public void Update(T entity)
         {
             table.Attach(entity);
-            _context.Entry(entity).State = EntityState.Modified;
+            var entry = _context.Entry(entity);
+            entry.State = EntityState.Modified;
+            if (entity is BaseEntity)
+            {
+                entry.Property(nameof(BaseEntity.Created)).IsModified = false;
+            }
         }
         public IQueryable<T> GetAll()
         {
@@ -44,11 +50,41 @@ namespace KitchenProject.Models.Repositories
 
         public IQueryable<T> Include(params Expression<Func<T, object>>[] includes)
         {
-            IQueryable<T> query = table;
+            IQueryable<T> query = table.AsNoTracking();
             foreach (Expression<Func<T, object>> include in includes)
-                query = query.Include(include).AsNoTracking();
+            {
+                if (TryGetNavigationPath(include, out string path))
+                    query = query.Include(path);
+                else
+                    query = query.Include(include);
+            }
 
             return query;
+        }
+
+        private static bool TryGetNavigationPath(Expression<Func<T, object>> include, out string path)
+        {
+            Expression? body = include.Body;
+            if (body is UnaryExpression { NodeType: ExpressionType.Convert or ExpressionType.ConvertChecked } unary)
+                body = unary.Operand;
+
+            var parts = new Stack<string>();
+            while (body is MemberExpression member)
+            {
+                parts.Push(member.Member.Name);
+                body = member.Expression;
+                if (body is UnaryExpression { NodeType: ExpressionType.Convert or ExpressionType.ConvertChecked } innerUnary)
+                    body = innerUnary.Operand;
+            }
+
+            if (body is ParameterExpression && parts.Count > 1)
+            {
+                path = string.Join(".", parts);
+                return true;
+            }
+
+            path = string.Empty;
+            return false;
         }
 
     }

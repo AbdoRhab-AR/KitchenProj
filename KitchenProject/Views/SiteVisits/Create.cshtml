@@ -28,7 +28,7 @@
 <div class="row justify-content-center">
     <div class="col-12 col-xl-10">
         <div class="custom-card p-4 p-md-5">
-            <form asp-action="Create" method="post">
+            <form asp-action="Create" method="post" enctype="multipart/form-data">
                 @Html.AntiForgeryToken()
 
                 <partial name="_SiteVisitForm" model="Model" />

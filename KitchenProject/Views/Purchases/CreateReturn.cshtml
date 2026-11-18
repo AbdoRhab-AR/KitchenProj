@@ -1,0 +1,75 @@
+@model Purchase
+@{
+    ViewData["Title"] = "مرتجع شراء " + Model.PurchaseNo;
+    Layout = "_DashboardLayout";
+    var returned = (Dictionary<Guid, decimal>)ViewBag.ReturnedByItem;
+    var balances = (Dictionary<Guid, decimal>)ViewBag.Balances;
+    var inv = System.Globalization.CultureInfo.InvariantCulture;
+}
+
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+    <div>
+        <h2 class="page-header-title mb-1"><i class="fa-solid fa-rotate-left text-danger me-2"></i> مرتجع شراء من الفاتورة @Model.PurchaseNo</h2>
+        <p class="text-muted mb-0">المورد: <strong>@Model.Suppliers?.Name</strong> — المخزن: <strong>@Model.Warehouses?.Name</strong></p>
+    </div>
+    <a asp-action="Details" asp-route-id="@Model.Id" class="btn btn-light border">رجوع للفاتورة</a>
+</div>
+
+<form asp-action="CreateReturn" asp-route-id="@Model.Id" method="post">
+    @Html.AntiForgeryToken()
+
+    <div class="custom-card p-3 mb-3">
+        <div class="row g-3">
+            <div class="col-6 col-md-3">
+                <label class="form-label small fw-bold text-muted">تاريخ المرتجع</label>
+                <input type="date" name="returnDate" value="@DateTime.Today.ToString("yyyy-MM-dd")" class="form-control" required />
+            </div>
+            <div class="col-12 col-md-9">
+                <label class="form-label small fw-bold text-muted">سبب الإرجاع / ملاحظات</label>
+                <input type="text" name="notes" class="form-control" placeholder="تالف، غير مطابق للمواصفات..." />
+            </div>
+        </div>
+    </div>
+
+    <div class="custom-card mb-3">
+        <div class="table-responsive">
+            <table class="table align-middle mb-0">
+                <thead class="bg-light text-muted" style="font-size:0.85rem;">
+                    <tr>
+                        <th class="ps-4">الصنف</th>
+                        <th>الكمية المشتراة</th>
+                        <th>المرتجع سابقاً</th>
+                        <th>المتاح للإرجاع</th>
+                        <th>رصيد المخزن</th>
+                        <th>سعر الوحدة</th>
+                        <th style="width:160px;">الكمية المرتجعة</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model.Items)
+                    {
+                        var prev = returned.GetValueOrDefault(item.ItemId);
+                        var avail = Math.Max(0, item.Quantity - prev);
+                        var stock = balances.GetValueOrDefault(item.ItemId);
+                        <tr>
+                            <td class="ps-4 fw-semibold">@item.Items?.Name</td>
+                            <td>@item.Quantity.ToString("0.##")</td>
+                            <td>@prev.ToString("0.##")</td>
+                            <td class="fw-bold text-primary">@avail.ToString("0.##")</td>
+                            <td>@stock.ToString("0.##")</td>
+                            <td>@item.UnitPrice.ToString("N2")</td>
+                            <td>
+                                <input type="number" step="0.01" min="0" max="@avail.ToString("0.##", inv)" name="quantities[@item.ItemId]" class="form-control form-control-sm" @(avail <= 0 ? "disabled" : "") />
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="d-flex gap-2">
+        <button type="submit" class="btn btn-danger fw-bold px-5"><i class="fa-solid fa-rotate-left me-1"></i> تسجيل المرتجع</button>
+        <a asp-action="Details" asp-route-id="@Model.Id" class="btn btn-light border">إلغاء</a>
+    </div>
+</form>

@@ -26,7 +26,7 @@
 </div>
 
 <div class="custom-card p-4 p-md-5">
-    <form asp-action="Edit" method="post">
+    <form asp-action="Edit" method="post" enctype="multipart/form-data">
         @Html.AntiForgeryToken()
         <input type="hidden" asp-for="Id" />
         <input type="hidden" asp-for="Created" />

@@ -2,6 +2,8 @@
 @{
     ViewData["Title"] = "إدارة العملاء";
     Layout = "_DashboardLayout";
+    var balances = ViewBag.Balances as Dictionary<Guid, (decimal Billed, decimal Paid)> ?? new();
+    decimal totalReceivables = ViewBag.TotalReceivables ?? 0m;
 }
 
 <!-- Page Header & Title Bar -->
@@ -47,11 +49,11 @@
     <div class="col-12 col-sm-6 col-xl-4">
         <div class="custom-card p-3 d-flex align-items-center justify-content-between">
             <div>
-                <span class="text-muted fw-bold d-block mb-1" style="font-size:0.85rem;">النتائج الحالية</span>
-                <h3 class="fw-extrabold mb-0 text-info">@ViewBag.TotalCount</h3>
+                <span class="text-muted fw-bold d-block mb-1" style="font-size:0.85rem;">إجمالي المتبقي على العملاء</span>
+                <h3 class="fw-extrabold mb-0 @(totalReceivables > 0 ? "text-danger" : "text-success")">@totalReceivables.ToString("N2")</h3>
             </div>
-            <div class="bg-info-subtle text-info rounded-3 p-3">
-                <i class="fa-solid fa-list-check fs-3"></i>
+            <div class="bg-danger-subtle text-danger rounded-3 p-3">
+                <i class="fa-solid fa-file-invoice-dollar fs-3"></i>
             </div>
         </div>
     </div>
@@ -63,7 +65,7 @@
         <div class="col-12 col-md-8 col-lg-6">
             <div class="input-group">
                 <span class="input-group-text bg-white border-end-0"><i class="fa-solid fa-magnifying-glass text-muted"></i></span>
-                <input type="text" name="searchString" class="form-control border-start-0 ps-0" placeholder="بحث باسم العميل، الهاتف، أو كود العميل..." value="@ViewBag.SearchString">
+                <input type="text" name="searchString" class="form-control border-start-0 ps-0" placeholder="اكتب اسم العميل للبحث..." autocomplete="off" value="@ViewBag.SearchString">
             </div>
         </div>
         <div class="col-12 col-md-4 col-lg-3 d-flex gap-2">
@@ -97,7 +99,7 @@
                     <th>رقم الهاتف</th>
                     <th>المدينة / العنوان</th>
                     <th>المشاريع</th>
-                    <th>تاريخ التسجيل</th>
+                    <th>المتبقي على العميل</th>
                     <th class="text-center pe-4">الإجراءات</th>
                 </tr>
             </thead>
@@ -140,11 +142,22 @@
                                     <i class="fa-solid fa-kitchen-set me-1"></i> @(item.Projects?.Count ?? 0) مشاريع
                                 </span>
                             </td>
-                            <td class="text-muted small">
-                                @item.Created.ToString("yyyy/MM/dd")
+                            <td>
+                                @{
+                                    var bal = balances.GetValueOrDefault(item.Id);
+                                    var rem = bal.Billed - bal.Paid;
+                                }
+                                <span class="fw-bold @(rem > 0 ? "text-danger" : "text-success")">@rem.ToString("N2")</span>
+                                @if (bal.Billed > 0)
+                                {
+                                    <small class="d-block text-muted" style="font-size:0.72rem;">من @bal.Billed.ToString("N2")</small>
+                                }
                             </td>
                             <td class="text-center pe-4">
                                 <div class="btn-group btn-group-sm" role="group">
+                                    <a asp-action="Statement" asp-route-id="@item.Id" class="btn btn-light border text-dark" title="كشف حساب العميل">
+                                        <i class="fa-solid fa-file-invoice-dollar"></i>
+                                    </a>
                                     <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-light border text-info" title="عرض التفاصيل">
                                         <i class="fa-solid fa-eye"></i>
                                     </a>

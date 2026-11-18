@@ -1,0 +1,93 @@
+@model KitchenProject.Models.Entities.SupplierPayment
+@{
+    Layout = "_PrintLayout";
+    var docNo = string.IsNullOrEmpty(Model.ReceiptNo) ? Model.Id.ToString("N")[..8].ToUpper() : Model.ReceiptNo;
+    ViewData["Title"] = "إيصال صرف " + docNo;
+    ViewData["DocTitle"] = "إيصال صرف للمورد";
+    ViewData["DocNo"] = docNo;
+}
+
+<div class="row g-2 mb-2">
+    <div class="col-6">
+        <div class="meta-box">
+            <span class="label">صُرف إلى السيد / السادة (المورد)</span>
+            <div class="fw-bold">@Model.supplier?.Name</div>
+            <div class="small">@Model.supplier?.Phone</div>
+        </div>
+    </div>
+    <div class="col-3">
+        <div class="meta-box">
+            <span class="label">التاريخ</span>
+            <div class="fw-bold">@Model.PaymentDate.ToString("yyyy/MM/dd")</div>
+            <span class="label mt-1">طريقة الدفع</span>
+            <div class="fw-bold">@Model.PaymentMethod.GetDisplayName()</div>
+        </div>
+    </div>
+    <div class="col-3">
+        <div class="meta-box">
+            <span class="label">نوع الصرف</span>
+            @if (Model.Purchase != null)
+            {
+                <div class="fw-bold">سداد فاتورة @Model.Purchase.PurchaseNo</div>
+                if (Model.Purchase.Projects != null)
+                {
+                    <span class="label mt-1">المشروع</span>
+                    <div class="fw-bold">@Model.Purchase.Projects.ProjectNo</div>
+                }
+            }
+            else
+            {
+                <div class="fw-bold">صرف مباشر للمورد</div>
+            }
+        </div>
+    </div>
+</div>
+
+<table class="table table-bordered print-table">
+    <tbody>
+        <tr>
+            <td class="fw-bold" style="width:30%; background:#f6f6f6;">مبلغ وقدره</td>
+            <td class="fw-bold fs-5" style="color:var(--brand);">@Model.Amount.ToString("N2") د.ل</td>
+        </tr>
+        <tr>
+            <td class="fw-bold" style="background:#f6f6f6;">وذلك عن</td>
+            <td>@(string.IsNullOrWhiteSpace(Model.Notes) ? (Model.Purchase != null ? "سداد من فاتورة الشراء رقم " + Model.Purchase.PurchaseNo : "دفعة صرف مباشر لحساب المورد") : Model.Notes)</td>
+        </tr>
+        @if (!string.IsNullOrEmpty(Model.ReferenceNo))
+        {
+            <tr>
+                <td class="fw-bold" style="background:#f6f6f6;">رقم الصك / الحوالة</td>
+                <td>@Model.ReferenceNo</td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+@if (Model.Purchase != null)
+{
+    <div class="no-break">
+        <table class="totals ms-auto mt-2">
+            <tr><td class="text-muted fw-bold">إجمالي الفاتورة</td><td class="text-start fw-bold">@Model.Purchase.Total.ToString("N2")</td></tr>
+            <tr><td class="text-muted fw-bold">إجمالي المدفوع</td><td class="text-start fw-bold">@Model.Purchase.PaidAmount.ToString("N2")</td></tr>
+            <tr class="grand"><td>المتبقي على الفاتورة (د.ل)</td><td class="text-start">@Model.Purchase.RemainingAmount.ToString("N2")</td></tr>
+        </table>
+    </div>
+}
+else if (ViewBag.SupplierTotalPurchases != null)
+{
+    decimal totalPurchases = (decimal)ViewBag.SupplierTotalPurchases;
+    decimal totalPaid = (decimal)ViewBag.SupplierTotalPaid;
+    decimal remaining = (decimal)ViewBag.SupplierRemaining;
+    <div class="no-break">
+        <table class="totals ms-auto mt-2">
+            <tr><td class="text-muted fw-bold">إجمالي المشتريات المستلمة</td><td class="text-start fw-bold">@totalPurchases.ToString("N2")</td></tr>
+            <tr><td class="text-muted fw-bold">إجمالي المدفوعات للمورد</td><td class="text-start fw-bold">@totalPaid.ToString("N2")</td></tr>
+            <tr class="grand"><td>الرصيد المتبقي للمورد (د.ل)</td><td class="text-start">@remaining.ToString("N2")</td></tr>
+        </table>
+    </div>
+}
+
+<div class="signatures">
+    <div>توقيع المستلم (المورد)</div>
+    <div>توقيع المحاسب / الختم</div>
+</div>

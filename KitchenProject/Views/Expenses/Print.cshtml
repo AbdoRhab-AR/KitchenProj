@@ -1,0 +1,92 @@
+@model List<Expense>
+@{
+    Layout = "_PrintLayout";
+    ViewData["Title"] = "كشف المصروفات";
+    ViewData["DocTitle"] = "كشف المصروفات";
+    DateTime? from = ViewBag.From;
+    DateTime? to = ViewBag.To;
+    string? scope = ViewBag.Scope;
+    string? type = ViewBag.Type;
+    var total = Model.Sum(e => e.Amount);
+    var byType = Model.GroupBy(e => e.ExpenseType).Select(g => new { Type = g.Key, Count = g.Count(), Sum = g.Sum(e => e.Amount) }).OrderByDescending(x => x.Sum).ToList();
+    var projectTotal = Model.Where(e => e.ProjectId != null).Sum(e => e.Amount);
+    var period = from.HasValue || to.HasValue
+        ? $"{(from.HasValue ? from.Value.ToString("yyyy/MM/dd") : "البداية")} - {(to.HasValue ? to.Value.ToString("yyyy/MM/dd") : "اليوم")}"
+        : "كل الفترات";
+    ViewData["DocNo"] = period;
+    int n = 0;
+}
+
+<div class="row g-2 mb-2">
+    <div class="col-3"><div class="meta-box"><span class="label">الفترة</span><div class="fw-bold small">@period</div></div></div>
+    <div class="col-3"><div class="meta-box"><span class="label">النطاق / النوع</span><div class="fw-bold small">@(scope == "project" ? "على المشاريع" : scope == "general" ? "عامة" : "الكل") / @(string.IsNullOrEmpty(type) ? "كل الأنواع" : type)</div></div></div>
+    <div class="col-3"><div class="meta-box"><span class="label">عدد المصروفات</span><div class="fw-bold">@Model.Count</div></div></div>
+    <div class="col-3"><div class="meta-box"><span class="label">الإجمالي (د.ل)</span><div class="fw-bold" style="color:var(--brand);">@total.ToString("N2")</div></div></div>
+</div>
+
+<table class="table table-bordered print-table">
+    <thead>
+        <tr>
+            <th style="width:5%">#</th>
+            <th style="width:12%">التاريخ</th>
+            <th style="width:15%">النوع</th>
+            <th>المشروع / الوصف</th>
+            <th style="width:11%">الطريقة</th>
+            <th style="width:15%">المبلغ (د.ل)</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var e in Model)
+        {
+            n++;
+            <tr>
+                <td>@n</td>
+                <td class="small">@e.ExpenseDate.ToString("yyyy/MM/dd")</td>
+                <td class="small">@e.ExpenseType</td>
+                <td class="small">
+                    @if (e.Project != null)
+                    {
+                        <span class="fw-bold">@e.Project.ProjectNo</span> <span class="text-muted">@e.Project.ProjectName</span>
+                    }
+                    else
+                    {
+                        <span class="text-muted">مصروف عام</span>
+                    }
+                    @if (!string.IsNullOrWhiteSpace(e.Description)) { <div>@e.Description</div> }
+                </td>
+                <td class="small">@e.Payment.GetDisplayName()</td>
+                <td class="fw-bold text-start">@e.Amount.ToString("N2")</td>
+            </tr>
+        }
+        @if (!Model.Any())
+        {
+            <tr><td colspan="6" class="text-center text-muted py-4">لا توجد مصروفات</td></tr>
+        }
+    </tbody>
+</table>
+
+<div class="no-break">
+    <div class="section-title">ملخص حسب النوع</div>
+    <table class="table table-bordered print-table" style="width:60%;">
+        <thead><tr><th>النوع</th><th style="width:15%">العدد</th><th style="width:30%">المبلغ (د.ل)</th></tr></thead>
+        <tbody>
+            @foreach (var t in byType)
+            {
+                <tr><td class="small">@t.Type</td><td>@t.Count</td><td class="text-start">@t.Sum.ToString("N2")</td></tr>
+            }
+        </tbody>
+    </table>
+    <table class="totals ms-auto mt-2">
+        <tr><td class="text-muted fw-bold">مصروفات المشاريع</td><td class="text-start fw-bold">@projectTotal.ToString("N2")</td></tr>
+        <tr><td class="text-muted fw-bold">مصروفات عامة</td><td class="text-start fw-bold">@((total - projectTotal).ToString("N2"))</td></tr>
+        <tr class="grand"><td>الإجمالي (د.ل)</td><td class="text-start">@total.ToString("N2")</td></tr>
+    </table>
+</div>
+
+<div class="small text-muted mt-2">طُبع بتاريخ @DateTime.Now.ToString("yyyy/MM/dd HH:mm") بواسطة @ViewBag.PrintedBy</div>
+
+<div class="signatures mt-4">
+    <div>المحاسب</div>
+    <div>المراجع</div>
+    <div>اعتماد الإدارة</div>
+</div>

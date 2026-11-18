@@ -39,14 +39,22 @@ namespace KitchenProject.Controllers
 			ViewBag.From = from;
 			ViewBag.To = to;
 
-			var query = _expense.Entity.Include(e => e.Project!);
+			var query = _expense.Entity.Include(e => e.Project!, e => e.Project!.Customer);
 
 			if (!string.IsNullOrWhiteSpace(searchString))
 			{
-				searchString = searchString.Trim();
-				query = query.Where(e => (e.Description != null && e.Description.Contains(searchString))
-									  || e.ExpenseType.Contains(searchString)
-									  || (e.Project != null && (e.Project.ProjectNo.Contains(searchString) || e.Project.ProjectName.Contains(searchString))));
+				if (!SearchValidator.TryValidateNameSearch(searchString, out var validName, out var searchError))
+				{
+					TempData["Error"] = searchError;
+					ViewBag.SearchError = searchError;
+					query = query.Where(_ => false);
+				}
+				else
+				{
+					query = query.Where(e => (e.Description != null && e.Description.Contains(validName))
+										  || e.ExpenseType.Contains(validName)
+										  || (e.Project != null && (e.Project.ProjectName.Contains(validName) || e.Project.Customer.Name.Contains(validName))));
+				}
 			}
 
 			if (scope == "project") query = query.Where(e => e.ProjectId != null);
@@ -59,7 +67,7 @@ namespace KitchenProject.Controllers
 			var totalCount = await query.CountAsync();
 			ViewBag.FilteredTotal = await query.SumAsync(e => (decimal?)e.Amount) ?? 0;
 
-			int pageSize = 15;
+			int pageSize = await _lookup.PageSizeAsync();
 			var expenses = await query.OrderByDescending(e => e.ExpenseDate).ThenByDescending(e => e.Created)
 									  .Skip((page - 1) * pageSize)
 									  .Take(pageSize)
@@ -78,6 +86,33 @@ namespace KitchenProject.Controllers
 			ViewBag.Projects = await _lookup.ProjectsAsync(projectId);
 			ViewBag.Types = await TypesAsync();
 			return View(expenses);
+		}
+
+		// GET: Expenses/Print   كشف مصروفات مطبوع (A4) بنفس فلاتر الشاشة وبدون ترقيم صفحات
+		public async Task<IActionResult> Print(string? searchString, string? scope, Guid? projectId, string? type, DateTime? from, DateTime? to)
+		{
+			var query = _expense.Entity.Include(e => e.Project!, e => e.Project!.Customer);
+
+			if (!string.IsNullOrWhiteSpace(searchString) && SearchValidator.TryValidateNameSearch(searchString, out var validName, out _))
+			{
+				query = query.Where(e => (e.Description != null && e.Description.Contains(validName))
+									  || e.ExpenseType.Contains(validName)
+									  || (e.Project != null && (e.Project.ProjectName.Contains(validName) || e.Project.Customer.Name.Contains(validName))));
+			}
+
+			if (scope == "project") query = query.Where(e => e.ProjectId != null);
+			if (scope == "general") query = query.Where(e => e.ProjectId == null);
+			if (projectId.HasValue) query = query.Where(e => e.ProjectId == projectId.Value);
+			if (!string.IsNullOrEmpty(type)) query = query.Where(e => e.ExpenseType == type);
+			if (from.HasValue) query = query.Where(e => e.ExpenseDate >= from.Value.Date);
+			if (to.HasValue) query = query.Where(e => e.ExpenseDate <= to.Value.Date);
+
+			ViewBag.From = from;
+			ViewBag.To = to;
+			ViewBag.Scope = scope;
+			ViewBag.Type = type;
+			ViewBag.PrintedBy = User.Identity?.Name;
+			return View(await query.OrderBy(e => e.ExpenseDate).ThenBy(e => e.Created).ToListAsync());
 		}
 
 		// GET: Expenses/Create?projectId=5
@@ -107,6 +142,7 @@ namespace KitchenProject.Controllers
 			{
 				expense.Id = Guid.NewGuid();
 				expense.Created = DateTime.UtcNow;
+				expense.CreatedBy = User.Identity?.Name;
 				expense.ExpenseType = expense.ExpenseType.Trim();
 				_expense.Entity.Insert(expense);
 				await _expense.SaveAsync();
@@ -151,6 +187,13 @@ namespace KitchenProject.Controllers
 				return NotFound();
 			}
 
+			if (!AppRoles.IsFullAccess(User) && !string.IsNullOrEmpty(expense.CreatedBy)
+				&& !string.Equals(expense.CreatedBy, User.Identity?.Name, StringComparison.OrdinalIgnoreCase))
+			{
+				TempData["Error"] = "لا يمكنك تعديل مصروف أنشأه مستخدم آخر";
+				return RedirectToAction(nameof(Index));
+			}
+
 			string? oldFile = null;
 			if (ModelState.IsValid && model.Attachment != null)
 			{
@@ -177,6 +220,8 @@ namespace KitchenProject.Controllers
 			expense.Amount = model.Amount;
 			expense.ExpenseDate = model.ExpenseDate;
 			expense.Payment = model.Payment;
+			expense.AccountId = model.AccountId;
+			expense.CashAccountId = model.CashAccountId;
 			expense.Description = model.Description;
 			expense.Notes = model.Notes;
 			expense.Modified = DateTime.UtcNow;
@@ -197,6 +242,11 @@ namespace KitchenProject.Controllers
 			if (expense == null)
 			{
 				TempData["Error"] = "تعذر العثور على المصروف المراد حذفه";
+			}
+			else if (!AppRoles.IsFullAccess(User) && !string.IsNullOrEmpty(expense.CreatedBy)
+				&& !string.Equals(expense.CreatedBy, User.Identity?.Name, StringComparison.OrdinalIgnoreCase))
+			{
+				TempData["Error"] = "لا يمكنك حذف مصروف أنشأه مستخدم آخر";
 			}
 			else
 			{
@@ -227,6 +277,8 @@ namespace KitchenProject.Controllers
 			ViewBag.Projects = await _lookup.ProjectsAsync(model.ProjectId);
 			ViewBag.Types = await TypesAsync();
 			ViewBag.MethodList = LookupService.EnumList(model.Payment);
+			ViewBag.ExpenseAccounts = await _lookup.ExpenseAccountsAsync(model.AccountId);
+			ViewBag.CashAccounts = await _lookup.CashAndBankAccountsAsync(model.CashAccountId);
 		}
 	}
 }

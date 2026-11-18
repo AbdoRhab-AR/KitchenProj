@@ -1,0 +1,111 @@
+@model List<LedgerRow>
+@{
+    ViewData["Title"] = "كشف حساب";
+    Layout = "_DashboardLayout";
+    DateTime? from = ViewBag.From;
+    DateTime? to = ViewBag.To;
+    var account = ViewBag.Account as Account;
+}
+
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+    <div>
+        <h2 class="page-header-title mb-1"><i class="fa-solid fa-book-open text-primary me-2"></i> كشف حساب (دفتر الأستاذ)</h2>
+        <p class="text-muted mb-0">حركات الحساب مع الرصيد الجاري. الحساب التجميعي يعرض حركات حساباته الفرعية</p>
+    </div>
+    @if (account != null)
+    {
+        <a asp-action="LedgerPrint" asp-route-accountId="@account.Id" asp-route-from="@from?.ToString("yyyy-MM-dd")" asp-route-to="@to?.ToString("yyyy-MM-dd")" target="_blank" class="btn btn-light border"><i class="fa-solid fa-print me-1"></i> طباعة (A4)</a>
+    }
+</div>
+
+<div class="custom-card mb-4 p-3">
+    <form method="get" asp-action="Ledger" class="row g-3 align-items-end">
+        <div class="col-12 col-md-5">
+            <label class="form-label small fw-bold text-muted">الحساب</label>
+            <select name="accountId" class="form-select" asp-items="ViewBag.Accounts"><option value="">— اختر الحساب —</option></select>
+        </div>
+        <div class="col-6 col-md-2">
+            <label class="form-label small fw-bold text-muted">من</label>
+            <input type="date" name="from" value="@from?.ToString("yyyy-MM-dd")" class="form-control" />
+        </div>
+        <div class="col-6 col-md-2">
+            <label class="form-label small fw-bold text-muted">إلى</label>
+            <input type="date" name="to" value="@to?.ToString("yyyy-MM-dd")" class="form-control" />
+        </div>
+        <div class="col-12 col-md-3 d-flex gap-2">
+            <button type="submit" class="btn btn-primary fw-bold rounded-3"><i class="fa-solid fa-search me-1"></i> عرض</button>
+            <a asp-action="Ledger" class="btn btn-light border text-muted"><i class="fa-solid fa-xmark"></i></a>
+        </div>
+    </form>
+</div>
+
+@if (account == null)
+{
+    <div class="custom-card text-center py-5 text-muted">
+        <i class="fa-solid fa-book-open display-4 mb-3 d-block text-secondary opacity-50"></i>
+        <h5 class="fw-bold mb-1">اختر حساباً لعرض كشفه</h5>
+    </div>
+}
+else
+{
+    decimal opening = ViewBag.Opening;
+    bool isGroup = ViewBag.IsGroup;
+    var debit = Model.Sum(r => r.Debit);
+    var credit = Model.Sum(r => r.Credit);
+    var closing = Model.Any() ? Model.Last().Balance : opening;
+
+    <div class="custom-card">
+        <div class="card-header-custom">
+            <h5 class="fw-bold mb-0"><span class="font-monospace">@account.Code</span> - @account.Name</h5>
+            <span class="badge bg-light text-dark border">@account.Type.GetDisplayName() (طبيعة @(account.IsDebitNature ? "مدينة" : "دائنة"))</span>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="bg-light text-muted" style="font-size:0.85rem;">
+                    <tr>
+                        <th class="ps-4">التاريخ</th>
+                        <th>رقم القيد</th>
+                        <th>البيان</th>
+                        @if (isGroup) { <th>الحساب</th> }
+                        <th>مدين</th>
+                        <th>دائن</th>
+                        <th>الرصيد</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (from.HasValue)
+                    {
+                        <tr class="table-light">
+                            <td class="ps-4" colspan="@(isGroup ? 6 : 5)">رصيد ما قبل @from.Value.ToString("yyyy/MM/dd")</td>
+                            <td class="fw-bold">@opening.ToString("N2")</td>
+                        </tr>
+                    }
+                    @foreach (var r in Model)
+                    {
+                        <tr>
+                            <td class="ps-4 small text-muted">@r.Date.ToString("yyyy/MM/dd")</td>
+                            <td><a asp-action="JournalDetails" asp-route-id="@r.EntryId" class="font-monospace">@r.EntryNo</a></td>
+                            <td class="small">@r.Description</td>
+                            @if (isGroup) { <td class="small">@r.AccountName</td> }
+                            <td>@(r.Debit == 0 ? "-" : r.Debit.ToString("N2"))</td>
+                            <td>@(r.Credit == 0 ? "-" : r.Credit.ToString("N2"))</td>
+                            <td class="fw-bold @(r.Balance < 0 ? "text-danger" : "")">@r.Balance.ToString("N2")</td>
+                        </tr>
+                    }
+                    @if (!Model.Any())
+                    {
+                        <tr><td colspan="@(isGroup ? 7 : 6)" class="text-center py-4 text-muted">لا توجد حركات</td></tr>
+                    }
+                </tbody>
+                <tfoot class="bg-light fw-bold">
+                    <tr>
+                        <td class="ps-4" colspan="@(isGroup ? 4 : 3)">الإجمالي</td>
+                        <td>@debit.ToString("N2")</td>
+                        <td>@credit.ToString("N2")</td>
+                        <td class="@(closing < 0 ? "text-danger" : "")">@closing.ToString("N2")</td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+}

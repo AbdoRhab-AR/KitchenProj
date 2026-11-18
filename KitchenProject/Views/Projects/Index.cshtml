@@ -21,20 +21,22 @@
 </div>
 
 <!-- KPI Stats Cards -->
-<div class="row g-3 mb-4">
-    <div class="col-12 col-sm-6 col-xl-3">
-        <div class="custom-card p-3 d-flex align-items-center justify-content-between">
-            <div>
-                <span class="text-muted fw-bold d-block mb-1" style="font-size:0.85rem;">إجمالي المشاريع</span>
-                <h3 class="fw-extrabold mb-0 text-dark">@ViewBag.TotalProjectsCount</h3>
+<div class="row g-3 row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-xl-5 mb-4">
+    <div class="col">
+        <a asp-action="Index" class="text-decoration-none">
+            <div class="custom-card p-3 h-100 d-flex align-items-center justify-content-between">
+                <div>
+                    <span class="text-muted fw-bold d-block mb-1" style="font-size:0.85rem;">إجمالي المشاريع</span>
+                    <h3 class="fw-extrabold mb-0 text-dark">@ViewBag.TotalProjectsCount</h3>
+                </div>
+                <div class="bg-primary-subtle text-primary rounded-3 p-3">
+                    <i class="fa-solid fa-folder-tree fs-3"></i>
+                </div>
             </div>
-            <div class="bg-primary-subtle text-primary rounded-3 p-3">
-                <i class="fa-solid fa-folder-tree fs-3"></i>
-            </div>
-        </div>
+        </a>
     </div>
-    <div class="col-12 col-sm-6 col-xl-3">
-        <div class="custom-card p-3 d-flex align-items-center justify-content-between">
+    <div class="col">
+        <div class="custom-card p-3 h-100 d-flex align-items-center justify-content-between">
             <div>
                 <span class="text-muted fw-bold d-block mb-1" style="font-size:0.85rem;">مشاريع مفتوحة</span>
                 <h3 class="fw-extrabold mb-0 text-warning">@ViewBag.ActiveProjectsCount</h3>
@@ -44,27 +46,44 @@
             </div>
         </div>
     </div>
-    <div class="col-12 col-sm-6 col-xl-3">
-        <div class="custom-card p-3 d-flex align-items-center justify-content-between">
-            <div>
-                <span class="text-muted fw-bold d-block mb-1" style="font-size:0.85rem;">قيد التنفيذ</span>
-                <h3 class="fw-extrabold mb-0 text-primary">@ViewBag.InProgressCount</h3>
+    <div class="col">
+        <a asp-action="Index" asp-route-status="@ProjectStatus.InProgress" class="text-decoration-none">
+            <div class="custom-card p-3 h-100 d-flex align-items-center justify-content-between @((ProjectStatus?)ViewBag.Status == ProjectStatus.InProgress ? "border border-primary" : "")">
+                <div>
+                    <span class="text-muted fw-bold d-block mb-1" style="font-size:0.85rem;">قيد التنفيذ</span>
+                    <h3 class="fw-extrabold mb-0 text-primary">@ViewBag.InProgressCount</h3>
+                </div>
+                <div class="bg-primary-subtle text-primary rounded-3 p-3">
+                    <i class="fa-solid fa-gears fs-3"></i>
+                </div>
             </div>
-            <div class="bg-primary-subtle text-primary rounded-3 p-3">
-                <i class="fa-solid fa-gears fs-3"></i>
-            </div>
-        </div>
+        </a>
     </div>
-    <div class="col-12 col-sm-6 col-xl-3">
-        <div class="custom-card p-3 d-flex align-items-center justify-content-between">
-            <div>
-                <span class="text-muted fw-bold d-block mb-1" style="font-size:0.85rem;">تم التسليم</span>
-                <h3 class="fw-extrabold mb-0 text-success">@ViewBag.DeliveredCount</h3>
+    <div class="col">
+        <a asp-action="Index" asp-route-status="@ProjectStatus.Delivered" class="text-decoration-none">
+            <div class="custom-card p-3 h-100 d-flex align-items-center justify-content-between @((ProjectStatus?)ViewBag.Status == ProjectStatus.Delivered ? "border border-success" : "")">
+                <div>
+                    <span class="text-muted fw-bold d-block mb-1" style="font-size:0.85rem;">تم التسليم</span>
+                    <h3 class="fw-extrabold mb-0 text-success">@ViewBag.DeliveredCount</h3>
+                </div>
+                <div class="bg-success-subtle text-success rounded-3 p-3">
+                    <i class="fa-solid fa-truck-ramp-box fs-3"></i>
+                </div>
             </div>
-            <div class="bg-success-subtle text-success rounded-3 p-3">
-                <i class="fa-solid fa-truck-ramp-box fs-3"></i>
+        </a>
+    </div>
+    <div class="col">
+        <a asp-action="Index" asp-route-status="@ProjectStatus.Cancelled" class="text-decoration-none">
+            <div class="custom-card p-3 h-100 d-flex align-items-center justify-content-between @((ProjectStatus?)ViewBag.Status == ProjectStatus.Cancelled ? "border border-danger" : "")">
+                <div>
+                    <span class="text-muted fw-bold d-block mb-1" style="font-size:0.85rem;">مشاريع ملغية</span>
+                    <h3 class="fw-extrabold mb-0 text-danger">@ViewBag.CancelledCount</h3>
+                </div>
+                <div class="bg-danger-subtle text-danger rounded-3 p-3">
+                    <i class="fa-solid fa-ban fs-3"></i>
+                </div>
             </div>
-        </div>
+        </a>
     </div>
 </div>
 
@@ -74,7 +93,7 @@
         <div class="col-12 col-md-6 col-lg-5">
             <div class="input-group">
                 <span class="input-group-text bg-white border-end-0"><i class="fa-solid fa-magnifying-glass text-muted"></i></span>
-                <input type="text" name="searchString" class="form-control border-start-0 ps-0" placeholder="بحث بكود المشروع، الاسم، أو اسم/هاتف العميل..." value="@ViewBag.SearchString">
+                <input type="text" name="searchString" class="form-control border-start-0 ps-0" placeholder="بحث باسم المشروع أو اسم العميل..." autocomplete="off" value="@ViewBag.SearchString">
             </div>
         </div>
         <div class="col-12 col-md-3 col-lg-3">

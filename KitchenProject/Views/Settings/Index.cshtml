@@ -50,6 +50,20 @@
                         <label asp-for="Email" class="form-label fw-bold">البريد الإلكتروني <span class="text-danger">*</span></label>
                         <input asp-for="Email" class="form-control" dir="ltr" />
                     </div>
+                    <div class="col-12 col-md-6">
+                        <label asp-for="PageSize" class="form-label fw-bold">عدد الصفوف في الصفحة (نظام الصفحات) <span class="text-danger">*</span></label>
+                        <input asp-for="PageSize" type="number" min="5" max="200" step="1" list="pageSizePresets" class="form-control" dir="ltr" />
+                        <datalist id="pageSizePresets">
+                            <option value="10"></option>
+                            <option value="15"></option>
+                            <option value="20"></option>
+                            <option value="25"></option>
+                            <option value="50"></option>
+                            <option value="100"></option>
+                        </datalist>
+                        <span asp-validation-for="PageSize" class="text-danger small"></span>
+                        <div class="form-text">يحدد عدد السجلات المعروضة في كل صفحة بجداول النظام (من 5 إلى 200 صف).</div>
+                    </div>
                 </div>
             </div>
         </div>

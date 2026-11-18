@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+using KitchenProject.Classes;
+using System.ComponentModel.DataAnnotations;
 
 namespace KitchenProject.Models.Entities
 {
@@ -6,6 +7,7 @@ namespace KitchenProject.Models.Entities
 	{
 
 		[MaxLength(100)]
+		[SafeName]
 		public required  string Name { get; set; }
 
 		[MaxLength(250)]

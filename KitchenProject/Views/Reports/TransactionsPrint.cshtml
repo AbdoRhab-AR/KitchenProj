@@ -1,0 +1,80 @@
+@model List<FinancialMove>
+@{
+    Layout = "_PrintLayout";
+    ViewData["Title"] = "كشف الحركات المالية";
+    ViewData["DocTitle"] = "كشف الحركات المالية";
+    DateTime? from = ViewBag.From;
+    DateTime? to = ViewBag.To;
+    string? kind = ViewBag.Kind;
+    PaymentMethod? method = ViewBag.Method;
+    var totalIn = Model.Sum(m => m.In);
+    var totalOut = Model.Sum(m => m.Out);
+    var period = from.HasValue || to.HasValue
+        ? $"{(from.HasValue ? from.Value.ToString("yyyy/MM/dd") : "البداية")} - {(to.HasValue ? to.Value.ToString("yyyy/MM/dd") : "اليوم")}"
+        : "كل الفترات";
+    ViewData["DocNo"] = period;
+    var kindName = kind switch { "receipt" => "إيصالات القبض", "supplier" => "دفعات الموردين", "expense" => "المصروفات", _ => "كل الحركات" };
+    int n = 0;
+}
+
+<div class="row g-2 mb-2">
+    <div class="col-3"><div class="meta-box"><span class="label">الفترة</span><div class="fw-bold small">@period</div></div></div>
+    <div class="col-3"><div class="meta-box"><span class="label">النوع / الطريقة</span><div class="fw-bold small">@kindName / @(method.HasValue ? method.Value.GetDisplayName() : "كل الطرق")</div></div></div>
+    <div class="col-3"><div class="meta-box"><span class="label">إجمالي الوارد</span><div class="fw-bold text-success">@totalIn.ToString("N2")</div></div></div>
+    <div class="col-3"><div class="meta-box"><span class="label">إجمالي المنصرف</span><div class="fw-bold text-danger">@totalOut.ToString("N2")</div></div></div>
+</div>
+
+<table class="table table-bordered print-table">
+    <thead>
+        <tr>
+            <th style="width:4%">#</th>
+            <th style="width:11%">التاريخ</th>
+            <th style="width:11%">النوع</th>
+            <th style="width:11%">السند</th>
+            <th>الجهة / البيان</th>
+            <th style="width:10%">الطريقة</th>
+            <th style="width:12%">وارد</th>
+            <th style="width:12%">منصرف</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var m in Model)
+        {
+            n++;
+            <tr>
+                <td>@n</td>
+                <td class="small">@m.Date.ToString("yyyy/MM/dd")</td>
+                <td class="small">@m.Kind</td>
+                <td class="small font-monospace">@m.Reference</td>
+                <td class="small">
+                    <span class="fw-bold">@m.Party</span>
+                    @if (!string.IsNullOrWhiteSpace(m.Link)) { <span class="text-muted"> - @m.Link</span> }
+                    @if (!string.IsNullOrWhiteSpace(m.Details)) { <div class="text-muted">@m.Details</div> }
+                </td>
+                <td class="small">@m.Method.GetDisplayName()</td>
+                <td class="text-start fw-bold">@(m.In == 0 ? "" : m.In.ToString("N2"))</td>
+                <td class="text-start fw-bold">@(m.Out == 0 ? "" : m.Out.ToString("N2"))</td>
+            </tr>
+        }
+        @if (!Model.Any())
+        {
+            <tr><td colspan="8" class="text-center text-muted py-4">لا توجد حركات</td></tr>
+        }
+    </tbody>
+</table>
+
+<div class="no-break">
+    <table class="totals ms-auto mt-2">
+        <tr><td class="text-muted fw-bold">إجمالي الوارد</td><td class="text-start fw-bold">@totalIn.ToString("N2")</td></tr>
+        <tr><td class="text-muted fw-bold">إجمالي المنصرف</td><td class="text-start fw-bold">@totalOut.ToString("N2")</td></tr>
+        <tr class="grand"><td>الصافي (د.ل)</td><td class="text-start">@((totalIn - totalOut).ToString("N2"))</td></tr>
+    </table>
+</div>
+
+<div class="small text-muted mt-2">طُبع بتاريخ @DateTime.Now.ToString("yyyy/MM/dd HH:mm") بواسطة @ViewBag.PrintedBy</div>
+
+<div class="signatures mt-4">
+    <div>المحاسب</div>
+    <div>المراجع</div>
+    <div>اعتماد الإدارة</div>
+</div>

@@ -5,6 +5,17 @@
     var isDraft = Model.Status == PurchaseStatuses.Draft;
     var isReceived = Model.Status == PurchaseStatuses.Received;
     var paidPercent = Model.Total > 0 ? (int)Math.Min(100, Math.Round(Model.PaidAmount / Model.Total * 100)) : 0;
+    var printReceiptId = TempData["PrintSupplierReceiptId"] as string;
+}
+
+@if (printReceiptId != null)
+{
+    <div class="alert alert-success border-0 rounded-3 d-flex align-items-center justify-content-between gap-2 mb-4">
+        <span><i class="fa-solid fa-receipt me-2"></i> تم حفظ إيصال الصرف للمورد.</span>
+        <a asp-controller="SupplierPayments" asp-action="Receipt" asp-route-id="@printReceiptId" target="_blank" class="btn btn-sm btn-success fw-bold">
+            <i class="fa-solid fa-print me-1"></i> طباعة الإيصال
+        </a>
+    </div>
 }
 
 <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
@@ -31,6 +42,12 @@
             </form>
             <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-primary-custom d-inline-flex align-items-center gap-2">
                 <i class="fa-solid fa-pen-to-square"></i> تعديل
+            </a>
+        }
+        @if (isReceived)
+        {
+            <a asp-action="CreateReturn" asp-route-id="@Model.Id" class="btn btn-outline-danger fw-bold rounded-3">
+                <i class="fa-solid fa-rotate-left me-1"></i> مرتجع شراء
             </a>
         }
         @if (Model.Status != PurchaseStatuses.Cancelled)
@@ -145,14 +162,22 @@
             {
                 <div class="d-flex align-items-center justify-content-between border-top py-2 small">
                     <div>
+                        @if (!string.IsNullOrEmpty(p.ReceiptNo))
+                        {
+                            <span class="badge bg-primary-subtle text-primary me-1">@p.ReceiptNo</span>
+                        }
                         <strong class="text-success">@p.Amount.ToString("N2")</strong>
                         <span class="text-muted">· @p.PaymentMethod.GetDisplayName() · @p.PaymentDate.ToString("yyyy/MM/dd")</span>
+                        @if (!string.IsNullOrEmpty(p.ReferenceNo)) { <div class="text-muted">مرجع: @p.ReferenceNo</div> }
                         @if (!string.IsNullOrEmpty(p.Notes)) { <div class="text-muted">@p.Notes</div> }
                     </div>
-                    <form asp-action="DeletePayment" asp-route-paymentId="@p.Id" method="post" onsubmit="return confirm('حذف هذا السداد؟')">
-                        @Html.AntiForgeryToken()
-                        <button type="submit" class="btn btn-sm btn-light border text-danger" title="حذف"><i class="fa-solid fa-xmark"></i></button>
-                    </form>
+                    <div class="d-flex gap-1">
+                        <a asp-controller="SupplierPayments" asp-action="Receipt" asp-route-id="@p.Id" target="_blank" class="btn btn-sm btn-light border text-dark" title="طباعة الإيصال"><i class="fa-solid fa-print"></i></a>
+                        <form asp-action="DeletePayment" asp-route-paymentId="@p.Id" method="post" onsubmit="return confirm('حذف هذا السداد؟')">
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="btn btn-sm btn-light border text-danger" title="حذف"><i class="fa-solid fa-xmark"></i></button>
+                        </form>
+                    </div>
                 </div>
             }
 
@@ -174,8 +199,12 @@
                             <input name="paymentDate" type="date" value="@DateTime.Today.ToString("yyyy-MM-dd")" class="form-control form-control-sm" />
                         </div>
                         <div class="col-6">
+                            <label class="form-label small fw-bold text-muted">رقم الصك / الحوالة</label>
+                            <input name="referenceNo" class="form-control form-control-sm" placeholder="اختياري..." />
+                        </div>
+                        <div class="col-12">
                             <label class="form-label small fw-bold text-muted">ملاحظة</label>
-                            <input name="notes" class="form-control form-control-sm" placeholder="رقم الصك..." />
+                            <input name="notes" class="form-control form-control-sm" placeholder="بيان السداد..." />
                         </div>
                     </div>
                     <button type="submit" class="btn btn-sm btn-success fw-bold w-100 mt-3"><i class="fa-solid fa-money-bill-transfer me-1"></i> تسجيل سداد</button>
@@ -188,3 +217,39 @@
         </div>
     </div>
 </div>
+
+@{
+    var returns = ViewBag.Returns as List<PurchaseReturn> ?? new List<PurchaseReturn>();
+}
+@if (returns.Any())
+{
+    <div class="custom-card mt-4">
+        <div class="card-header-custom">
+            <h5 class="fw-bold mb-0"><i class="fa-solid fa-rotate-left text-danger me-2"></i> مرتجعات الشراء</h5>
+        </div>
+        <div class="table-responsive">
+            <table class="table align-middle mb-0">
+                <thead class="bg-light text-muted" style="font-size:0.85rem;">
+                    <tr><th class="ps-4">رقم المرتجع</th><th>التاريخ</th><th>البيان</th><th>الإجمالي</th><th class="text-center pe-4"></th></tr>
+                </thead>
+                <tbody>
+                    @foreach (var r in returns)
+                    {
+                        <tr>
+                            <td class="ps-4 font-monospace fw-bold">@r.ReturnNo</td>
+                            <td class="small text-muted">@r.ReturnDate.ToString("yyyy/MM/dd")</td>
+                            <td class="small">@(r.Notes ?? "-") (@r.Items.Count صنف)</td>
+                            <td class="fw-bold text-danger">@r.Total.ToString("N2")</td>
+                            <td class="text-center pe-4">
+                                <form asp-action="DeleteReturn" asp-route-id="@r.Id" method="post" onsubmit="return confirm('حذف المرتجع @r.ReturnNo؟')">
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="btn btn-sm btn-light border text-danger"><i class="fa-solid fa-trash-can"></i></button>
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}

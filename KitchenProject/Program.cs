@@ -1,4 +1,4 @@
-using KitchenProject.Classes;
+ï»¿using KitchenProject.Classes;
 using KitchenProject.Models;
 using KitchenProject.Models.Entities;
 using KitchenProject.Models.Interfaces;
@@ -21,6 +21,7 @@ builder.Services.AddScoped(typeof(IUnitOfWork<>), typeof(UnitOfWork<>));
 builder.Services.AddScoped<LookupService>();
 builder.Services.AddScoped<StockService>();
 builder.Services.AddScoped<ProfitService>();
+builder.Services.AddScoped<AccountingService>();
 
 //-------------------------------------------------
 builder.Services.AddDbContext<ApplicationDbContext>
@@ -34,24 +35,24 @@ builder.Services.Configure<ProgrammerSettings>
 builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
 {
 	options.Password.RequiredLength = 6; // minimum 6 characters
-	options.Password.RequiredUniqueChars = 1; // ÍÑİ İÑíÏ æÇÍÏ Úáì ÇáÃŞá
-	options.Password.RequireNonAlphanumeric = false; // ÚäÏ ÊİÚíáåÇ ÓÊÊØáÈ ßáãÇÊ ÇáãÑæÑ ÑãÒ ÎÇÕ æÇÍÏ Úáì ÇáÃŞá
-	options.Password.RequireDigit = true; //íÌÈ Ãä ÊÍÊæí Úáì ÑŞã
-	options.Password.RequireLowercase = false; //áÇ íáÒã ÃÍÑİ ÕÛíÑÉ
-	options.Password.RequireUppercase = false; //áÇ íáÒã ÃÍÑİ ßÈíÑÉ
-	options.Lockout.MaxFailedAccessAttempts = 5; // ÇŞİÇá ÇáÍÓÇÈ ÈÚÏ 5 ãÍÇæáÇÊ ÏÎæá İÇÔáÉ
+	options.Password.RequiredUniqueChars = 1; // Ø­Ø±Ù ÙØ±ÙŠØ¯ ÙˆØ§Ø­Ø¯ Ø¹Ù„Ù‰ Ø§Ù„Ø£Ù‚Ù„
+	options.Password.RequireNonAlphanumeric = false; // Ø¹Ù†Ø¯ ØªÙØ¹ÙŠÙ„Ù‡Ø§ Ø³ØªØªØ·Ù„Ø¨ ÙƒÙ„Ù…Ø§Øª Ø§Ù„Ù…Ø±ÙˆØ± Ø±Ù…Ø² Ø®Ø§Øµ ÙˆØ§Ø­Ø¯ Ø¹Ù„Ù‰ Ø§Ù„Ø£Ù‚Ù„
+	options.Password.RequireDigit = true; //ÙŠØ¬Ø¨ Ø£Ù† ØªØ­ØªÙˆÙŠ Ø¹Ù„Ù‰ Ø±Ù‚Ù…
+	options.Password.RequireLowercase = false; //Ù„Ø§ ÙŠÙ„Ø²Ù… Ø£Ø­Ø±Ù ØµØºÙŠØ±Ø©
+	options.Password.RequireUppercase = false; //Ù„Ø§ ÙŠÙ„Ø²Ù… Ø£Ø­Ø±Ù ÙƒØ¨ÙŠØ±Ø©
+	options.Lockout.MaxFailedAccessAttempts = 5; // Ø§Ù‚ÙØ§Ù„ Ø§Ù„Ø­Ø³Ø§Ø¨ Ø¨Ø¹Ø¯ 5 Ù…Ø­Ø§ÙˆÙ„Ø§Øª Ø¯Ø®ÙˆÙ„ ÙØ§Ø´Ù„Ø©
 	options.Lockout.DefaultLockoutTimeSpan =
-			 TimeSpan.FromMinutes(15); //ÇŞİÇá ÇáÍÓÇÈ áãÏÉ ÎãÓÉ ÚÔÑ ÏŞíŞÉ 
-	options.SignIn.RequireConfirmedAccount = true; // ÊÓÌíá ÇáÏÎæá íÊØáÈ ÊÃßíÏ ÇáÍÓÇÈ
+			 TimeSpan.FromMinutes(15); //Ø§Ù‚ÙØ§Ù„ Ø§Ù„Ø­Ø³Ø§Ø¨ Ù„Ù…Ø¯Ø© Ø®Ù…Ø³Ø© Ø¹Ø´Ø± Ø¯Ù‚ÙŠÙ‚Ø© 
+	options.SignIn.RequireConfirmedAccount = true; // ØªØ³Ø¬ÙŠÙ„ Ø§Ù„Ø¯Ø®ÙˆÙ„ ÙŠØªØ·Ù„Ø¨ ØªØ£ÙƒÙŠØ¯ Ø§Ù„Ø­Ø³Ø§Ø¨
 	options.User.RequireUniqueEmail = false; // staff may have no email; login is by user name
 })
 	   .AddEntityFrameworkStores<ApplicationDbContext>()
-	//ÈŞÇÚÏÉ ÇáÈíÇäÇÊ ááæÕæá Çáì ÇáÌÏÇæá æÇÏÑÇÁ ÇáÅÓÊÚáÇãÇÊ Identity ÑÈØ
+	//Ø¨Ù‚Ø§Ø¹Ø¯Ø© Ø§Ù„Ø¨ÙŠØ§Ù†Ø§Øª Ù„Ù„ÙˆØµÙˆÙ„ Ø§Ù„Ù‰ Ø§Ù„Ø¬Ø¯Ø§ÙˆÙ„ ÙˆØ§Ø¯Ø±Ø§Ø¡ Ø§Ù„Ø¥Ø³ØªØ¹Ù„Ø§Ù…Ø§Øª Identity Ø±Ø¨Ø·
 	.AddDefaultTokenProviders()
-	.AddClaimsPrincipalFactory<AppClaimsPrincipalFactory>(); //íõÓÊÎÏã ãæİÑ ÇáÑãæÒ ÇáÅİÊÑÇÖí áÅäÔÇÁ ÑãæÒ ÅÚÇÏÉ ÊÚííä ßáãÉ ÇáãÑæÑ æÊÛííÑ ÇáÈÑíÏ ÇáÅáßÊÑæäí æÅÑÓÇáåÇ Åáì ÇáÈÑíÏ ÇáÅáßÊÑæäí æÇáåÇÊİ æÇáãÕÇÏŞÉ ÇáËäÇÆíÉ .
+	.AddClaimsPrincipalFactory<AppClaimsPrincipalFactory>(); //ÙŠÙØ³ØªØ®Ø¯Ù… Ù…ÙˆÙØ± Ø§Ù„Ø±Ù…ÙˆØ² Ø§Ù„Ø¥ÙØªØ±Ø§Ø¶ÙŠ Ù„Ø¥Ù†Ø´Ø§Ø¡ Ø±Ù…ÙˆØ² Ø¥Ø¹Ø§Ø¯Ø© ØªØ¹ÙŠÙŠÙ† ÙƒÙ„Ù…Ø© Ø§Ù„Ù…Ø±ÙˆØ± ÙˆØªØºÙŠÙŠØ± Ø§Ù„Ø¨Ø±ÙŠØ¯ Ø§Ù„Ø¥Ù„ÙƒØªØ±ÙˆÙ†ÙŠ ÙˆØ¥Ø±Ø³Ø§Ù„Ù‡Ø§ Ø¥Ù„Ù‰ Ø§Ù„Ø¨Ø±ÙŠØ¯ Ø§Ù„Ø¥Ù„ÙƒØªØ±ÙˆÙ†ÙŠ ÙˆØ§Ù„Ù‡Ø§ØªÙ ÙˆØ§Ù„Ù…ØµØ§Ø¯Ù‚Ø© Ø§Ù„Ø«Ù†Ø§Ø¦ÙŠØ© .
 
 
-//ÕÇáÍÉ ÅáÇ áãÏÉ ÇáÏŞÇÆŞ Çæ ÇáÓÇÚÇÊ ÇáãÍÏÏÉ ÈÚÏ ÅäÔÇÆåÇ//DataProtectorTokenProvider//áä Êßæä ÇáÑãæÒ ÇáÊí íÊã ÅäÔÇÄåÇ ÈæÇÓØÉ ãæİÑ ÇáÑãæÒ
+//ØµØ§Ù„Ø­Ø© Ø¥Ù„Ø§ Ù„Ù…Ø¯Ø© Ø§Ù„Ø¯Ù‚Ø§Ø¦Ù‚ Ø§Ùˆ Ø§Ù„Ø³Ø§Ø¹Ø§Øª Ø§Ù„Ù…Ø­Ø¯Ø¯Ø© Ø¨Ø¹Ø¯ Ø¥Ù†Ø´Ø§Ø¦Ù‡Ø§//DataProtectorTokenProvider//Ù„Ù† ØªÙƒÙˆÙ† Ø§Ù„Ø±Ù…ÙˆØ² Ø§Ù„ØªÙŠ ÙŠØªÙ… Ø¥Ù†Ø´Ø§Ø¤Ù‡Ø§ Ø¨ÙˆØ§Ø³Ø·Ø© Ù…ÙˆÙØ± Ø§Ù„Ø±Ù…ÙˆØ²
 builder.Services.Configure<DataProtectionTokenProviderOptions>(options =>
 							   options.TokenLifespan = TimeSpan.FromMinutes(15));
 
@@ -82,12 +83,12 @@ builder.Services.AddAuthorization(options =>
 	options.AddPolicy("SiteStatePolicy", policy => policy.RequireClaim("SiteState", "true"));
 	//options.AddPolicy("ProfilePolicy", policy => policy.RequireClaim("UserProfile", "true")); // just example
 
-	options.AddPolicy("AdminOrProgPolicy", policy => policy.RequireRole("Prog", "Admin")); // ÇĞÇ ÇÑÏäÇ ÇÓÊÚãÇá ÇáÑæá ßÈæáíÕí Ëã äØÈŞåÇ İí ÇáßæäÊÑæáÑ ßÈæáíÕí
+	options.AddPolicy("AdminOrProgPolicy", policy => policy.RequireRole("Prog", "Admin")); // Ø§Ø°Ø§ Ø§Ø±Ø¯Ù†Ø§ Ø§Ø³ØªØ¹Ù…Ø§Ù„ Ø§Ù„Ø±ÙˆÙ„ ÙƒØ¨ÙˆÙ„ÙŠØµÙŠ Ø«Ù… Ù†Ø·Ø¨Ù‚Ù‡Ø§ ÙÙŠ Ø§Ù„ÙƒÙˆÙ†ØªØ±ÙˆÙ„Ø± ÙƒØ¨ÙˆÙ„ÙŠØµÙŠ
 
 
 	options.AddPolicy("ProgOrAdminOrEmployeePolicy", policy =>
 	{
-		policy.RequireClaim(ClaimTypes.Role, "Admin", "Employee", "Prog"); // ÇĞÇ ÇÑÏäÇ ÇÓÊÚãÇá ÇáÑæá ßÈæáíÕí Ëã äØÈŞåÇ İí ÇáßæäÊÑæáÑ ßÈæáíÕí
+		policy.RequireClaim(ClaimTypes.Role, "Admin", "Employee", "Prog"); // Ø§Ø°Ø§ Ø§Ø±Ø¯Ù†Ø§ Ø§Ø³ØªØ¹Ù…Ø§Ù„ Ø§Ù„Ø±ÙˆÙ„ ÙƒØ¨ÙˆÙ„ÙŠØµÙŠ Ø«Ù… Ù†Ø·Ø¨Ù‚Ù‡Ø§ ÙÙŠ Ø§Ù„ÙƒÙˆÙ†ØªØ±ÙˆÙ„Ø± ÙƒØ¨ÙˆÙ„ÙŠØµÙŠ
 	});
 
 	options.AddPolicy("SettingsPolicy", policy =>
@@ -109,7 +110,7 @@ builder.Services.AddAuthorization(options =>
 //------------------------------------------------
 //builder.Services.AddAutoMapper(typeof(Program).Assembly);
 
-//appsettings.jason ÊÓÌíá ŞÓã ÇáÅÚÏÇÏÇÊ ÇáÎÇÕÉ ÈÇáÅíãíá æÇáãæÌæÏ İí 
+//appsettings.jason ØªØ³Ø¬ÙŠÙ„ Ù‚Ø³Ù… Ø§Ù„Ø¥Ø¹Ø¯Ø§Ø¯Ø§Øª Ø§Ù„Ø®Ø§ØµØ© Ø¨Ø§Ù„Ø¥ÙŠÙ…ÙŠÙ„ ÙˆØ§Ù„Ù…ÙˆØ¬ÙˆØ¯ ÙÙŠ 
 var emailconfig = builder.Configuration
 				  .GetSection("MailSettings").Get<MailSettings>();
 builder.Services.AddSingleton(emailconfig);
@@ -121,12 +122,19 @@ builder.Services.AddMvc(options =>
 {
 	options.Filters.Add(typeof(AsyncActionFilter));
 }).AddXmlSerializerFormatters();
-builder.Services.AddHttpContextAccessor(); //AsyncActionFilter áÅÓÊÚãÇáåÇ áÌáÈ ÇáíæÒÑ ÇáÍÇáí İí 
+builder.Services.AddHttpContextAccessor(); //AsyncActionFilter Ù„Ø¥Ø³ØªØ¹Ù…Ø§Ù„Ù‡Ø§ Ù„Ø¬Ù„Ø¨ Ø§Ù„ÙŠÙˆØ²Ø± Ø§Ù„Ø­Ø§Ù„ÙŠ ÙÙŠ 
 
 
 builder.Services.AddSingleton<UserSessionTracker>();
 
 var app = builder.Build();
+
+using (var scope = app.Services.CreateScope())
+{
+	var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+	db.Database.Migrate();
+	AccountingSeeder.SeedAsync(db).GetAwaiter().GetResult(); // Ø´Ø¬Ø±Ø© Ø§Ù„Ø­Ø³Ø§Ø¨Ø§Øª Ø§Ù„Ø§ÙØªØ±Ø§Ø¶ÙŠØ© Ø¹Ù†Ø¯ Ø£ÙˆÙ„ ØªØ´ØºÙŠÙ„
+}
 
 // Fixed number/date format (decimal point ".") regardless of the Windows region settings,
 // so amounts typed in number inputs always bind correctly.
@@ -145,19 +153,19 @@ if (!app.Environment.IsDevelopment())
 	app.UseStatusCodePagesWithReExecute("/Error/{0}");
 }
 else if (app.Environment.IsDevelopment())
-	app.UseDeveloperExceptionPage(); //ÕİÍÉ ÇáÎØÃ ÇáÎÇÕÉ ÈÇáãØæÑ
+	app.UseDeveloperExceptionPage(); //ØµÙØ­Ø© Ø§Ù„Ø®Ø·Ø£ Ø§Ù„Ø®Ø§ØµØ© Ø¨Ø§Ù„Ù…Ø·ÙˆØ±
 
 
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseRouting();
 
-app.UseAuthentication();//Who are you//ááÊÍŞŞ ãä åæíÉ ÇáãÓÊÎÏã¡ ÇáÇÓã æßáãÉ ÇáãÑæÑ æÇáÑãÒ ÇáÎÇÕ æÇáãÕÇÏŞÉ ÇáËäÇÆíÉ
-app.UseAuthorization();//What you allowed to do//ááÊÍŞŞ ãä ÕáÇÍíÉ ÇáãÓÊÎÏã
+app.UseAuthentication();//Who are you//Ù„Ù„ØªØ­Ù‚Ù‚ Ù…Ù† Ù‡ÙˆÙŠØ© Ø§Ù„Ù…Ø³ØªØ®Ø¯Ù…ØŒ Ø§Ù„Ø§Ø³Ù… ÙˆÙƒÙ„Ù…Ø© Ø§Ù„Ù…Ø±ÙˆØ± ÙˆØ§Ù„Ø±Ù…Ø² Ø§Ù„Ø®Ø§Øµ ÙˆØ§Ù„Ù…ØµØ§Ø¯Ù‚Ø© Ø§Ù„Ø«Ù†Ø§Ø¦ÙŠØ©
+app.UseAuthorization();//What you allowed to do//Ù„Ù„ØªØ­Ù‚Ù‚ Ù…Ù† ØµÙ„Ø§Ø­ÙŠØ© Ø§Ù„Ù…Ø³ØªØ®Ø¯Ù…
 
 app.MapControllerRoute(
 	name: "default",
-	pattern: "{controller=Customers}/{action=Index}/{id?}");
+	pattern: "{controller=Home}/{action=Index}/{id?}");
 
 
 

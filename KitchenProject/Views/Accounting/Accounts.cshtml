@@ -1,0 +1,75 @@
+@model List<AccountNode>
+@{
+    ViewData["Title"] = "شجرة الحسابات";
+    Layout = "_DashboardLayout";
+    var used = (HashSet<Guid>)ViewBag.UsedIds;
+}
+
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+    <div>
+        <h2 class="page-header-title mb-1"><i class="fa-solid fa-sitemap text-primary me-2"></i> شجرة الحسابات</h2>
+        <p class="text-muted mb-0">الحسابات التجميعية تجمع أرصدة أبنائها، والقيود تُسجل على الحسابات النهائية فقط</p>
+    </div>
+    <div>
+        <a asp-action="CreateAccount" class="btn btn-primary-custom d-inline-flex align-items-center gap-2">
+            <i class="fa-solid fa-plus"></i><span>حساب جديد</span>
+        </a>
+    </div>
+</div>
+
+<div class="custom-card">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="bg-light text-muted" style="font-size:0.85rem;">
+                <tr>
+                    <th class="ps-4">رقم الحساب</th>
+                    <th>اسم الحساب</th>
+                    <th>النوع</th>
+                    <th>مدين</th>
+                    <th>دائن</th>
+                    <th>الرصيد</th>
+                    <th class="text-center pe-4">الإجراءات</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var n in Model)
+                {
+                    var a = n.Account;
+                    <tr class="@(a.IsPostable ? "" : "table-light fw-bold") @(a.IsActive ? "" : "text-muted")">
+                        <td class="ps-4 font-monospace">@a.Code</td>
+                        <td style="padding-right:@(n.Depth * 1.5 + 0.5)rem;">
+                            @if (!a.IsPostable) { <i class="fa-solid fa-folder-open text-warning me-1"></i> }
+                            @a.Name
+                            @if (!a.IsActive) { <span class="badge bg-secondary-subtle text-secondary">معطل</span> }
+                            @if (a.SystemKey != null) { <i class="fa-solid fa-lock text-muted ms-1" title="حساب أساسي مرتبط بالقيود التلقائية"></i> }
+                        </td>
+                        <td><span class="badge bg-light text-dark border">@a.Type.GetDisplayName()</span></td>
+                        <td>@(n.Debit == 0 ? "-" : n.Debit.ToString("N2"))</td>
+                        <td>@(n.Credit == 0 ? "-" : n.Credit.ToString("N2"))</td>
+                        <td class="fw-bold @(n.Balance < 0 ? "text-danger" : "")">@n.Balance.ToString("N2")</td>
+                        <td class="text-center pe-4">
+                            <div class="btn-group btn-group-sm" role="group">
+                                <a asp-action="Ledger" asp-route-accountId="@a.Id" class="btn btn-light border text-secondary" title="كشف حساب"><i class="fa-solid fa-book-open"></i></a>
+                                @if (!a.IsPostable)
+                                {
+                                    <a asp-action="CreateAccount" asp-route-parentId="@a.Id" class="btn btn-light border text-success" title="إضافة حساب فرعي"><i class="fa-solid fa-plus"></i></a>
+                                }
+                                <a asp-action="EditAccount" asp-route-id="@a.Id" class="btn btn-light border text-primary" title="تعديل"><i class="fa-solid fa-pen"></i></a>
+                                @if (a.SystemKey == null && !used.Contains(a.Id))
+                                {
+                                    <button type="submit" form="del-@a.Id" class="btn btn-light border text-danger" title="حذف"><i class="fa-solid fa-trash-can"></i></button>
+                                }
+                            </div>
+                            @if (a.SystemKey == null && !used.Contains(a.Id))
+                            {
+                                <form id="del-@a.Id" asp-action="DeleteAccount" asp-route-id="@a.Id" method="post" class="d-none" onsubmit="return confirm('حذف هذا الحساب؟')">
+                                    @Html.AntiForgeryToken()
+                                </form>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

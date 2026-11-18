@@ -1,0 +1,56 @@
+@model List<AccountNode>
+@{
+    Layout = "_PrintLayout";
+    ViewData["Title"] = "قائمة الدخل";
+    ViewData["DocTitle"] = "قائمة الدخل";
+    DateTime? from = ViewBag.From;
+    DateTime? to = ViewBag.To;
+    ViewData["DocNo"] = $"{from:yyyy/MM/dd} - {to:yyyy/MM/dd}";
+
+    var postable = Model.Where(n => n.Account.IsPostable && n.Balance != 0).ToList();
+    var revenue = postable.Where(n => n.Account.Type == AccountType.Revenue).ToList();
+    var cost = postable.Where(n => n.Account.Type == AccountType.Expense && n.Account.Code.StartsWith("5")).ToList();
+    var opex = postable.Where(n => n.Account.Type == AccountType.Expense && !n.Account.Code.StartsWith("5")).ToList();
+    var totalRevenue = revenue.Sum(n => n.Balance);
+    var totalCost = cost.Sum(n => n.Balance);
+    var totalOpex = opex.Sum(n => n.Balance);
+    var gross = totalRevenue - totalCost;
+    var net = gross - totalOpex;
+}
+
+@if (ViewBag.ProjectName != null)
+{
+    <div class="meta-box mb-2"><span class="label">المشروع</span><div class="fw-bold">@ViewBag.ProjectName</div></div>
+}
+
+<table class="table table-bordered print-table">
+    <thead><tr><th>البند</th><th style="width:24%">المبلغ (د.ل)</th></tr></thead>
+    <tbody>
+        <tr class="table-light fw-bold"><td colspan="2">الإيرادات</td></tr>
+        @foreach (var n in revenue) { <tr><td class="ps-4"><span class="font-monospace small text-muted">@n.Account.Code</span> @n.Account.Name</td><td class="text-start">@n.Balance.ToString("N2")</td></tr> }
+        <tr class="fw-bold"><td>إجمالي الإيرادات</td><td class="text-start text-success">@totalRevenue.ToString("N2")</td></tr>
+
+        <tr class="table-light fw-bold"><td colspan="2">تكلفة المبيعات</td></tr>
+        @foreach (var n in cost) { <tr><td class="ps-4"><span class="font-monospace small text-muted">@n.Account.Code</span> @n.Account.Name</td><td class="text-start">@n.Balance.ToString("N2")</td></tr> }
+        <tr class="fw-bold"><td>إجمالي تكلفة المبيعات</td><td class="text-start text-danger">@totalCost.ToString("N2")</td></tr>
+
+        <tr class="fw-bold bg-light"><td>مجمل الربح</td><td class="text-start">@gross.ToString("N2")</td></tr>
+
+        <tr class="table-light fw-bold"><td colspan="2">المصروفات التشغيلية</td></tr>
+        @foreach (var n in opex) { <tr><td class="ps-4"><span class="font-monospace small text-muted">@n.Account.Code</span> @n.Account.Name</td><td class="text-start">@n.Balance.ToString("N2")</td></tr> }
+        <tr class="fw-bold"><td>إجمالي المصروفات التشغيلية</td><td class="text-start text-danger">@totalOpex.ToString("N2")</td></tr>
+
+        <tr class="fw-bold fs-6" style="background:var(--brand-soft);">
+            <td>@(net >= 0 ? "صافي الربح" : "صافي الخسارة")</td>
+            <td class="text-start" style="color:var(--brand);">@net.ToString("N2")</td>
+        </tr>
+    </tbody>
+</table>
+
+<div class="small text-muted mt-2">طُبع بتاريخ @DateTime.Now.ToString("yyyy/MM/dd HH:mm") بواسطة @ViewBag.PrintedBy</div>
+
+<div class="signatures mt-4">
+    <div>المحاسب</div>
+    <div>المراجع</div>
+    <div>اعتماد الإدارة</div>
+</div>

@@ -14,7 +14,7 @@
     حُرر هذا العقد بتاريخ <strong>@((Model.StartDate ?? Model.Created.ToLocalTime()).ToString("yyyy/MM/dd"))</strong> بين كل من:
 </p>
 
-<div class="row g-2 mb-3">
+<div class="row g-2 mb-2">
     <div class="col-6">
         <div class="meta-box">
             <span class="label">الطرف الأول (الشركة)</span>
@@ -31,21 +31,23 @@
     </div>
 </div>
 
-<div class="section-title">أولاً: موضوع العقد</div>
-<p class="mb-1">
-    يلتزم الطرف الأول بتصنيع وتوريد وتركيب مطبخ
-    @if (!string.IsNullOrEmpty(Model.Projects?.KitchenType))
-    {
-        <span>(<strong>@Model.Projects.KitchenType</strong>)</span>
-    }
-    للطرف الثاني ضمن المشروع رقم <strong>@Model.Projects?.ProjectNo</strong> — @Model.Projects?.ProjectName،
-    وفق المواصفات الفنية الموضحة أدناه.
-</p>
+<div class="no-break">
+    <div class="section-title">أولاً: موضوع العقد</div>
+    <p class="mb-1">
+        يلتزم الطرف الأول بتصنيع وتوريد وتركيب مطبخ
+        @if (!string.IsNullOrEmpty(Model.Projects?.KitchenType))
+        {
+            <span>(<strong>@Model.Projects.KitchenType</strong>)</span>
+        }
+        للطرف الثاني ضمن المشروع رقم <strong>@Model.Projects?.ProjectNo</strong> — @Model.Projects?.ProjectName،
+        وفق المواصفات الفنية الموضحة أدناه.
+    </p>
+</div>
 
 @if (!string.IsNullOrWhiteSpace(Model.Specifications))
 {
     <div class="section-title">ثانياً: المواصفات الفنية</div>
-    <div class="pre-text border rounded p-2" style="line-height:1.9;">@Model.Specifications</div>
+    <div class="pre-text border rounded p-2" style="line-height:1.55;">@Model.Specifications</div>
 }
 
 @if (Model.Quote != null && Model.Quote.Items.Any())
@@ -72,27 +74,25 @@
 
 <div class="no-break">
     <div class="section-title">القيمة ومدة التنفيذ</div>
-    <table class="table table-bordered mb-2" style="max-width:100%;">
-        <tr>
-            <td class="fw-bold bg-light" style="width:30%;">قيمة العقد الإجمالية</td>
-            <td class="fw-bold" style="color:var(--brand);">@Model.TotalAmount.ToString("N2") د.ل</td>
-        </tr>
-        <tr>
-            <td class="fw-bold bg-light">تاريخ البدء</td>
-            <td>@(Model.StartDate?.ToString("yyyy/MM/dd") ?? "-")</td>
-        </tr>
-        <tr>
-            <td class="fw-bold bg-light">موعد التسليم المتوقع</td>
-            <td>@(Model.ExpectedEndDate?.ToString("yyyy/MM/dd") ?? "-")</td>
-        </tr>
+    <table class="table table-bordered print-table mb-2 text-center">
+        <tbody>
+            <tr>
+                <td class="bg-light fw-bold" style="width:18%;">قيمة العقد الإجمالية</td>
+                <td class="fw-bold" style="color:var(--brand); width:18%;">@Model.TotalAmount.ToString("N2") د.ل</td>
+                <td class="bg-light fw-bold" style="width:14%;">تاريخ البدء</td>
+                <td style="width:16%;">@(Model.StartDate?.ToString("yyyy/MM/dd") ?? "-")</td>
+                <td class="bg-light fw-bold" style="width:18%;">موعد التسليم المتوقع</td>
+                <td style="width:16%;">@(Model.ExpectedEndDate?.ToString("yyyy/MM/dd") ?? "-")</td>
+            </tr>
+        </tbody>
     </table>
-</div>
 
-@if (!string.IsNullOrEmpty(Model.Notes))
-{
-    <div class="section-title">شروط إضافية</div>
-    <div class="pre-text small">@Model.Notes</div>
-}
+    @if (!string.IsNullOrEmpty(Model.Notes))
+    {
+        <div class="section-title">شروط إضافية</div>
+        <div class="pre-text small">@Model.Notes</div>
+    }
+</div>
 
 <div class="signatures">
     <div>الطرف الأول<br /><small class="fw-normal text-muted">الختم والتوقيع</small></div>

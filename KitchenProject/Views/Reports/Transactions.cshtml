@@ -1,0 +1,98 @@
+@model List<FinancialMove>
+@{
+    ViewData["Title"] = "الحركات المالية";
+    Layout = "_DashboardLayout";
+    DateTime? from = ViewBag.From;
+    DateTime? to = ViewBag.To;
+    string? kind = ViewBag.Kind;
+    PaymentMethod? method = ViewBag.Method;
+    var totalIn = Model.Sum(m => m.In);
+    var totalOut = Model.Sum(m => m.Out);
+}
+
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+    <div>
+        <h2 class="page-header-title mb-1"><i class="fa-solid fa-right-left text-primary me-2"></i> الحركات المالية</h2>
+        <p class="text-muted mb-0">إيصالات القبض ودفعات الموردين والمصروفات في كشف واحد مرتب بالتاريخ</p>
+    </div>
+    <a asp-action="TransactionsPrint" asp-route-from="@from?.ToString("yyyy-MM-dd")" asp-route-to="@to?.ToString("yyyy-MM-dd")" asp-route-kind="@kind" asp-route-method="@method" target="_blank" class="btn btn-primary-custom d-inline-flex align-items-center gap-2">
+        <i class="fa-solid fa-print"></i><span>طباعة الكشف (A4)</span>
+    </a>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-12 col-sm-4"><div class="custom-card p-3"><span class="text-muted fw-bold d-block mb-1" style="font-size:0.85rem;">إجمالي الوارد</span><h3 class="fw-extrabold mb-0 text-success">@totalIn.ToString("N2")</h3></div></div>
+    <div class="col-12 col-sm-4"><div class="custom-card p-3"><span class="text-muted fw-bold d-block mb-1" style="font-size:0.85rem;">إجمالي المنصرف</span><h3 class="fw-extrabold mb-0 text-danger">@totalOut.ToString("N2")</h3></div></div>
+    <div class="col-12 col-sm-4"><div class="custom-card p-3"><span class="text-muted fw-bold d-block mb-1" style="font-size:0.85rem;">الصافي</span><h3 class="fw-extrabold mb-0 @(totalIn - totalOut < 0 ? "text-danger" : "")">@((totalIn - totalOut).ToString("N2"))</h3></div></div>
+</div>
+
+<div class="custom-card mb-4 p-3">
+    <form method="get" asp-action="Transactions" class="row g-3 align-items-end">
+        <div class="col-6 col-md-2">
+            <label class="form-label small fw-bold text-muted">من</label>
+            <input type="date" name="from" value="@from?.ToString("yyyy-MM-dd")" class="form-control" />
+        </div>
+        <div class="col-6 col-md-2">
+            <label class="form-label small fw-bold text-muted">إلى</label>
+            <input type="date" name="to" value="@to?.ToString("yyyy-MM-dd")" class="form-control" />
+        </div>
+        <div class="col-6 col-md-3">
+            <label class="form-label small fw-bold text-muted">النوع</label>
+            <select name="kind" class="form-select">
+                <option value="">الكل</option>
+                <option value="receipt" selected="@(kind == "receipt")">إيصالات القبض</option>
+                <option value="supplier" selected="@(kind == "supplier")">دفعات الموردين</option>
+                <option value="expense" selected="@(kind == "expense")">المصروفات</option>
+            </select>
+        </div>
+        <div class="col-6 col-md-2">
+            <label class="form-label small fw-bold text-muted">طريقة الدفع</label>
+            <select name="method" class="form-select" asp-items="Html.GetEnumSelectList<PaymentMethod>()"><option value="">الكل</option></select>
+        </div>
+        <div class="col-12 col-md-3 d-flex gap-2">
+            <button type="submit" class="btn btn-primary fw-bold rounded-3"><i class="fa-solid fa-search me-1"></i> عرض</button>
+            <a asp-action="Transactions" class="btn btn-light border text-muted"><i class="fa-solid fa-xmark"></i></a>
+        </div>
+    </form>
+</div>
+
+<div class="custom-card">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="bg-light text-muted" style="font-size:0.85rem;">
+                <tr>
+                    <th class="ps-4">التاريخ</th>
+                    <th>النوع</th>
+                    <th>السند</th>
+                    <th>الجهة</th>
+                    <th>المرجع</th>
+                    <th>الطريقة</th>
+                    <th>وارد</th>
+                    <th>منصرف</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var m in Model)
+                {
+                    <tr>
+                        <td class="ps-4 small text-muted">@m.Date.ToString("yyyy/MM/dd")</td>
+                        <td><span class="badge @(m.In > 0 ? "bg-success-subtle text-success" : "bg-danger-subtle text-danger")">@m.Kind</span></td>
+                        <td class="small font-monospace">@m.Reference</td>
+                        <td class="small">@m.Party</td>
+                        <td class="small">@m.Link</td>
+                        <td class="small">@m.Method.GetDisplayName()</td>
+                        <td class="fw-bold text-success">@(m.In == 0 ? "" : m.In.ToString("N2"))</td>
+                        <td class="fw-bold text-danger">@(m.Out == 0 ? "" : m.Out.ToString("N2"))</td>
+                    </tr>
+                }
+                @if (!Model.Any())
+                {
+                    <tr><td colspan="8" class="text-center py-5 text-muted">لا توجد حركات في هذه الفترة</td></tr>
+                }
+            </tbody>
+            <tfoot class="bg-light fw-bold">
+                <tr><td colspan="6" class="ps-4">الإجمالي (@Model.Count حركة)</td><td class="text-success">@totalIn.ToString("N2")</td><td class="text-danger">@totalOut.ToString("N2")</td></tr>
+            </tfoot>
+        </table>
+    </div>
+</div>

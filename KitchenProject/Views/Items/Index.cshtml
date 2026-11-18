@@ -3,6 +3,7 @@
     ViewData["Title"] = "الأصناف";
     Layout = "_DashboardLayout";
     var balances = (Dictionary<Guid, decimal>)ViewBag.Balances;
+    var avgCosts = ViewBag.AverageCosts as Dictionary<Guid, decimal> ?? new();
     ItemType? type = ViewBag.Type;
 }
 
@@ -12,18 +13,15 @@
         <h2 class="page-header-title mb-1">
             <i class="fa-solid fa-boxes-stacked text-primary me-2"></i> الأصناف
         </h2>
-        <p class="text-muted mb-0">الخامات التي تدخل المخزن، والأصناف الجاهزة التي تُباع في عروض الأسعار</p>
+        <p class="text-muted mb-0">كتالوج موحّد للأصناف المخزنية والوحدات المصنّعة والخدمات بأسعار التكلفة والبيع</p>
     </div>
     <div class="d-flex flex-wrap gap-2">
         <a asp-controller="ItemGroups" asp-action="Index" class="btn btn-outline-secondary fw-bold rounded-3">
             <i class="fa-solid fa-layer-group me-1"></i> البنود A / B / C
         </a>
-        <a asp-action="Create" asp-route-type="Raw" class="btn btn-outline-primary fw-bold rounded-3">
-            <i class="fa-solid fa-cubes me-1"></i> خام جديد
-        </a>
-        <a asp-action="Create" asp-route-type="Finished" class="btn btn-primary-custom d-inline-flex align-items-center gap-2">
+        <a asp-action="Create" class="btn btn-primary-custom d-inline-flex align-items-center gap-2">
             <i class="fa-solid fa-plus"></i>
-            <span>صنف جاهز</span>
+            <span>إضافة صنف جديد</span>
         </a>
     </div>
 </div>
@@ -34,7 +32,7 @@
         <a asp-action="Index" asp-route-type="Raw" class="text-decoration-none">
             <div class="custom-card p-3 d-flex align-items-center justify-content-between">
                 <div>
-                    <span class="text-muted fw-bold d-block mb-1" style="font-size:0.85rem;">أصناف خام</span>
+                    <span class="text-muted fw-bold d-block mb-1" style="font-size:0.85rem;">أصناف مخزنية</span>
                     <h3 class="fw-extrabold mb-0 text-warning">@ViewBag.RawCount</h3>
                 </div>
                 <div class="bg-warning-subtle text-warning rounded-3 p-3"><i class="fa-solid fa-cubes fs-3"></i></div>
@@ -45,7 +43,7 @@
         <a asp-action="Index" asp-route-type="Finished" class="text-decoration-none">
             <div class="custom-card p-3 d-flex align-items-center justify-content-between">
                 <div>
-                    <span class="text-muted fw-bold d-block mb-1" style="font-size:0.85rem;">أصناف جاهزة</span>
+                    <span class="text-muted fw-bold d-block mb-1" style="font-size:0.85rem;">وحدات مصنّعة / خدمات</span>
                     <h3 class="fw-extrabold mb-0 text-success">@ViewBag.FinishedCount</h3>
                 </div>
                 <div class="bg-success-subtle text-success rounded-3 p-3"><i class="fa-solid fa-couch fs-3"></i></div>
@@ -71,7 +69,7 @@
         <div class="col-12 col-md-4">
             <div class="input-group">
                 <span class="input-group-text bg-white border-end-0"><i class="fa-solid fa-magnifying-glass text-muted"></i></span>
-                <input type="text" name="searchString" class="form-control border-start-0 ps-0" placeholder="بحث بالاسم أو الكود..." value="@ViewBag.SearchString">
+                <input type="text" name="searchString" class="form-control border-start-0 ps-0" placeholder="اكتب اسم الصنف للبحث..." autocomplete="off" value="@ViewBag.SearchString">
             </div>
         </div>
         <div class="col-6 col-md-2">
@@ -116,7 +114,8 @@
                     <th>الصنف</th>
                     <th>النوع / البند</th>
                     <th>الوحدة</th>
-                    <th>السعر</th>
+                    <th>سعر التكلفة / الشراء</th>
+                    <th>سعر البيع</th>
                     <th>الرصيد</th>
                     <th class="text-center pe-4">الإجراءات</th>
                 </tr>
@@ -127,6 +126,9 @@
                     foreach (var item in Model)
                     {
                         var balance = balances.GetValueOrDefault(item.Id);
+                        var avgCost = avgCosts.GetValueOrDefault(item.Id);
+                        var effectiveCost = Math.Max(item.PurchasePrice, avgCost);
+                        var effectiveSale = Math.Max(item.SalePrice, effectiveCost);
                         var low = item.Type == ItemType.Raw && item.MinQuantity > 0 && balance <= item.MinQuantity;
                         <tr class="@(item.IsActive ? "" : "opacity-50")">
                             <td class="ps-4"><span class="badge bg-light text-dark border font-monospace">@item.Code</span></td>
@@ -145,15 +147,15 @@
                                 }
                             </td>
                             <td class="small text-muted">@item.Unit</td>
-                            <td class="fw-bold">
-                                @if (item.Type == ItemType.Raw)
+                            <td class="fw-bold text-secondary">
+                                @effectiveCost.ToString("N2")
+                                @if (avgCost > item.PurchasePrice)
                                 {
-                                    @item.PurchasePrice.ToString("N2") <small class="d-block text-muted fw-normal" style="font-size:0.72rem;">آخر سعر شراء</small>
+                                    <small class="d-block text-muted fw-normal" style="font-size:0.72rem;">متوسط التكلفة</small>
                                 }
-                                else
-                                {
-                                    @item.SalePrice.ToString("N2") <small class="d-block text-muted fw-normal" style="font-size:0.72rem;">سعر البيع</small>
-                                }
+                            </td>
+                            <td class="fw-bold text-primary">
+                                @effectiveSale.ToString("N2")
                             </td>
                             <td>
                                 @if (item.Type == ItemType.Raw)
@@ -181,10 +183,10 @@
                 else
                 {
                     <tr>
-                        <td colspan="7" class="text-center py-5 text-muted">
+                        <td colspan="8" class="text-center py-5 text-muted">
                             <i class="fa-solid fa-boxes-stacked display-4 mb-3 d-block text-secondary opacity-50"></i>
                             <h5 class="fw-bold mb-1">لا توجد أصناف</h5>
-                            <p class="text-muted small mb-0">أضف الخامات التي تشتريها والأصناف الجاهزة التي تبيعها</p>
+                            <p class="text-muted small mb-0">أضف الخامات والإكسسوارات المخزنية والوحدات المصنّعة التي تُباع للعملاء</p>
                         </td>
                     </tr>
                 }

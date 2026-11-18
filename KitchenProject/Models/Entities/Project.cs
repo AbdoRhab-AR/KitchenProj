@@ -1,3 +1,4 @@
+using KitchenProject.Classes;
 using KitchenProject.Models.Enums;
 using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
 using System.ComponentModel.DataAnnotations;
@@ -18,7 +19,9 @@ namespace KitchenProject.Models.Entities
 		[Display(Name = "العميل")]
 		public Guid CustomerId { get; set; }
 
+		[Required(ErrorMessage = "اسم المشروع مطلوب")]
 		[MaxLength(150)]
+		[SafeName]
 		public required string ProjectName { get; set; }
 
 		[MaxLength(100)]
@@ -43,6 +46,14 @@ namespace KitchenProject.Models.Entities
 
 		[Column(TypeName = "decimal(18,2)")]
 		public decimal FinalAmount { get; set; }
+
+		// رسوم الإلغاء المستحقة على العميل (اختيارية عند إلغاء المشروع)
+		[Range(0, 100000000, ErrorMessage = "رسوم الإلغاء لا يمكن أن تكون سالبة")]
+		[Column(TypeName = "decimal(18,2)")]
+		public decimal CancellationFee { get; set; }
+
+		[MaxLength(500)]
+		public string? CancellationReason { get; set; }
 
 		[DisplayFormat(DataFormatString = "{0:dd-MM-yyyy hh:mm:ss tt}")]
 		public DateTime? StartDate { get; set; }

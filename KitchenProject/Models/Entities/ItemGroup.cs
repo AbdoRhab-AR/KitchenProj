@@ -1,3 +1,4 @@
+using KitchenProject.Classes;
 using System.ComponentModel.DataAnnotations;
 
 namespace KitchenProject.Models.Entities
@@ -11,6 +12,7 @@ namespace KitchenProject.Models.Entities
 
 		[Required(ErrorMessage = "اسم البند مطلوب")]
 		[MaxLength(100)]
+		[SafeName]
 		public string Name { get; set; } = "";
 
 		public int SortOrder { get; set; }

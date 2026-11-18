@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.AspNetCore.Mvc.ModelBinding.Metadata;
 using System.ComponentModel.DataAnnotations;
 
@@ -31,6 +32,16 @@ namespace KitchenProject.Classes
 		{
 			public void CreateValidationMetadata(ValidationMetadataProviderContext context)
 			{
+				// الحقول الرقمية والتواريخ غير القابلة لـ null: بدون هذا يولّد MVC في المتصفح رسالة Required إنجليزية
+				var type = context.Key.ModelType;
+				if (context.Key.MetadataKind == ModelMetadataKind.Property
+					&& type.IsValueType
+					&& Nullable.GetUnderlyingType(type) == null
+					&& !context.ValidationMetadata.ValidatorMetadata.OfType<RequiredAttribute>().Any())
+				{
+					context.ValidationMetadata.ValidatorMetadata.Add(new RequiredAttribute { ErrorMessage = "هذا الحقل مطلوب" });
+				}
+
 				foreach (var attribute in context.ValidationMetadata.ValidatorMetadata.OfType<ValidationAttribute>())
 				{
 					// الرسائل المكتوبة يدوياً على الخاصية تبقى كما هي

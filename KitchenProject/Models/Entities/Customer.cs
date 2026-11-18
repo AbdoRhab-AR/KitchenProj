@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+using KitchenProject.Classes;
+using System.ComponentModel.DataAnnotations;
 
 namespace KitchenProject.Models.Entities
 {
@@ -8,16 +9,18 @@ namespace KitchenProject.Models.Entities
 		[StringLength(20)]
 		public required string CustomerNo { get; set; }
 
-		[StringLength(30)]
+		[Required(ErrorMessage = "اسم العميل مطلوب")]
+		[StringLength(60, ErrorMessage = "اسم العميل لا يتجاوز 60 حرفاً")]
+		[SafeName(strictlyLettersOnly: true)]
 		public required string Name { get; set; }
 
-		[RegularExpression(@"^\d{14}$", ErrorMessage = "رقم الهاتف يجب أن يكون 14 رقماً")]
+		[RegularExpression(@"^\d{10}$", ErrorMessage = "رقم الهاتف يجب أن يكون 10 رقماً")]
 		public required string Phone { get; set; }
 
 		[MaxLength(14)]
 		public string? Phone2 { get; set; }
 
-		[MaxLength(30), EmailAddress]
+		[MaxLength(30), EmailAddress(ErrorMessage = "البريد الإلكتروني غير صالح")]
 		public string? Email { get; set; }
 
 		[Required(ErrorMessage = "العنوان مطلوب")]

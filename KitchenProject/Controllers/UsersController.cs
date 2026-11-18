@@ -54,10 +54,17 @@ namespace KitchenProject.Controllers
 
 			if (!string.IsNullOrWhiteSpace(searchString))
 			{
-				var s = searchString.Trim();
-				rows = rows.Where(r => r.UserName.Contains(s, StringComparison.OrdinalIgnoreCase)
-									|| r.DisplayName.Contains(s)
-									|| (r.PhoneNumber ?? "").Contains(s)).ToList();
+				if (!SearchValidator.TryValidateNameSearch(searchString, out var validName, out var searchError))
+				{
+					TempData["Error"] = searchError;
+					ViewBag.SearchError = searchError;
+					rows.Clear();
+				}
+				else
+				{
+					rows = rows.Where(r => r.DisplayName.Contains(validName, StringComparison.OrdinalIgnoreCase)
+										|| r.UserName.Contains(validName, StringComparison.OrdinalIgnoreCase)).ToList();
+				}
 			}
 
 			return View(rows);

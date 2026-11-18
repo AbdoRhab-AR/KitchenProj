@@ -1,7 +1,8 @@
-using KitchenProject.Classes;
+﻿using KitchenProject.Classes;
 using KitchenProject.Models.Entities;
 using KitchenProject.Models.Enums;
 using KitchenProject.Models.Interfaces;
+using KitchenProject.ViewModels;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -17,18 +18,155 @@ namespace KitchenProject.Controllers
 		private readonly IUnitOfWork<Expense> _expense;
 		private readonly IUnitOfWork<Quote> _quote;
 		private readonly ProfitService _profit;
+		private readonly KitchenProject.Models.ApplicationDbContext _db;
 
 		public ReportsController(IUnitOfWork<Project> project,
 								 IUnitOfWork<StockTransaction> tx,
 								 IUnitOfWork<Expense> expense,
 								 IUnitOfWork<Quote> quote,
-								 ProfitService profit)
+								 ProfitService profit,
+								 KitchenProject.Models.ApplicationDbContext db)
 		{
 			_project = project;
 			_tx = tx;
 			_expense = expense;
 			_quote = quote;
 			_profit = profit;
+			_db = db;
+		}
+
+		// الحركات المالية: كل ما دخل (تحصيلات العملاء) وخرج (دفعات الموردين والمصروفات) مرتباً بالتاريخ
+		private async Task<List<FinancialMove>> MovesAsync(DateTime? from, DateTime? to, string? kind, PaymentMethod? method)
+		{
+			var moves = new List<FinancialMove>();
+
+			if (string.IsNullOrEmpty(kind) || kind == "receipt")
+			{
+				var q = _db.CustomerPayments.AsNoTracking()
+					.Where(p => !(p.Payment == PaymentMethod.Chek && p.ChequeStatus == ChequeStatus.Bounced));
+				if (from.HasValue) q = q.Where(p => p.PaymentDate >= from.Value.Date);
+				if (to.HasValue) q = q.Where(p => p.PaymentDate <= to.Value.Date);
+				if (method.HasValue) q = q.Where(p => p.Payment == method.Value);
+				moves.AddRange((await q.Select(p => new { p.PaymentDate, p.ReceiptNo, Party = p.Project.Customer.Name, p.Project.ProjectNo, p.Notes, p.Payment, p.Amount, p.IsRefund }).ToListAsync())
+					.Select(p => p.IsRefund
+						? new FinancialMove("سند إرجاع عميل", p.PaymentDate, p.ReceiptNo, p.Party, p.ProjectNo, p.Notes ?? "", p.Payment, 0, p.Amount)
+						: new FinancialMove("تحصيل عميل", p.PaymentDate, p.ReceiptNo, p.Party, p.ProjectNo, p.Notes ?? "", p.Payment, p.Amount, 0)));
+			}
+
+			if (string.IsNullOrEmpty(kind) || kind == "supplier")
+			{
+				var q = _db.SupplierPayments.AsNoTracking()
+					.Where(p => !(p.PaymentMethod == PaymentMethod.Chek && p.ChequeStatus == ChequeStatus.Bounced));
+				if (from.HasValue) q = q.Where(p => p.PaymentDate >= from.Value.Date);
+				if (to.HasValue) q = q.Where(p => p.PaymentDate <= to.Value.Date);
+				if (method.HasValue) q = q.Where(p => p.PaymentMethod == method.Value);
+				moves.AddRange((await q.Select(p => new { p.PaymentDate, p.ReceiptNo, Party = p.supplier.Name, PurchaseNo = p.Purchase != null ? p.Purchase.PurchaseNo : "", p.Notes, p.PaymentMethod, p.Amount }).ToListAsync())
+					.Select(p => new FinancialMove("دفعة مورد", p.PaymentDate, p.ReceiptNo, p.Party, p.PurchaseNo, p.Notes ?? "", p.PaymentMethod, 0, p.Amount)));
+			}
+
+			if (string.IsNullOrEmpty(kind) || kind == "expense")
+			{
+				var q = _db.Expenses.AsNoTracking().AsQueryable();
+				if (from.HasValue) q = q.Where(e => e.ExpenseDate >= from.Value.Date);
+				if (to.HasValue) q = q.Where(e => e.ExpenseDate <= to.Value.Date);
+				if (method.HasValue) q = q.Where(e => e.Payment == method.Value);
+				moves.AddRange((await q.Select(e => new { e.ExpenseDate, e.ExpenseType, ProjectNo = e.Project != null ? e.Project.ProjectNo : "", e.Description, e.Payment, e.Amount }).ToListAsync())
+					.Select(e => new FinancialMove("مصروف", e.ExpenseDate, "", e.ExpenseType, e.ProjectNo, e.Description ?? "", e.Payment, 0, e.Amount)));
+			}
+
+			return moves.OrderBy(m => m.Date).ThenBy(m => m.Kind).ToList();
+		}
+
+		private void FillMoveFilters(DateTime? from, DateTime? to, string? kind, PaymentMethod? method)
+		{
+			ViewBag.From = from;
+			ViewBag.To = to;
+			ViewBag.Kind = kind;
+			ViewBag.Method = method;
+		}
+
+		// GET: Reports/Transactions
+		public async Task<IActionResult> Transactions(DateTime? from, DateTime? to, string? kind, PaymentMethod? method)
+		{
+			ViewBag.ActivePage = "Transactions";
+			FillMoveFilters(from, to, kind, method);
+			return View(await MovesAsync(from, to, kind, method));
+		}
+
+		// GET: Reports/TransactionsPrint  (A4)
+		public async Task<IActionResult> TransactionsPrint(DateTime? from, DateTime? to, string? kind, PaymentMethod? method)
+		{
+			FillMoveFilters(from, to, kind, method);
+			ViewBag.PrintedBy = User.Identity?.Name;
+			return View(await MovesAsync(from, to, kind, method));
+		}
+
+		// أعمار الديون: العقود المتأخرة عن السداد (عملاء) وفواتير المشتريات غير المسددة (موردين)
+		private async Task<List<AgingRow>> BuildAgingAsync(string kind, DateTime asOf)
+		{
+			asOf = asOf.Date;
+			if (kind == "suppliers")
+			{
+				var purchases = await _db.Purchases.AsNoTracking()
+					.Where(p => p.Status == PurchaseStatuses.Received && p.Total > p.PaidAmount)
+					.Select(p => new { p.Id, p.Suppliers.SupplierNo, p.Suppliers.Name, p.PurchaseNo, p.PurchaseDate, p.Total, p.PaidAmount })
+					.ToListAsync();
+				var returnsByPurchase = await _db.PurchaseReturns.AsNoTracking()
+					.GroupBy(r => r.PurchaseId)
+					.Select(g => new { g.Key, Total = g.Sum(r => r.Total) })
+					.ToDictionaryAsync(x => x.Key, x => x.Total);
+				return purchases.Select(p =>
+				{
+					var netTotal = p.Total - returnsByPurchase.GetValueOrDefault(p.Id);
+					return new AgingRow
+					{
+						PartyNo = p.SupplierNo,
+						PartyName = p.Name,
+						DocNo = p.PurchaseNo,
+						DocDate = p.PurchaseDate.Date,
+						AgeDays = Math.Max(0, (asOf - p.PurchaseDate.Date).Days),
+						Total = netTotal,
+						Paid = p.PaidAmount,
+						Remaining = netTotal - p.PaidAmount
+					};
+				}).Where(r => r.Remaining > 0).OrderByDescending(r => r.AgeDays).ToList();
+			}
+
+			var contracts = await _db.Contracts.AsNoTracking()
+				.Where(c => (c.Status == ContractStatuses.Active || c.Status == ContractStatuses.Completed) && c.TotalAmount > c.PaidAmount)
+				.Select(c => new { c.Projects.Customer.CustomerNo, c.Projects.Customer.Name, c.ContractNo, Date = (c.StartDate ?? c.Created).Date, c.TotalAmount, c.PaidAmount })
+				.ToListAsync();
+			return contracts.Select(c => new AgingRow
+			{
+				PartyNo = c.CustomerNo,
+				PartyName = c.Name,
+				DocNo = c.ContractNo,
+				DocDate = c.Date,
+				AgeDays = Math.Max(0, (asOf - c.Date).Days),
+				Total = c.TotalAmount,
+				Paid = c.PaidAmount,
+				Remaining = c.TotalAmount - c.PaidAmount
+			}).OrderByDescending(r => r.AgeDays).ToList();
+		}
+
+		// GET: Reports/Aging
+		public async Task<IActionResult> Aging(string kind = "customers", DateTime? asOf = null)
+		{
+			ViewBag.ActivePage = "Aging";
+			var date = (asOf ?? DateTime.Today).Date;
+			ViewBag.Kind = kind;
+			ViewBag.AsOf = date;
+			return View(await BuildAgingAsync(kind, date));
+		}
+
+		// GET: Reports/AgingPrint  (A4)
+		public async Task<IActionResult> AgingPrint(string kind = "customers", DateTime? asOf = null)
+		{
+			var date = (asOf ?? DateTime.Today).Date;
+			ViewBag.Kind = kind;
+			ViewBag.AsOf = date;
+			ViewBag.PrintedBy = User.Identity?.Name;
+			return View(await BuildAgingAsync(kind, date));
 		}
 
 		// GET: Reports  ->  تقرير الأرباح
@@ -48,8 +186,16 @@ namespace KitchenProject.Controllers
 			var query = _project.Entity.GetWhere(p => p.Status != ProjectStatus.Cancelled);
 			if (!string.IsNullOrWhiteSpace(searchString))
 			{
-				searchString = searchString.Trim();
-				query = query.Where(p => p.ProjectNo.Contains(searchString) || p.ProjectName.Contains(searchString) || p.Customer.Name.Contains(searchString));
+				if (!SearchValidator.TryValidateNameSearch(searchString, out var validName, out var searchError))
+				{
+					TempData["Error"] = searchError;
+					ViewBag.SearchError = searchError;
+					query = query.Where(_ => false);
+				}
+				else
+				{
+					query = query.Where(p => p.ProjectName.Contains(validName) || p.Customer.Name.Contains(validName));
+				}
 			}
 			if (status.HasValue) query = query.Where(p => p.Status == status.Value);
 			if (from.HasValue) query = query.Where(p => p.Created >= from.Value.Date);
@@ -122,3 +268,4 @@ namespace KitchenProject.Controllers
 		public decimal UnitCost => Quantity != 0 ? Cost / Quantity : 0;
 	}
 }
+

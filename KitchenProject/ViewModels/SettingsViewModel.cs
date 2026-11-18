@@ -28,6 +28,10 @@ namespace KitchenProject.ViewModels
 		[StringLength(4000)]
 		public string? DefaultQuoteTerms { get; set; }
 
+		[Required(ErrorMessage = "عدد الصفوف في الصفحة مطلوب")]
+		[Range(5, 200, ErrorMessage = "عدد الصفوف في الصفحة يجب أن يكون بين {1} و {2}")]
+		public int PageSize { get; set; } = 10;
+
 		public string? LogoUrl { get; set; }
 		public string? LetterheadUrl { get; set; }
 

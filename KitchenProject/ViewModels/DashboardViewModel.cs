@@ -8,6 +8,7 @@ namespace KitchenProject.ViewModels
 	{
 		public Dictionary<ProjectStatus, int> ProjectsByStatus { get; set; } = new();
 		public int ActiveProjects { get; set; }
+		public int CancelledProjects { get; set; }
 		public List<Project> RecentProjects { get; set; } = new();
 		public List<Project> MyProjects { get; set; } = new();
 		public List<SiteVisit> UpcomingVisits { get; set; } = new();

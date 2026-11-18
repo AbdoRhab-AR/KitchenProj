@@ -54,10 +54,17 @@ namespace KitchenProject.Controllers
 
 			if (!string.IsNullOrWhiteSpace(searchString))
 			{
-				searchString = searchString.Trim();
-				query = query.Where(c => c.ContractNo.Contains(searchString)
-									  || c.Projects.ProjectName.Contains(searchString)
-									  || c.Projects.Customer.Name.Contains(searchString));
+				if (!SearchValidator.TryValidateNameSearch(searchString, out var validName, out var searchError))
+				{
+					TempData["Error"] = searchError;
+					ViewBag.SearchError = searchError;
+					query = query.Where(_ => false);
+				}
+				else
+				{
+					query = query.Where(c => c.Projects.ProjectName.Contains(validName)
+										  || c.Projects.Customer.Name.Contains(validName));
+				}
 			}
 
 			if (!string.IsNullOrEmpty(status))
@@ -66,7 +73,7 @@ namespace KitchenProject.Controllers
 			}
 
 			var totalCount = await query.CountAsync();
-			int pageSize = 10;
+			int pageSize = await _lookup.PageSizeAsync();
 			var contracts = await query.OrderByDescending(c => c.Created)
 									   .Skip((page - 1) * pageSize)
 									   .Take(pageSize)
@@ -228,9 +235,9 @@ namespace KitchenProject.Controllers
 				return NotFound();
 			}
 
-			// المدفوع والملف لا يُعدلان من النموذج مباشرة
+			// المدفوع والملف وتاريخ الإنشاء لا يُعدلون من النموذج مباشرة
 			var stored = await _contract.Entity.GetWhere(c => c.Id == id)
-				.Select(c => new { c.PaidAmount, c.ContractFilePath })
+				.Select(c => new { c.PaidAmount, c.ContractFilePath, c.Created })
 				.FirstOrDefaultAsync();
 			if (stored == null)
 			{
@@ -238,6 +245,7 @@ namespace KitchenProject.Controllers
 			}
 			contract.PaidAmount = stored.PaidAmount;
 			contract.ContractFilePath = stored.ContractFilePath;
+			contract.Created = stored.Created;
 
 			await ValidateContractAsync(contract);
 
@@ -316,7 +324,7 @@ namespace KitchenProject.Controllers
 			return _contract.Entity.Include(c => c.Projects, c => c.Projects.Customer,
 											c => c.Projects.DesignerUser!, c => c.Quote!, c => c.CustomerPayments)
 				.AsSplitQuery()
-				.Include(c => c.Quote!.Items)
+				.Include(c => c.Quote!).ThenInclude(q => q.Items)
 				.FirstOrDefaultAsync(c => c.Id == id)!;
 		}
 
@@ -348,7 +356,7 @@ namespace KitchenProject.Controllers
 			if (contract.TotalAmount <= 0)
 				ModelState.AddModelError(nameof(Contract.TotalAmount), "قيمة العقد يجب أن تكون أكبر من صفر");
 
-			if (!ContractStatuses.Names.ContainsKey(contract.Status))
+			if (string.IsNullOrEmpty(contract.Status) || !ContractStatuses.Names.ContainsKey(contract.Status))
 				ModelState.AddModelError(nameof(Contract.Status), "حالة غير صالحة");
 
 			if (contract.StartDate.HasValue && contract.ExpectedEndDate.HasValue && contract.ExpectedEndDate < contract.StartDate)

@@ -40,8 +40,15 @@
         }
         .navbar-brand {
             font-weight: 800;
-            font-size: 1.4rem;
+            font-size: 1.35rem;
             color: var(--primary-color) !important;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .navbar-brand img {
+            height: 36px;
+            width: auto;
         }
         .navbar-brand i {
             color: var(--accent-color);
@@ -84,7 +91,8 @@
         <nav class="navbar navbar-expand-lg navbar-light main-navbar sticky-top">
             <div class="container">
                 <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">
-                    <i class="fa-solid fa-kitchen-set me-2"></i> مطابخنا المحترفة
+                    <img src="~/images/brand/logo-mark.png" alt="Bin Gsoma" />
+                    <span>بن قسومة لتصنيع المطابخ</span>
                 </a>
                 <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#mainNavbar">
                     <span class="navbar-toggler-icon"></span>
@@ -120,8 +128,8 @@
 
     <footer class="public-footer">
         <div class="container text-center">
-            <p class="mb-1 fw-bold text-white"><i class="fa-solid fa-kitchen-set me-1 text-primary"></i> مصنع وتفصيل المطابخ الإحترافي</p>
-            <small>&copy; @DateTime.Now.Year - جميع الحقوق محفوظة للنظام</small>
+            <p class="mb-1 fw-bold text-white"><i class="fa-solid fa-kitchen-set text-primary me-1"></i> شركة بن قسومة لحلول المطابخ</p>
+            <small>&copy; @DateTime.Now.Year - جميع الحقوق محفوظة</small>
         </div>
     </footer>
 

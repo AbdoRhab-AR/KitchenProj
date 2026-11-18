@@ -1,0 +1,114 @@
+@model List<ChequeRowVm>
+@{
+    ViewData["Title"] = "حافظة الصكوك";
+    Layout = "_DashboardLayout";
+    ChequeStatus? status = ViewBag.Status;
+    string? kind = ViewBag.Kind;
+}
+
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+    <div>
+        <h2 class="page-header-title mb-1"><i class="fa-solid fa-money-check-dollar text-primary me-2"></i> حافظة الصكوك / الشيكات</h2>
+        <p class="text-muted mb-0">متابعة الصكوك المستلمة من العملاء والصادرة للموردين وتحديث حالتها (تحت التحصيل / محصّل / مرتجع)</p>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-12 col-sm-4">
+        <div class="custom-card p-3">
+            <span class="text-muted fw-bold d-block mb-1" style="font-size:0.85rem;">تحت التحصيل (عملاء)</span>
+            <h3 class="fw-extrabold mb-0 text-warning-emphasis">@Model.Where(c => c.IsCustomer && c.Status == ChequeStatus.Pending).Sum(c => c.Amount).ToString("N2")</h3>
+        </div>
+    </div>
+    <div class="col-12 col-sm-4">
+        <div class="custom-card p-3">
+            <span class="text-muted fw-bold d-block mb-1" style="font-size:0.85rem;">صكوك مؤجلة (موردين)</span>
+            <h3 class="fw-extrabold mb-0 text-danger">@Model.Where(c => !c.IsCustomer && c.Status == ChequeStatus.Pending).Sum(c => c.Amount).ToString("N2")</h3>
+        </div>
+    </div>
+    <div class="col-12 col-sm-4">
+        <div class="custom-card p-3">
+            <span class="text-muted fw-bold d-block mb-1" style="font-size:0.85rem;">مرتجع / مرفوض</span>
+            <h3 class="fw-extrabold mb-0 text-secondary">@Model.Count(c => c.Status == ChequeStatus.Bounced) صك</h3>
+        </div>
+    </div>
+</div>
+
+<div class="custom-card mb-4 p-3">
+    <form method="get" asp-action="Cheques" class="row g-3 align-items-end">
+        <div class="col-6 col-md-3">
+            <label class="form-label small fw-bold text-muted">النوع</label>
+            <select name="kind" class="form-select">
+                <option value="">الكل</option>
+                <option value="customer" selected="@(kind == "customer")">صكوك عملاء (واردة)</option>
+                <option value="supplier" selected="@(kind == "supplier")">صكوك موردين (صادرة)</option>
+            </select>
+        </div>
+        <div class="col-6 col-md-3">
+            <label class="form-label small fw-bold text-muted">الحالة</label>
+            <select name="status" class="form-select" asp-items="Html.GetEnumSelectList<ChequeStatus>()"><option value="">الكل</option></select>
+        </div>
+        <div class="col-12 col-md-3 d-flex gap-2">
+            <button type="submit" class="btn btn-primary fw-bold rounded-3"><i class="fa-solid fa-search me-1"></i> عرض</button>
+            <a asp-action="Cheques" class="btn btn-light border text-muted"><i class="fa-solid fa-xmark"></i></a>
+        </div>
+    </form>
+</div>
+
+<div class="custom-card">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="bg-light text-muted" style="font-size:0.85rem;">
+                <tr>
+                    <th class="ps-4">السند</th>
+                    <th>النوع</th>
+                    <th>الجهة</th>
+                    <th>رقم الصك</th>
+                    <th>تاريخ السند</th>
+                    <th>الاستحقاق</th>
+                    <th>المبلغ</th>
+                    <th>الحالة</th>
+                    <th class="text-center pe-4">تغيير الحالة</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var c in Model)
+                {
+                    var badge = c.Status switch
+                    {
+                        ChequeStatus.Pending => "bg-warning-subtle text-warning-emphasis",
+                        ChequeStatus.Cleared => "bg-success-subtle text-success",
+                        _ => "bg-danger-subtle text-danger"
+                    };
+                    <tr>
+                        <td class="ps-4 font-monospace small">@c.ReceiptNo</td>
+                        <td><span class="badge @(c.IsCustomer ? "bg-success-subtle text-success" : "bg-danger-subtle text-danger")">@(c.IsCustomer ? "وارد (عميل)" : "صادر (مورد)")</span></td>
+                        <td class="small fw-semibold">@c.PartyName <span class="text-muted">(@c.LinkText)</span></td>
+                        <td class="font-monospace small">@(c.ReferenceNo ?? "-")</td>
+                        <td class="small text-muted">@c.PaymentDate.ToString("yyyy/MM/dd")</td>
+                        <td class="small @(c.DueDate.HasValue && c.DueDate.Value.Date <= DateTime.Today && c.Status == ChequeStatus.Pending ? "text-danger fw-bold" : "text-muted")">@(c.DueDate?.ToString("yyyy/MM/dd") ?? "-")</td>
+                        <td class="fw-bold">@c.Amount.ToString("N2")</td>
+                        <td><span class="badge @badge">@c.Status.GetDisplayName()</span></td>
+                        <td class="text-center pe-4">
+                            <form asp-action="UpdateChequeStatus" method="post" class="d-inline-flex gap-1">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="isCustomer" value="@(c.IsCustomer ? "true" : "false")" />
+                                <input type="hidden" name="id" value="@c.Id" />
+                                <select name="newStatus" class="form-select form-select-sm" style="width:auto;" onchange="this.form.submit()">
+                                    @foreach (ChequeStatus st in Enum.GetValues<ChequeStatus>())
+                                    {
+                                        <option value="@st" selected="@(st == c.Status)">@st.GetDisplayName()</option>
+                                    }
+                                </select>
+                            </form>
+                        </td>
+                    </tr>
+                }
+                @if (!Model.Any())
+                {
+                    <tr><td colspan="9" class="text-center py-5 text-muted">لا توجد صكوك مسجلة</td></tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

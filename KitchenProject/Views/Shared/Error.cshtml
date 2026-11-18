@@ -1,1 +1,22 @@
-﻿
+@{
+    ViewData["Title"] = "حدث خطأ";
+    Layout = User.Identity?.IsAuthenticated == true ? "_DashboardLayout" : "_Layout";
+    var requestId = System.Diagnostics.Activity.Current?.Id ?? Context.TraceIdentifier;
+}
+
+<div class="d-flex align-items-center justify-content-center py-5">
+    <div class="custom-card p-5 text-center" style="max-width:480px;">
+        <div class="bg-danger-subtle text-danger rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width:72px; height:72px;">
+            <i class="fa-solid fa-triangle-exclamation fs-1"></i>
+        </div>
+        <h3 class="fw-bold mb-2">حدث خطأ غير متوقع</h3>
+        <p class="text-muted mb-4">تعذر إتمام الطلب الحالي. يرجى المحاولة مرة أخرى أو العودة للرئيسية.</p>
+        @if (!string.IsNullOrEmpty(requestId))
+        {
+            <p class="small text-muted font-monospace mb-4">رقم الطلب: @requestId</p>
+        }
+        <a asp-controller="Home" asp-action="Index" class="btn btn-primary-custom px-4">
+            <i class="fa-solid fa-house me-1"></i> العودة للرئيسية
+        </a>
+    </div>
+</div>

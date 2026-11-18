@@ -33,5 +33,20 @@ namespace KitchenProject.Models.Entities
 		public string? ReferenceNo { get; set; }
 
 		public string? Notes { get; set; }
+
+		// إرجاع مبلغ للعميل (سند صرف لعميل)
+		public bool IsRefund { get; set; }
+
+		// حساب الخزنة أو البنك المختار في شجرة الحسابات (اختياري)
+		public Guid? CashAccountId { get; set; }
+
+		// متابعة الصكوك المؤجلة
+		public ChequeStatus? ChequeStatus { get; set; }
+		public DateTime? ChequeDueDate { get; set; }
+
+		// ضوابط الصلاحيات والطباعة
+		public bool IsPrinted { get; set; }
+		[MaxLength(100)]
+		public string? CreatedBy { get; set; }
 	}
 }

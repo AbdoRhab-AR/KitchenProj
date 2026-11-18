@@ -1,0 +1,118 @@
+@model List<JournalEntry>
+@{
+    ViewData["Title"] = "القيود اليومية";
+    Layout = "_DashboardLayout";
+    DateTime? from = ViewBag.From;
+    DateTime? to = ViewBag.To;
+    string? source = ViewBag.Source;
+    DateTime? closed = ViewBag.ClosedThrough;
+}
+
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+    <div>
+        <h2 class="page-header-title mb-1"><i class="fa-solid fa-book text-primary me-2"></i> القيود اليومية</h2>
+        <p class="text-muted mb-0">
+            قيود تلقائية من العقود وإيصالات القبض والمشتريات والمصروفات والمخزن، وقيود يدوية للأرصدة الافتتاحية والتسويات
+            @if (closed.HasValue) { <span class="badge bg-warning-subtle text-warning-emphasis ms-1"><i class="fa-solid fa-lock me-1"></i>مقفل حتى @closed.Value.ToString("yyyy/MM/dd")</span> }
+        </p>
+    </div>
+    <div class="d-flex gap-2">
+        <form asp-action="SyncNow" method="post" class="m-0">
+            @Html.AntiForgeryToken()
+            <button type="submit" class="btn btn-light border fw-bold" title="إعادة توليد القيود التلقائية من المستندات"><i class="fa-solid fa-rotate me-1"></i> مزامنة</button>
+        </form>
+        <a asp-action="CreateJournal" class="btn btn-primary-custom d-inline-flex align-items-center gap-2">
+            <i class="fa-solid fa-plus"></i><span>قيد يدوي</span>
+        </a>
+    </div>
+</div>
+
+<div class="custom-card mb-4 p-3">
+    <form method="get" asp-action="Index" class="row g-3 align-items-end">
+        <div class="col-12 col-md-3">
+            <label class="form-label small fw-bold text-muted">بحث</label>
+            <input type="text" name="searchString" class="form-control" placeholder="بيان القيد أو رقمه..." value="@ViewBag.SearchString" autocomplete="off" />
+        </div>
+        <div class="col-6 col-md-2">
+            <label class="form-label small fw-bold text-muted">المصدر</label>
+            <select name="source" class="form-select">
+                <option value="">الكل</option>
+                <option value="manual" selected="@(source == "manual")">يدوي</option>
+                <option value="auto" selected="@(source == "auto")">تلقائي</option>
+                <option value="Contract" selected="@(source == "Contract")">عقود</option>
+                <option value="Receipt" selected="@(source == "Receipt")">إيصالات القبض</option>
+                <option value="Purchase" selected="@(source == "Purchase")">مشتريات</option>
+                <option value="SupplierPayment" selected="@(source == "SupplierPayment")">دفعات موردين</option>
+                <option value="Expense" selected="@(source == "Expense")">مصروفات</option>
+                <option value="Stock" selected="@(source == "Stock")">مخزن</option>
+                <option value="close" selected="@(source == "close")">إقفال</option>
+            </select>
+        </div>
+        <div class="col-12 col-md-3">
+            <label class="form-label small fw-bold text-muted">الحساب</label>
+            <select name="accountId" class="form-select" asp-items="ViewBag.Accounts"><option value="">كل الحسابات</option></select>
+        </div>
+        <div class="col-6 col-md-2">
+            <label class="form-label small fw-bold text-muted">من</label>
+            <input type="date" name="from" value="@from?.ToString("yyyy-MM-dd")" class="form-control" />
+        </div>
+        <div class="col-6 col-md-2">
+            <label class="form-label small fw-bold text-muted">إلى</label>
+            <input type="date" name="to" value="@to?.ToString("yyyy-MM-dd")" class="form-control" />
+        </div>
+        <div class="col-12 d-flex gap-2">
+            <button type="submit" class="btn btn-primary fw-bold rounded-3"><i class="fa-solid fa-search me-1"></i> بحث</button>
+            <a asp-action="Index" class="btn btn-light border fw-bold text-muted"><i class="fa-solid fa-xmark"></i></a>
+        </div>
+    </form>
+</div>
+
+<div class="custom-card">
+    <div class="card-header-custom">
+        <h5 class="fw-bold mb-0 text-dark"><i class="fa-solid fa-list text-secondary me-2"></i> القيود</h5>
+        <span class="badge bg-light text-dark border">@ViewBag.TotalCount قيد</span>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="bg-light text-muted" style="font-size:0.85rem;">
+                <tr>
+                    <th class="ps-4">رقم القيد</th>
+                    <th>التاريخ</th>
+                    <th>البيان</th>
+                    <th>المصدر</th>
+                    <th>المبلغ</th>
+                    <th class="text-center pe-4"></th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.Any())
+                {
+                    foreach (var e in Model)
+                    {
+                        <tr>
+                            <td class="ps-4 font-monospace">@e.EntryNo</td>
+                            <td class="small text-muted">@e.EntryDate.ToString("yyyy/MM/dd")</td>
+                            <td class="small">@e.Description</td>
+                            <td><span class="badge @(e.IsAuto ? "bg-info-subtle text-info-emphasis" : "bg-success-subtle text-success")">@AccountingService.SourceName(e.SourceType)</span></td>
+                            <td class="fw-bold">@e.TotalDebit.ToString("N2")</td>
+                            <td class="text-center pe-4">
+                                <a asp-action="JournalDetails" asp-route-id="@e.Id" class="btn btn-sm btn-light border text-primary" title="عرض"><i class="fa-solid fa-eye"></i></a>
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="6" class="text-center py-5 text-muted">
+                            <i class="fa-solid fa-book display-4 mb-3 d-block text-secondary opacity-50"></i>
+                            <h5 class="fw-bold mb-1">لا توجد قيود</h5>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <partial name="_Pager" model='new Dictionary<string, string?> { ["searchString"] = ViewBag.SearchString, ["source"] = source, ["accountId"] = ViewBag.AccountId?.ToString(), ["from"] = from?.ToString("yyyy-MM-dd"), ["to"] = to?.ToString("yyyy-MM-dd") }' />
+</div>

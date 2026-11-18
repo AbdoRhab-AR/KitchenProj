@@ -126,7 +126,7 @@
         function renumber() {
             tbody.querySelectorAll('tr.line-row').forEach((tr, i) => {
                 tr.querySelector('.row-no').textContent = i + 1;
-                tr.querySelectorAll('input, select').forEach(input => {
+                tr.querySelectorAll('input:not(.ks-combobox-input), select').forEach(input => {
                     const field = input.dataset.field || input.name.replace(/^Items\[\d+\]\./, '');
                     input.dataset.field = field;
                     input.name = `Items[${i}].${field}`;
@@ -157,7 +157,9 @@
             if (tbody.querySelectorAll('tr.line-row').length > 1) {
                 btn.closest('tr').remove();
             } else {
-                btn.closest('tr').querySelector('select').value = '';
+                const sel = btn.closest('tr').querySelector('select');
+                sel.value = '';
+                sel.dispatchEvent(new Event('change', { bubbles: true }));
                 refresh(btn.closest('tr'));
             }
             renumber();

@@ -1,0 +1,64 @@
+@model JournalEntry
+@{
+    Layout = "_PrintLayout";
+    ViewData["Title"] = "قيد يومي " + Model.EntryNo;
+    ViewData["DocTitle"] = "سند قيد يومية";
+    ViewData["DocNo"] = Model.EntryNo;
+    var projects = (Dictionary<Guid, string>)ViewBag.Projects;
+}
+
+<div class="row g-2 mb-2">
+    <div class="col-4"><div class="meta-box"><span class="label">التاريخ</span><div class="fw-bold">@Model.EntryDate.ToString("yyyy/MM/dd")</div></div></div>
+    <div class="col-4"><div class="meta-box"><span class="label">المصدر</span><div class="fw-bold">@AccountingService.SourceName(Model.SourceType)</div></div></div>
+    <div class="col-4"><div class="meta-box"><span class="label">أنشأه</span><div class="fw-bold">@(Model.CreatedBy ?? "-")</div></div></div>
+</div>
+
+<div class="meta-box mb-2">
+    <span class="label">البيان</span>
+    <div class="fw-bold">@Model.Description</div>
+</div>
+
+<table class="table table-bordered print-table">
+    <thead>
+        <tr>
+            <th style="width:12%">رقم الحساب</th>
+            <th style="width:28%">اسم الحساب</th>
+            <th>البيان / المشروع</th>
+            <th style="width:15%">مدين (د.ل)</th>
+            <th style="width:15%">دائن (د.ل)</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var l in Model.Lines.OrderByDescending(l => l.Debit > 0).ThenBy(l => l.Account.Code))
+        {
+            <tr>
+                <td class="font-monospace small">@l.Account.Code</td>
+                <td class="fw-semibold">@l.Account.Name</td>
+                <td class="small">
+                    @l.Description
+                    @if (l.ProjectId.HasValue && projects.TryGetValue(l.ProjectId.Value, out var pn))
+                    {
+                        <div class="text-muted">@pn</div>
+                    }
+                </td>
+                <td class="text-start fw-bold">@(l.Debit == 0 ? "" : l.Debit.ToString("N2"))</td>
+                <td class="text-start fw-bold">@(l.Credit == 0 ? "" : l.Credit.ToString("N2"))</td>
+            </tr>
+        }
+    </tbody>
+    <tfoot>
+        <tr class="fw-bold bg-light">
+            <td colspan="3">الإجمالي</td>
+            <td class="text-start">@Model.TotalDebit.ToString("N2")</td>
+            <td class="text-start">@Model.TotalCredit.ToString("N2")</td>
+        </tr>
+    </tfoot>
+</table>
+
+<div class="small text-muted mt-2">طُبع بتاريخ @DateTime.Now.ToString("yyyy/MM/dd HH:mm") بواسطة @ViewBag.PrintedBy</div>
+
+<div class="signatures mt-4">
+    <div>المحاسب</div>
+    <div>المراجع</div>
+    <div>اعتماد الإدارة</div>
+</div>

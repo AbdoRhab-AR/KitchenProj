@@ -1,0 +1,78 @@
+@model List<LedgerRow>
+@{
+    Layout = "_PrintLayout";
+    var account = (Account)ViewBag.Account;
+    DateTime? from = ViewBag.From;
+    DateTime? to = ViewBag.To;
+    decimal opening = ViewBag.Opening;
+    bool isGroup = ViewBag.IsGroup;
+    ViewData["Title"] = "كشف حساب " + account.Name;
+    ViewData["DocTitle"] = "كشف حساب (دفتر الأستاذ)";
+    ViewData["DocNo"] = account.Code;
+    var period = from.HasValue || to.HasValue
+        ? $"{(from.HasValue ? from.Value.ToString("yyyy/MM/dd") : "البداية")} - {(to.HasValue ? to.Value.ToString("yyyy/MM/dd") : "اليوم")}"
+        : "كل الفترات";
+    var debit = Model.Sum(r => r.Debit);
+    var credit = Model.Sum(r => r.Credit);
+    var closing = Model.Any() ? Model.Last().Balance : opening;
+}
+
+<div class="row g-2 mb-2">
+    <div class="col-5"><div class="meta-box"><span class="label">الحساب</span><div class="fw-bold">@account.Code - @account.Name</div></div></div>
+    <div class="col-4"><div class="meta-box"><span class="label">الفترة</span><div class="fw-bold small">@period</div></div></div>
+    <div class="col-3"><div class="meta-box"><span class="label">الرصيد الختامي</span><div class="fw-bold" style="color:var(--brand);">@closing.ToString("N2")</div></div></div>
+</div>
+
+<table class="table table-bordered print-table">
+    <thead>
+        <tr>
+            <th style="width:11%">التاريخ</th>
+            <th style="width:11%">رقم القيد</th>
+            <th>البيان</th>
+            @if (isGroup) { <th style="width:18%">الحساب</th> }
+            <th style="width:13%">مدين</th>
+            <th style="width:13%">دائن</th>
+            <th style="width:14%">الرصيد</th>
+        </tr>
+    </thead>
+    <tbody>
+        @if (from.HasValue)
+        {
+            <tr class="table-light">
+                <td colspan="@(isGroup ? 6 : 5)">رصيد ما قبل @from.Value.ToString("yyyy/MM/dd")</td>
+                <td class="text-start fw-bold">@opening.ToString("N2")</td>
+            </tr>
+        }
+        @foreach (var r in Model)
+        {
+            <tr>
+                <td class="small">@r.Date.ToString("yyyy/MM/dd")</td>
+                <td class="font-monospace small">@r.EntryNo</td>
+                <td class="small">@r.Description</td>
+                @if (isGroup) { <td class="small">@r.AccountName</td> }
+                <td class="text-start">@(r.Debit == 0 ? "" : r.Debit.ToString("N2"))</td>
+                <td class="text-start">@(r.Credit == 0 ? "" : r.Credit.ToString("N2"))</td>
+                <td class="text-start fw-bold">@r.Balance.ToString("N2")</td>
+            </tr>
+        }
+        @if (!Model.Any())
+        {
+            <tr><td colspan="@(isGroup ? 7 : 6)" class="text-center text-muted py-4">لا توجد حركات</td></tr>
+        }
+    </tbody>
+    <tfoot>
+        <tr class="fw-bold bg-light">
+            <td colspan="@(isGroup ? 4 : 3)">الإجمالي</td>
+            <td class="text-start">@debit.ToString("N2")</td>
+            <td class="text-start">@credit.ToString("N2")</td>
+            <td class="text-start">@closing.ToString("N2")</td>
+        </tr>
+    </tfoot>
+</table>
+
+<div class="small text-muted mt-2">طُبع بتاريخ @DateTime.Now.ToString("yyyy/MM/dd HH:mm") بواسطة @ViewBag.PrintedBy</div>
+
+<div class="signatures mt-4">
+    <div>المحاسب</div>
+    <div>المراجع</div>
+</div>

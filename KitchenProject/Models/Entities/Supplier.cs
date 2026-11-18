@@ -1,3 +1,4 @@
+using KitchenProject.Classes;
 using System.ComponentModel.DataAnnotations;
 
 namespace KitchenProject.Models.Entities
@@ -9,6 +10,7 @@ namespace KitchenProject.Models.Entities
 
 		[Required(ErrorMessage = "اسم المورد مطلوب")]
 		[MaxLength(150)]
+		[SafeName]
 		public required string Name { get; set; }
 
 		[MaxLength(30)]

@@ -29,13 +29,20 @@ namespace KitchenProject.Models.Entities
 		public string? AttachmentPath { get; set; }
 		public string? Notes { get; set; }
 
+		// ربط المصروف بحساب مصروف وحساب خزنة/بنك في شجرة الحسابات (اختياري)
+		public Guid? AccountId { get; set; }
+		public Guid? CashAccountId { get; set; }
+
+		[MaxLength(100)]
+		public string? CreatedBy { get; set; }
+
 		[NotMapped]
 		public IFormFile? Attachment { get; set; }
 
 		// أنواع مقترحة في الشاشة (يمكن كتابة غيرها)
 		public static readonly string[] SuggestedTypes =
 		{
-			"نقل وتوصيل", "تركيب", "عمالة يومية", "أدوات ومستهلكات", "صيانة", "إيجار", "كهرباء ومياه", "رواتب", "دعاية وإعلان", "أخرى"
+			"نقل وتوصيل", "تركيب", "عمالة يومية", "أتعاب معاينة مهندس", "أتعاب تصميم", "أدوات ومستهلكات", "صيانة", "إيجار", "كهرباء ومياه", "رواتب", "دعاية وإعلان", "أخرى"
 		};
 	}
 }

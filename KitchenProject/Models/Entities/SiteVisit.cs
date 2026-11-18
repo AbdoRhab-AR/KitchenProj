@@ -12,8 +12,8 @@ namespace KitchenProject.Models.Entities
 		public Guid ProjectId { get; set; }
 
 		[ValidateNever]
-		public ApplicationUser Engineer { get; set; }
-		public string EngineerId { get; set; }
+		public ApplicationUser? Engineer { get; set; }
+		public string? EngineerId { get; set; }
 
 		[DisplayFormat(DataFormatString = "{0:dd-MM-yyyy hh:mm:ss tt}")]
 		public DateTime VisitDate { get; set; }

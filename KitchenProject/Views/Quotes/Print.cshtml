@@ -6,7 +6,7 @@
     ViewData["DocNo"] = Model.QuoteNo;
 }
 
-<div class="row g-2 mb-3">
+<div class="row g-2 mb-2">
     <div class="col-6">
         <div class="meta-box">
             <span class="label">السيد / السادة</span>
@@ -65,14 +65,7 @@
     </tbody>
 </table>
 
-<div class="d-flex justify-content-between align-items-start gap-4 mt-3 no-break">
-    <div class="flex-grow-1">
-        @if (!string.IsNullOrEmpty(Model.Notes))
-        {
-            <div class="section-title mt-0">الشروط والملاحظات</div>
-            <div class="pre-text small">@Model.Notes</div>
-        }
-    </div>
+<div class="d-flex justify-content-end mt-2 no-break">
     <table class="totals">
         <tr><td class="text-muted fw-bold">المجموع</td><td class="text-start fw-bold">@Model.Subtotal.ToString("N2")</td></tr>
         @if (Model.Discount > 0)
@@ -86,6 +79,14 @@
         <tr class="grand"><td>الإجمالي (د.ل)</td><td class="text-start">@Model.Total.ToString("N2")</td></tr>
     </table>
 </div>
+
+@if (!string.IsNullOrEmpty(Model.Notes))
+{
+    <div class="mt-3 no-break">
+        <div class="section-title mt-0">الشروط والملاحظات</div>
+        <div class="pre-text small">@Model.Notes</div>
+    </div>
+}
 
 <div class="signatures">
     <div>توقيع العميل بالموافقة</div>

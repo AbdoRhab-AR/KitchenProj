@@ -30,9 +30,9 @@
             --brand: #880D18;
             --brand-soft: #f7ecec;
             --sand: #d6b49b;
-            --head-space: 44mm;   /* ارتفاع رأس الورق الرسمي */
+            --head-space: 42mm;   /* ارتفاع رأس الورق الرسمي */
             --foot-space: 50mm;   /* ارتفاع تذييل الورق الرسمي */
-            --side-space: 18mm;
+            --side-space: 16mm;
         }
 
         @@page { size: A4; margin: 0; }
@@ -41,7 +41,8 @@
             font-family: 'Cairo', sans-serif;
             background: #e2e8f0;
             color: #1f2937;
-            font-size: 0.9rem;
+            font-size: 0.84rem;
+            line-height: 1.45;
         }
 
         .sheet {
@@ -51,55 +52,76 @@
             min-height: 297mm;
             margin: 24px auto;
             box-shadow: 0 6px 30px rgba(0, 0, 0, 0.12);
+            overflow: hidden;
         }
 
-        .letterhead-bg {
+        .letterhead-top,
+        .letterhead-bottom {
             position: absolute;
-            inset: 0;
+            left: 0;
             width: 210mm;
             height: 297mm;
             z-index: 0;
+            pointer-events: none;
+            user-select: none;
+        }
+
+        .letterhead-top {
+            top: 0;
+            clip-path: inset(0 0 50% 0);
+        }
+
+        .letterhead-bottom {
+            bottom: 0;
+            clip-path: inset(50% 0 0 0);
         }
 
         .page-frame { position: relative; z-index: 1; width: 100%; border-collapse: collapse; }
-        .page-frame > thead td { height: var(--head-space); }
-        .page-frame > tfoot td { height: var(--foot-space); }
+        .page-frame > thead { display: table-header-group; }
+        .page-frame > tfoot { display: table-footer-group; }
+        .page-frame > thead td,
+        .page-frame > tfoot td { padding: 0; border: 0; }
+        .head-spacer { height: var(--head-space); }
+        .foot-spacer { height: var(--foot-space); }
         .page-frame > tbody > tr > td { padding: 0 var(--side-space); vertical-align: top; }
 
         /* بدون ورق رسمي: رأس نصي بسيط */
-        .text-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid var(--brand); padding: 14mm var(--side-space) 10px; margin-bottom: 16px; }
-        .text-header img { max-height: 60px; max-width: 220px; object-fit: contain; }
+        .text-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid var(--brand); padding: 12mm var(--side-space) 8px; margin-bottom: 12px; }
+        .text-header img { max-height: 56px; max-width: 210px; object-fit: contain; }
 
-        .doc-heading { display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 2px solid var(--brand); padding-bottom: 8px; margin-bottom: 14px; }
-        .doc-title { font-weight: 800; font-size: 1.45rem; color: var(--brand); }
-        .doc-no { font-weight: 700; color: #475569; }
+        .doc-heading { display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 2px solid var(--brand); padding-bottom: 6px; margin-bottom: 10px; }
+        .doc-title { font-weight: 800; font-size: 1.28rem; color: var(--brand); }
+        .doc-no { font-weight: 700; color: #475569; font-size: 0.9rem; }
 
-        .meta-box { background: #fafafa; border: 1px solid #e5e7eb; border-radius: 8px; padding: 8px 12px; height: 100%; }
-        .meta-box .label { color: #64748b; font-size: 0.75rem; font-weight: 700; display: block; }
+        .meta-box { background: #fafafa; border: 1px solid #e5e7eb; border-radius: 8px; padding: 6px 10px; height: 100%; }
+        .meta-box .label { color: #64748b; font-size: 0.72rem; font-weight: 700; display: block; }
 
         .print-table { margin-bottom: 0; }
-        .print-table th { background: var(--brand) !important; color: #fff !important; font-weight: 700; font-size: 0.82rem; }
-        .print-table td, .print-table th { border-color: #e5d5d5 !important; padding: 6px 8px; }
-        .print-table tbody tr:nth-child(even) td { background: #fdf8f8; }
+        .print-table th { background: var(--brand) !important; color: #fff !important; font-weight: 700; font-size: 0.8rem; }
+        .print-table td, .print-table th { border-color: #d1d5db !important; padding: 5px 8px; vertical-align: middle; }
+        .print-table tbody tr { page-break-inside: avoid; break-inside: avoid; }
+        .print-table tbody tr:nth-child(even) td { background: #fafafa; }
 
-        .totals { min-width: 260px; }
+        .totals { min-width: 240px; }
         .totals td { padding: 4px 10px; }
-        .totals .grand td { background: var(--brand); color: #fff; font-weight: 800; font-size: 1rem; }
+        .totals .grand td { background: var(--brand); color: #fff; font-weight: 800; font-size: 0.95rem; }
 
-        .section-title { font-weight: 800; font-size: 0.98rem; color: var(--brand); border-right: 4px solid var(--brand); padding-right: 8px; margin: 16px 0 8px; }
+        .section-title { font-weight: 800; font-size: 0.92rem; color: var(--brand); border-right: 4px solid var(--brand); padding-right: 8px; margin: 10px 0 6px; page-break-after: avoid; break-after: avoid; }
         .pre-text { white-space: pre-line; }
-        .signatures { display: flex; justify-content: space-between; gap: 40px; margin-top: 36px; page-break-inside: avoid; }
-        .signatures div { flex: 1; text-align: center; border-top: 1px solid #1f2937; padding-top: 6px; font-weight: 700; font-size: 0.85rem; }
-        .no-break { page-break-inside: avoid; }
+        .sig-spacer { display: block; height: 18px; margin: 0; padding: 0; border-top: 1px solid transparent; box-sizing: border-box; break-inside: avoid; page-break-inside: avoid; }
+        .signatures { display: flex; justify-content: space-between; gap: 40px; margin-top: 0; page-break-inside: avoid; break-inside: avoid; }
+        .signatures div { flex: 1; text-align: center; border-top: 1px solid #1f2937; padding-top: 5px; font-weight: 700; font-size: 0.82rem; }
+        .no-break { page-break-inside: avoid; break-inside: avoid; }
 
         .toolbar { position: sticky; top: 0; z-index: 10; background: var(--brand); padding: 10px; text-align: center; }
 
         @@media print {
-            body { background: #fff; }
-            .toolbar { display: none; }
-            .sheet { width: auto; min-height: 0; margin: 0; box-shadow: none; position: static; }
-            /* fixed = تتكرر الخلفية في كل صفحة مطبوعة */
-            .letterhead-bg { position: fixed; top: 0; left: 0; }
+            html, body { background: #fff; margin: 0; padding: 0; }
+            .toolbar { display: none !important; }
+            .sheet { width: 100%; min-height: 0; margin: 0; box-shadow: none; position: static; overflow: visible; }
+            /* fixed = تتكرر الخلفية في كل صفحة مطبوعة مع تثبيت الرأس بأعلى الصفحة والتذييل بأسفلها */
+            .letterhead-top { position: fixed; top: 0; left: 0; }
+            .letterhead-bottom { position: fixed; bottom: 0; left: 0; }
             * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
         }
     </style>
@@ -114,16 +136,19 @@
         </button>
     </div>
 
+    <div id="printA4Probe" style="position:fixed;top:0;left:0;width:0;height:297mm;visibility:hidden;pointer-events:none;z-index:-1;"></div>
+
     <div class="sheet">
         @if (!string.IsNullOrEmpty(letterhead))
         {
-            <img class="letterhead-bg" src="@letterhead" alt="" />
+            <img class="letterhead-top" src="@letterhead" alt="" />
+            <img class="letterhead-bottom" src="@letterhead" alt="" />
             <table class="page-frame">
-                <thead><tr><td></td></tr></thead>
-                <tfoot><tr><td></td></tr></tfoot>
+                <thead><tr><td><div class="head-spacer"></div></td></tr></thead>
+                <tfoot><tr><td><div class="foot-spacer"></div></td></tr></tfoot>
                 <tbody>
                     <tr>
-                        <td>
+                        <td id="printBodyContainer">
                             <div class="doc-heading">
                                 <div class="doc-title">@ViewData["DocTitle"]</div>
                                 <div class="doc-no">@ViewData["DocNo"]</div>
@@ -155,7 +180,7 @@
                     </div>
                 }
             </div>
-            <div style="padding: 0 var(--side-space) 14mm;">
+            <div id="printBodyContainer" style="padding: 0 var(--side-space) 14mm;">
                 <div class="doc-heading">
                     <div class="doc-title">@ViewData["DocTitle"]</div>
                     <div class="doc-no">@ViewData["DocNo"]</div>
@@ -164,5 +189,221 @@
             </div>
         }
     </div>
+
+    <script>
+        (function () {
+            function alignSignaturesToBottom() {
+                var container = document.getElementById('printBodyContainer');
+                var sheet = document.querySelector('.sheet');
+                var probe = document.getElementById('printA4Probe');
+                if (!container || !sheet || !probe) return;
+
+                var sigEl = container.querySelector('.signatures');
+                if (!sigEl) return;
+
+                var spacer = document.getElementById('sigSpacer');
+                if (!spacer) {
+                    spacer = document.createElement('div');
+                    spacer.id = 'sigSpacer';
+                    spacer.className = 'sig-spacer';
+                    sigEl.parentNode.insertBefore(spacer, sigEl);
+                }
+
+                var minGap = 18;
+                spacer.style.height = minGap + 'px';
+                spacer.style.breakBefore = '';
+                spacer.style.pageBreakBefore = '';
+
+                var pageH = probe.getBoundingClientRect().height;
+                if (!pageH || pageH <= 0) return;
+
+                var headEl = sheet.querySelector('.head-spacer');
+                var footEl = sheet.querySelector('.foot-spacer');
+                var hasLetterhead = !!(headEl && footEl);
+
+                var firstPageLimit, laterPageLimit;
+                if (hasLetterhead) {
+                    var headH = headEl.getBoundingClientRect().height;
+                    var footH = footEl.getBoundingClientRect().height;
+                    firstPageLimit = pageH - headH - footH;
+                    laterPageLimit = firstPageLimit;
+                } else {
+                    var headerOffset = Math.max(0, container.getBoundingClientRect().top - sheet.getBoundingClientRect().top);
+                    var bottomPad = parseFloat(getComputedStyle(container).paddingBottom) || 0;
+                    firstPageLimit = pageH - headerOffset - bottomPad;
+                    laterPageLimit = pageH - bottomPad;
+                }
+
+                var units = [];
+                var pendingTitle = null;
+
+                function collectUnits(parent) {
+                    var children = parent.children;
+                    for (var i = 0; i < children.length; i++) {
+                        var el = children[i];
+                        if (el === spacer || el === sigEl) {
+                            return false;
+                        }
+                        if (el.contains(sigEl)) {
+                            collectUnits(el);
+                            return false;
+                        }
+                        var cs = getComputedStyle(el);
+                        if (cs.display === 'none') continue;
+
+                        if (el.classList.contains('section-title')) {
+                            pendingTitle = el;
+                            continue;
+                        }
+
+                        var isAtomic = el.classList.contains('no-break')
+                            || el.classList.contains('row')
+                            || el.classList.contains('doc-heading')
+                            || el.classList.contains('totals')
+                            || cs.breakInside === 'avoid'
+                            || cs.pageBreakInside === 'avoid';
+
+                        if (el.tagName === 'TABLE' && !isAtomic) {
+                            var thead = el.querySelector(':scope > thead');
+                            var theadRect = thead ? thead.getBoundingClientRect() : null;
+                            var theadH = theadRect ? theadRect.height : 0;
+                            var rows = el.querySelectorAll(':scope > tbody > tr');
+                            if (rows.length === 0) {
+                                var tRect = el.getBoundingClientRect();
+                                units.push({
+                                    top: pendingTitle ? Math.min(tRect.top, pendingTitle.getBoundingClientRect().top) : tRect.top,
+                                    bottom: tRect.bottom,
+                                    atomic: true,
+                                    repeatTheadH: 0
+                                });
+                                pendingTitle = null;
+                            } else {
+                                for (var r = 0; r < rows.length; r++) {
+                                    var rRect = rows[r].getBoundingClientRect();
+                                    var topY = rRect.top;
+                                    if (r === 0) {
+                                        if (theadRect && theadRect.height > 0) topY = Math.min(topY, theadRect.top);
+                                        if (pendingTitle) topY = Math.min(topY, pendingTitle.getBoundingClientRect().top);
+                                        pendingTitle = null;
+                                    }
+                                    units.push({
+                                        top: topY,
+                                        bottom: rRect.bottom,
+                                        atomic: true,
+                                        repeatTheadH: r === 0 ? 0 : theadH
+                                    });
+                                }
+                            }
+                            continue;
+                        }
+
+                        if (isAtomic || el.children.length === 0) {
+                            var rect = el.getBoundingClientRect();
+                            var topVal = pendingTitle ? Math.min(rect.top, pendingTitle.getBoundingClientRect().top) : rect.top;
+                            pendingTitle = null;
+                            units.push({
+                                top: topVal,
+                                bottom: rect.bottom,
+                                atomic: isAtomic,
+                                lineH: parseFloat(cs.lineHeight) || 20,
+                                repeatTheadH: 0
+                            });
+                        } else {
+                            if (collectUnits(el) === false) return false;
+                        }
+                    }
+                    return true;
+                }
+
+                collectUnits(container);
+                if (pendingTitle) {
+                    var ptRect = pendingTitle.getBoundingClientRect();
+                    units.push({ top: ptRect.top, bottom: ptRect.bottom, atomic: true, repeatTheadH: 0 });
+                }
+
+                var safetyPad = pageH * (5 / 297);
+                var originTop = container.getBoundingClientRect().top;
+                var pageIndex = 0;
+                var currentLimit = firstPageLimit - safetyPad;
+                var pageStartDomY = originTop;
+                var extraOffset = 0;
+                var lastBottomOnPage = 0;
+
+                for (var i = 0; i < units.length; i++) {
+                    var u = units[i];
+                    var projectedBottom = (u.bottom - pageStartDomY) + extraOffset;
+
+                    if (projectedBottom <= currentLimit) {
+                        lastBottomOnPage = projectedBottom;
+                        continue;
+                    }
+
+                    if (u.atomic) {
+                        if (lastBottomOnPage > 0) {
+                            pageIndex++;
+                            currentLimit = laterPageLimit - safetyPad;
+                            pageStartDomY = u.top;
+                            extraOffset = u.repeatTheadH || 0;
+                            lastBottomOnPage = extraOffset + (u.bottom - u.top);
+                        } else {
+                            lastBottomOnPage = projectedBottom;
+                        }
+                    } else {
+                        var startOnPage = (u.top - pageStartDomY) + extraOffset;
+                        var remainingH = (u.bottom - u.top);
+                        var spaceLeft = Math.max(0, currentLimit - Math.max(0, startOnPage));
+                        if (spaceLeft < u.lineH * 2 && lastBottomOnPage > 0) {
+                            pageIndex++;
+                            currentLimit = laterPageLimit - safetyPad;
+                            pageStartDomY = u.top;
+                            extraOffset = 0;
+                            spaceLeft = currentLimit;
+                        }
+                        while (spaceLeft > 0) {
+                            var chunk = u.lineH > 0 ? Math.floor(spaceLeft / u.lineH) * u.lineH : spaceLeft;
+                            if (chunk <= 0) chunk = spaceLeft;
+                            if (remainingH <= spaceLeft && remainingH <= chunk) break;
+                            remainingH -= Math.min(remainingH, chunk);
+                            pageIndex++;
+                            currentLimit = laterPageLimit - safetyPad;
+                            spaceLeft = currentLimit;
+                            if (remainingH <= 0) break;
+                        }
+                        lastBottomOnPage = remainingH;
+                        pageStartDomY = u.bottom;
+                        extraOffset = lastBottomOnPage;
+                    }
+                }
+
+                var lastBottomDomY = units.length > 0 ? units[units.length - 1].bottom : originTop;
+                var sigMarginBottom = parseFloat(getComputedStyle(sigEl).marginBottom) || 0;
+                var sigRect = sigEl.getBoundingClientRect();
+                var sigBlockNeeded = (sigRect.bottom - lastBottomDomY) + sigMarginBottom;
+                var remaining = currentLimit - lastBottomOnPage;
+
+                if (remaining >= sigBlockNeeded) {
+                    spacer.style.height = (minGap + (remaining - sigBlockNeeded)) + 'px';
+                } else {
+                    var nextLimit = laterPageLimit - safetyPad;
+                    var sigHeight = sigRect.height + sigMarginBottom;
+                    spacer.style.breakBefore = 'page';
+                    spacer.style.pageBreakBefore = 'always';
+                    spacer.style.height = Math.max(minGap, nextLimit - sigHeight) + 'px';
+                }
+            }
+
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', alignSignaturesToBottom);
+            } else {
+                alignSignaturesToBottom();
+            }
+            window.addEventListener('load', alignSignaturesToBottom);
+            window.addEventListener('resize', alignSignaturesToBottom);
+            window.addEventListener('beforeprint', alignSignaturesToBottom);
+            if (document.fonts && document.fonts.ready) {
+                document.fonts.ready.then(alignSignaturesToBottom);
+            }
+        })();
+    </script>
 </body>
 </html>

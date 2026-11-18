@@ -1,15 +1,15 @@
 @model KitchenProject.Models.Entities.CustomerPayment
 @{
     Layout = "_PrintLayout";
-    ViewData["Title"] = "إيصال قبض " + Model.ReceiptNo;
-    ViewData["DocTitle"] = "إيصال قبض";
+    ViewData["Title"] = (Model.IsRefund ? "سند إرجاع " : "إيصال قبض ") + Model.ReceiptNo;
+    ViewData["DocTitle"] = Model.IsRefund ? "سند إرجاع مبلغ للعميل" : "إيصال قبض";
     ViewData["DocNo"] = Model.ReceiptNo;
 }
 
-<div class="row g-2 mb-3">
+<div class="row g-2 mb-2">
     <div class="col-6">
         <div class="meta-box">
-            <span class="label">استلمنا من السيد / السادة</span>
+            <span class="label">@(Model.IsRefund ? "صرفنا إلى السيد / السادة" : "استلمنا من السيد / السادة")</span>
             <div class="fw-bold">@Model.Project?.Customer?.Name</div>
             <div class="small">@Model.Project?.Customer?.Phone</div>
         </div>
@@ -39,7 +39,7 @@
     <tbody>
         <tr>
             <td class="fw-bold" style="width:30%; background:#f6f6f6;">مبلغ وقدره</td>
-            <td class="fw-bold fs-5">@Model.Amount.ToString("N2") د.ل</td>
+            <td class="fw-bold fs-5" style="color:var(--brand);">@Model.Amount.ToString("N2") د.ل</td>
         </tr>
         <tr>
             <td class="fw-bold" style="background:#f6f6f6;">وذلك عن</td>
@@ -57,11 +57,13 @@
 
 @if (Model.Contract != null)
 {
-    <table class="totals ms-auto mt-3">
-        <tr><td class="text-muted fw-bold">قيمة العقد</td><td class="text-start fw-bold">@Model.Contract.TotalAmount.ToString("N2")</td></tr>
-        <tr><td class="text-muted fw-bold">إجمالي المدفوع</td><td class="text-start fw-bold">@Model.Contract.PaidAmount.ToString("N2")</td></tr>
-        <tr class="grand"><td>المتبقي (د.ل)</td><td class="text-start">@Model.Contract.RemainingAmount.ToString("N2")</td></tr>
-    </table>
+    <div class="no-break">
+        <table class="totals ms-auto mt-2">
+            <tr><td class="text-muted fw-bold">قيمة العقد</td><td class="text-start fw-bold">@Model.Contract.TotalAmount.ToString("N2")</td></tr>
+            <tr><td class="text-muted fw-bold">إجمالي المدفوع</td><td class="text-start fw-bold">@Model.Contract.PaidAmount.ToString("N2")</td></tr>
+            <tr class="grand"><td>المتبقي (د.ل)</td><td class="text-start">@Model.Contract.RemainingAmount.ToString("N2")</td></tr>
+        </table>
+    </div>
 }
 
 <div class="signatures">

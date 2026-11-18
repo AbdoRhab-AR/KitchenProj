@@ -11,9 +11,11 @@
     var currentStage = Array.IndexOf(stages, Model.Status);
 
     var contractsTotal = Model.Contracts.Where(c => c.Status != ContractStatuses.Cancelled).Sum(c => c.TotalAmount);
-    var paidTotal = Model.CustomerPayments.Sum(p => p.Amount);
+    var paidTotal = Model.CustomerPayments
+        .Where(p => !(p.Payment == PaymentMethod.Chek && p.ChequeStatus == ChequeStatus.Bounced))
+        .Sum(p => p.IsRefund ? -p.Amount : p.Amount);
     var expensesTotal = Model.Expenses.Sum(e => e.Amount);
-    var saleValue = ProfitService.SaleValue(contractsTotal, Model.FinalAmount, Model.EstimatedAmount);
+    var saleValue = ProfitService.SaleValue(contractsTotal, Model.FinalAmount, Model.EstimatedAmount, Model.Status, Model.CancellationFee);
     var remaining = saleValue - paidTotal;
     var paidPercent = saleValue > 0 ? (int)Math.Min(100, Math.Round(paidTotal / saleValue * 100)) : 0;
 
@@ -21,6 +23,7 @@
     var materials = ViewBag.Materials as List<StockTransaction> ?? new();
     var purchases = ViewBag.Purchases as List<Purchase> ?? new();
     var requests = ViewBag.MaterialRequests as List<MaterialRequest> ?? new();
+    var projectPics = ViewBag.ProjectPics as List<(string Url, string Label)> ?? new();
     var materialsCost = materials.Sum(m => (m.QuantityOut - m.QuantityIn) * m.UnitCost);
     var margin = saleValue - materialsCost - expensesTotal;
     var printReceiptId = TempData["PrintReceiptId"] as string;
@@ -62,6 +65,12 @@
             <i class="fa-solid fa-pen-to-square"></i>
             <span>تعديل</span>
         </a>
+        @if (Model.Status != ProjectStatus.Cancelled && AppRoles.CanAccess(User, "Projects", "Cancel"))
+        {
+            <button type="button" class="btn btn-outline-warning fw-bold rounded-3" data-bs-toggle="modal" data-bs-target="#cancelProjectModal">
+                <i class="fa-solid fa-ban me-1"></i> إلغاء المشروع
+            </button>
+        }
         <button type="button" asp-permission="Delete" class="btn btn-outline-danger fw-bold rounded-3" data-bs-toggle="modal" data-bs-target="#deleteModal">
             <i class="fa-solid fa-trash-can"></i>
         </button>
@@ -75,9 +84,37 @@
 <div class="custom-card p-4 mb-4">
     @if (Model.Status == ProjectStatus.Cancelled)
     {
-        <div class="alert alert-danger border-0 rounded-3 mb-0 d-flex align-items-center gap-2">
-            <i class="fa-solid fa-ban fs-4"></i>
-            <span class="fw-bold">هذا المشروع ملغى</span>
+        <div class="alert alert-danger border-0 rounded-3 mb-0 d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-2">
+            <div class="d-flex align-items-start gap-2">
+                <i class="fa-solid fa-ban fs-4 mt-1"></i>
+                <div>
+                    <div class="fw-bold">هذا المشروع ملغى</div>
+                    @if (!string.IsNullOrWhiteSpace(Model.CancellationReason))
+                    {
+                        <div class="small mt-1"><strong>السبب:</strong> @Model.CancellationReason</div>
+                    }
+                    @if (Model.CancellationFee > 0)
+                    {
+                        <div class="small mt-1">
+                            <strong>رسوم الإلغاء على العميل:</strong> @Model.CancellationFee.ToString("N2")
+                            @if (remaining > 0)
+                            {
+                                <span class="ms-2">(المتبقي للتحصيل: @remaining.ToString("N2"))</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-success ms-2">تم التحصيل بالكامل</span>
+                            }
+                        </div>
+                    }
+                </div>
+            </div>
+            @if (Model.CancellationFee > 0 && remaining > 0 && AppRoles.CanAccess(User, "Payments", "Create"))
+            {
+                <a asp-controller="Payments" asp-action="Create" asp-route-projectId="@Model.Id" class="btn btn-sm btn-danger fw-bold flex-shrink-0">
+                    <i class="fa-solid fa-hand-holding-dollar me-1"></i> تحصيل رسوم الإلغاء
+                </a>
+            }
         </div>
     }
     else
@@ -188,7 +225,9 @@
                         <span class="text-muted d-block small fw-bold">قيمة المشروع</span>
                         <span class="fw-bold fs-5 text-dark">@saleValue.ToString("N2")</span>
                         <small class="d-block text-muted" style="font-size:0.72rem;">
-                            @(contractsTotal > 0 ? "من العقود" : Model.FinalAmount > 0 ? "القيمة النهائية" : "القيمة التقديرية")
+                            @(Model.Status == ProjectStatus.Cancelled
+                                ? (contractsTotal > 0 ? "من العقود" : Model.CancellationFee > 0 ? "رسوم إلغاء على العميل" : "ملغى بدون رسوم")
+                                : (contractsTotal > 0 ? "من العقود" : Model.FinalAmount > 0 ? "القيمة النهائية" : "القيمة التقديرية"))
                         </small>
                     </div>
                 </div>
@@ -221,6 +260,21 @@
                 <span class="small fw-bold text-muted">الهامش المبدئي (القيمة - الخامات - المصروفات)</span>
                 <span class="fw-bold @(margin >= 0 ? "text-success" : "text-danger")">@margin.ToString("N2")</span>
             </div>
+            @if (materialsCost <= 0 && (Model.Status == ProjectStatus.Contracted || Model.Status == ProjectStatus.InProgress || Model.Status == ProjectStatus.Delivered || Model.Status == ProjectStatus.Closed))
+            {
+                <div class="alert alert-warning border-0 rounded-3 small d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-2 mb-3">
+                    <div>
+                        <i class="fa-solid fa-triangle-exclamation me-1"></i>
+                        <strong>تنبيه تكلفة:</strong> لم يُسجّل صرف أي خامات أو إكسسوارات لهذا المشروع من المخزن حتى الآن — الربح المعروض أعلاه غير مكتمل قبل خصم الخامات.
+                    </div>
+                    @if (AppRoles.CanAccess(User, "Stock", "Issue"))
+                    {
+                        <a asp-controller="Stock" asp-action="Issue" asp-route-projectId="@Model.Id" asp-route-fromQuote="true" class="btn btn-sm btn-warning fw-bold flex-shrink-0">
+                            <i class="fa-solid fa-dolly me-1"></i> صرف أصناف العرض الآن
+                        </a>
+                    }
+                </div>
+            }
             <div class="d-flex flex-wrap gap-2 mb-3">
                 @if (AppRoles.CanAccess(User, "Expenses", "Create"))
                 {
@@ -249,6 +303,72 @@
             </div>
             <div class="progress" style="height:8px;">
                 <div class="progress-bar bg-success" style="width:@paidPercent%"></div>
+            </div>
+        </div>
+
+        <!-- Project Images & 3D Designs Gallery -->
+        <div class="custom-card mb-4">
+            <div class="card-header-custom">
+                <h5 class="fw-bold mb-0 text-dark">
+                    <i class="fa-solid fa-images text-primary me-2"></i> صور التصميم والمخططات والموقع
+                    <span class="badge bg-light text-dark border ms-1">@projectPics.Count</span>
+                </h5>
+            </div>
+            <div class="p-4">
+                @if (AppRoles.CanAccess(User, "Projects", "UploadPics"))
+                {
+                    <form asp-action="UploadPics" asp-route-id="@Model.Id" method="post" enctype="multipart/form-data" class="row g-2 align-items-center mb-3">
+                        @Html.AntiForgeryToken()
+                        <div class="col-12 col-sm-8 col-md-9">
+                            <input type="file" name="files" multiple accept=".jpg,.jpeg,.png,.webp,.pdf" class="form-control form-control-sm" required />
+                            <small class="text-muted" style="font-size:0.75rem;">يمكنك تحديد ورفع أكثر من صورة معاً (تصميم 3D، مخطط مقاسات، صور الموقع) — تُحفظ في <code>wwwroot/pic</code></small>
+                        </div>
+                        <div class="col-12 col-sm-4 col-md-3">
+                            <button type="submit" class="btn btn-sm btn-primary fw-bold w-100">
+                                <i class="fa-solid fa-cloud-arrow-up me-1"></i> رفع الصور
+                            </button>
+                        </div>
+                    </form>
+                }
+
+                @if (projectPics.Any())
+                {
+                    <div class="row g-3">
+                        @foreach (var item in projectPics)
+                        {
+                            var isPdf = item.Url.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase);
+                            <div class="col-6 col-md-4 col-xl-3">
+                                <div class="border rounded-3 p-2 bg-light h-100 d-flex flex-column justify-content-between">
+                                    <a href="@item.Url" target="_blank" class="text-decoration-none text-center d-block mb-2" title="اضغط للفتح بالحجم الكامل">
+                                        @if (isPdf)
+                                        {
+                                            <div class="py-4 text-danger"><i class="fa-solid fa-file-pdf fa-3x"></i><div class="small mt-1 text-dark fw-bold">مخطط PDF</div></div>
+                                        }
+                                        else
+                                        {
+                                            <img src="@item.Url" alt="@item.Label" class="img-fluid rounded-2" style="height:130px; object-fit:cover; width:100%;" />
+                                        }
+                                    </a>
+                                    <div class="d-flex justify-content-between align-items-center gap-1 mt-1">
+                                        <span class="badge bg-white text-secondary border text-truncate" style="max-width:130px; font-size:0.7rem;" title="@item.Label">@item.Label</span>
+                                        @if (AppRoles.CanAccess(User, "Projects", "DeletePic"))
+                                        {
+                                            <form asp-action="DeletePic" asp-route-id="@Model.Id" method="post" class="m-0" onsubmit="return confirm('حذف هذه الصورة نهائياً من المشروع؟')">
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="url" value="@item.Url" />
+                                                <button type="submit" class="btn btn-sm btn-light border text-danger py-0 px-2" title="حذف الصورة"><i class="fa-solid fa-trash-can" style="font-size:0.75rem;"></i></button>
+                                            </form>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <p class="text-muted small text-center py-2 mb-0">لا توجد صور تصميم أو مخططات مرفوعة لهذا المشروع بعد</p>
+                }
             </div>
         </div>
 
@@ -381,9 +501,17 @@
                     <i class="fa-solid fa-wallet text-primary me-2"></i> دفعات العميل
                     <span class="badge bg-light text-dark border ms-1">@Model.CustomerPayments.Count</span>
                 </h5>
-                <a asp-controller="Payments" asp-action="Create" asp-route-projectId="@Model.Id" class="btn btn-sm btn-outline-primary fw-bold">
-                    <i class="fa-solid fa-plus me-1"></i> تسجيل دفعة
-                </a>
+                <div class="d-flex gap-2">
+                    <a asp-controller="Payments" asp-action="Create" asp-route-projectId="@Model.Id" class="btn btn-sm btn-outline-primary fw-bold">
+                        <i class="fa-solid fa-plus me-1"></i> تسجيل دفعة
+                    </a>
+                    @if (paidTotal > 0)
+                    {
+                        <a asp-controller="Payments" asp-action="Create" asp-route-projectId="@Model.Id" asp-route-isRefund="true" class="btn btn-sm btn-outline-danger fw-bold">
+                            <i class="fa-solid fa-rotate-left me-1"></i> سند إرجاع
+                        </a>
+                    }
+                </div>
             </div>
             @if (Model.CustomerPayments.Any())
             {
@@ -392,12 +520,25 @@
                         <tbody>
                             @foreach (var p in Model.CustomerPayments.OrderByDescending(p => p.PaymentDate))
                             {
+                                var isBounced = p.Payment == PaymentMethod.Chek && p.ChequeStatus == ChequeStatus.Bounced;
                                 <tr>
-                                    <td class="ps-4 fw-bold">@p.ReceiptNo</td>
+                                    <td class="ps-4 fw-bold">
+                                        @p.ReceiptNo
+                                        @if (p.IsRefund)
+                                        {
+                                            <span class="badge bg-danger-subtle text-danger border border-danger-subtle ms-1">مرتجع</span>
+                                        }
+                                        @if (isBounced)
+                                        {
+                                            <span class="badge bg-secondary-subtle text-secondary border ms-1">صك راجع</span>
+                                        }
+                                    </td>
                                     <td class="small text-muted">@p.PaymentDate.ToString("yyyy/MM/dd")</td>
                                     <td class="small">@p.Payment.GetDisplayName()</td>
                                     <td class="small text-muted text-truncate" style="max-width:200px;">@p.Notes</td>
-                                    <td class="fw-bold text-success">@p.Amount.ToString("N2")</td>
+                                    <td class="fw-bold @(p.IsRefund ? "text-danger" : (isBounced ? "text-decoration-line-through text-muted" : "text-success"))">
+                                        @(p.IsRefund ? "-" : "")@p.Amount.ToString("N2")
+                                    </td>
                                     <td class="pe-4 text-end">
                                         <a asp-controller="Payments" asp-action="Receipt" asp-route-id="@p.Id" target="_blank" class="btn btn-sm btn-light border" title="طباعة الإيصال"><i class="fa-solid fa-print"></i></a>
                                     </td>
@@ -429,6 +570,12 @@
                     }
                     @if (AppRoles.CanAccess(User, "Stock", "Issue"))
                     {
+                        @if (Model.Quotes.Any())
+                        {
+                            <a asp-controller="Stock" asp-action="Issue" asp-route-projectId="@Model.Id" asp-route-fromQuote="true" class="btn btn-sm btn-warning fw-bold" title="صرف الإكسسوارات والخامات الواردة في عرض السعر مباشرة">
+                                <i class="fa-solid fa-wand-magic-sparkles me-1"></i> صرف أصناف العرض
+                            </a>
+                        }
                         <a asp-controller="Stock" asp-action="Issue" asp-route-projectId="@Model.Id" class="btn btn-sm btn-outline-danger fw-bold">
                             <i class="fa-solid fa-dolly me-1"></i> صرف
                         </a>
@@ -534,3 +681,85 @@
         </div>
     </div>
 </div>
+
+@if (Model.Status != ProjectStatus.Cancelled && AppRoles.CanAccess(User, "Projects", "Cancel"))
+{
+    <!-- Cancel Project Modal -->
+    <div class="modal fade" id="cancelProjectModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content border-0 shadow-lg rounded-4 text-start">
+                <form asp-action="Cancel" method="post">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="ProjectId" value="@Model.Id" />
+                    <div class="modal-header border-0 pb-0">
+                        <h5 class="modal-title fw-bold text-warning-emphasis">
+                            <i class="fa-solid fa-ban text-danger me-2"></i> إلغاء المشروع (@Model.ProjectNo)
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body py-3">
+                        <p class="text-muted small mb-3">
+                            سيتم تحويل حالة المشروع <strong>"@Model.ProjectName"</strong> إلى <strong>ملغى</strong>.
+                            جميع حقول الأتعاب أدناه <strong>اختيارية</strong> — اتركها فارغة أو صفراً إذا لم توجد أتعاب.
+                        </p>
+
+                        <div class="border rounded-3 p-3 mb-3 bg-light">
+                            <h6 class="fw-bold mb-3 text-dark">
+                                <i class="fa-solid fa-users-gear text-primary me-1"></i> 1. أتعاب الفريق (تُسجّل كمصروفات على المشروع)
+                            </h6>
+                            <div class="row g-3">
+                                <div class="col-12 col-md-4">
+                                    <label class="form-label small fw-bold">
+                                        أتعاب معاينة المهندس
+                                        @if (!string.IsNullOrWhiteSpace(Model.EngineerUser?.UserName))
+                                        {
+                                            <span class="text-muted fw-normal">(@Model.EngineerUser.UserName)</span>
+                                        }
+                                    </label>
+                                    <input type="number" name="EngineerFee" step="0.01" min="0" value="0" class="form-control" dir="ltr" />
+                                </div>
+                                <div class="col-12 col-md-4">
+                                    <label class="form-label small fw-bold">
+                                        أتعاب المصمم
+                                        @if (!string.IsNullOrWhiteSpace(Model.DesignerUser?.UserName))
+                                        {
+                                            <span class="text-muted fw-normal">(@Model.DesignerUser.UserName)</span>
+                                        }
+                                    </label>
+                                    <input type="number" name="DesignerFee" step="0.01" min="0" value="0" class="form-control" dir="ltr" />
+                                </div>
+                                <div class="col-12 col-md-4">
+                                    <label class="form-label small fw-bold">طريقة صرف الأتعاب</label>
+                                    <select name="PaymentMethod" class="form-select" asp-items="Html.GetEnumSelectList<PaymentMethod>()"></select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="border rounded-3 p-3 mb-3">
+                            <h6 class="fw-bold mb-2 text-dark">
+                                <i class="fa-solid fa-hand-holding-dollar text-success me-1"></i> 2. رسوم إلغاء على العميل (اختياري)
+                            </h6>
+                            <div class="row g-3">
+                                <div class="col-12 col-md-5">
+                                    <label class="form-label small fw-bold">المبلغ المستحق على العميل</label>
+                                    <input type="number" name="CustomerCancellationFee" step="0.01" min="0" value="0" class="form-control" dir="ltr" />
+                                    <div class="form-text">يظهر كمبلغ مستحق للتحصيل من العميل رغم إلغاء المشروع.</div>
+                                </div>
+                                <div class="col-12 col-md-7">
+                                    <label class="form-label small fw-bold">سبب الإلغاء / ملاحظات</label>
+                                    <input type="text" name="CancellationReason" maxlength="500" class="form-control" placeholder="مثال: رفض العميل عرض السعر بعد المعاينة والتصميم" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer border-0 pt-0">
+                        <button type="button" class="btn btn-light fw-bold" data-bs-dismiss="modal">تراجع</button>
+                        <button type="submit" class="btn btn-danger fw-bold">
+                            <i class="fa-solid fa-ban me-1"></i> تأكيد إلغاء المشروع
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+}

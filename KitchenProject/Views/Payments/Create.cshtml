@@ -1,6 +1,6 @@
 @model KitchenProject.Models.Entities.CustomerPayment
 @{
-    ViewData["Title"] = "إيصال قبض جديد";
+    ViewData["Title"] = Model.IsRefund ? "سند إرجاع لعميل" : "إيصال قبض جديد";
     Layout = "_DashboardLayout";
     var contracts = (List<ContractOption>)ViewBag.Contracts;
     var inv = System.Globalization.CultureInfo.InvariantCulture;
@@ -12,12 +12,12 @@
     <div>
         <nav aria-label="breadcrumb">
             <ol class="breadcrumb mb-1 small text-muted">
-                <li class="breadcrumb-item"><a asp-action="Index" class="text-decoration-none">تحصيلات العملاء</a></li>
+                <li class="breadcrumb-item"><a asp-action="Index" class="text-decoration-none">إيصالات القبض</a></li>
                 <li class="breadcrumb-item active" aria-current="page">إيصال جديد</li>
             </ol>
         </nav>
         <h2 class="page-header-title mb-0">
-            <i class="fa-solid fa-hand-holding-dollar text-primary me-2"></i> تسجيل دفعة من عميل
+            <i class="fa-solid @(Model.IsRefund ? "fa-rotate-left text-danger" : "fa-hand-holding-dollar text-primary") me-2"></i> @(Model.IsRefund ? "تسجيل سند إرجاع مبلغ للعميل" : "تسجيل دفعة من عميل")
         </h2>
     </div>
     <div>
@@ -28,6 +28,7 @@
 <div class="custom-card p-4 p-md-5" style="max-width:900px;">
     <form asp-action="Create" method="post">
         @Html.AntiForgeryToken()
+        <input type="hidden" asp-for="IsRefund" />
         <div asp-validation-summary="All" class="alert alert-danger rounded-3 mb-4" role="alert"></div>
 
         <div class="row g-4">
@@ -66,11 +67,25 @@
             </div>
             <div class="col-6 col-md-4">
                 <label asp-for="Payment" class="form-label fw-bold">طريقة الدفع</label>
-                <select asp-for="Payment" asp-items="ViewBag.MethodList" class="form-select"></select>
+                <select asp-for="Payment" asp-items="ViewBag.MethodList" class="form-select" id="paymentMethod"></select>
+            </div>
+            <div class="col-6 col-md-4">
+                <label asp-for="CashAccountId" class="form-label fw-bold">حساب الخزنة / البنك</label>
+                <select asp-for="CashAccountId" asp-items="ViewBag.CashAccounts" class="form-select">
+                    <option value="">-- افتراضي حسب طريقة الدفع --</option>
+                </select>
             </div>
             <div class="col-6 col-md-4">
                 <label asp-for="ReferenceNo" class="form-label fw-bold">رقم الصك / الحوالة</label>
                 <input asp-for="ReferenceNo" class="form-control" />
+            </div>
+            <div class="col-6 col-md-4 cheque-fields" style="display:none;">
+                <label asp-for="ChequeStatus" class="form-label fw-bold">حالة الصك</label>
+                <select asp-for="ChequeStatus" asp-items="ViewBag.ChequeStatuses" class="form-select"></select>
+            </div>
+            <div class="col-6 col-md-4 cheque-fields" style="display:none;">
+                <label asp-for="ChequeDueDate" class="form-label fw-bold">تاريخ استحقاق الصك</label>
+                <input asp-for="ChequeDueDate" type="date" asp-format="{0:yyyy-MM-dd}" class="form-control" />
             </div>
             <div class="col-12">
                 <label asp-for="Notes" class="form-label fw-bold">البيان</label>
@@ -110,15 +125,23 @@
 
         function showHint() {
             const opt = contract.selectedOptions[0];
+            const isRefund = @(Model.IsRefund ? "true" : "false");
             if (opt && opt.dataset.remaining) {
                 const remaining = parseFloat(opt.dataset.remaining);
                 hint.textContent = `المتبقي على العقد: ${remaining.toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
-                amount.max = remaining;
+                if (!isRefund) amount.max = remaining;
             } else {
                 hint.textContent = '';
                 amount.removeAttribute('max');
             }
         }
+        const pm = document.getElementById('paymentMethod');
+        function toggleCheque() {
+            const isChek = pm.value === '@((int)PaymentMethod.Chek)';
+            document.querySelectorAll('.cheque-fields').forEach(el => el.style.display = isChek ? '' : 'none');
+        }
+        pm.addEventListener('change', toggleCheque);
+        toggleCheque();
 
         project.addEventListener('change', filterContracts);
         contract.addEventListener('change', () => {

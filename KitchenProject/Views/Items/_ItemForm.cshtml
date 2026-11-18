@@ -20,13 +20,13 @@
         <span asp-validation-for="Name" class="text-danger small"></span>
     </div>
 
-    <div class="col-12 col-md-6 finished-only">
-        <label asp-for="ItemGroupId" class="form-label fw-bold">البند <span class="text-danger">*</span></label>
+    <div class="col-12 col-md-6">
+        <label asp-for="ItemGroupId" class="form-label fw-bold">البند <span class="text-danger finished-only">*</span></label>
         <select asp-for="ItemGroupId" asp-items="ViewBag.Groups" class="form-select">
-            <option value="">-- اختر البند --</option>
+            <option value="">-- بدون بند (خامة ورشة عامة) --</option>
         </select>
         <span asp-validation-for="ItemGroupId" class="text-danger small"></span>
-        <small class="text-muted d-block mt-1">البنود للأصناف الجاهزة فقط. <a asp-controller="ItemGroups" asp-action="Index" target="_blank">تعديل أسماء البنود</a></small>
+        <small class="text-muted d-block mt-1">مطلوب للوحدات المصنّعة والخدمات، واختياري للإكسسوارات والخامات. <a asp-controller="ItemGroups" asp-action="Index" target="_blank">تعديل أسماء البنود</a></small>
     </div>
     <div class="col-12 col-md-3">
         <label asp-for="Unit" class="form-label fw-bold">الوحدة</label>
@@ -54,23 +54,23 @@
 
 <h6 class="fw-bold text-muted mb-3"><i class="fa-solid fa-tags me-2"></i> الأسعار والمخزون</h6>
 <div class="row g-4 mb-4">
-    <div class="col-12 col-md-4 raw-only">
-        <label asp-for="PurchasePrice" class="form-label fw-bold">سعر الشراء</label>
+    <div class="col-12 col-md-4">
+        <label asp-for="PurchasePrice" class="form-label fw-bold">سعر الشراء / التكلفة</label>
         <input asp-for="PurchasePrice" type="number" step="0.01" min="0" class="form-control" />
-        <small class="text-muted">يتحدث تلقائياً مع كل فاتورة شراء مستلمة</small>
+        <small class="text-muted">سعر الشراء أو التكلفة المعيارية — يتحدث تلقائياً مع كل فاتورة شراء مستلمة</small>
         <span asp-validation-for="PurchasePrice" class="text-danger small d-block"></span>
+    </div>
+    <div class="col-12 col-md-4">
+        <label asp-for="SalePrice" class="form-label fw-bold">سعر البيع</label>
+        <input asp-for="SalePrice" type="number" step="0.01" min="0" class="form-control" />
+        <small class="text-muted">السعر الافتراضي في عرض السعر (يجب ألا يقل عن سعر الشراء/التكلفة)</small>
+        <span asp-validation-for="SalePrice" class="text-danger small d-block"></span>
     </div>
     <div class="col-12 col-md-4 raw-only">
         <label asp-for="MinQuantity" class="form-label fw-bold">حد إعادة الطلب</label>
         <input asp-for="MinQuantity" type="number" step="0.01" min="0" class="form-control" />
         <small class="text-muted">تنبيه عندما يصل الرصيد لهذه الكمية (0 = بدون تنبيه)</small>
         <span asp-validation-for="MinQuantity" class="text-danger small d-block"></span>
-    </div>
-    <div class="col-12 col-md-4 finished-only">
-        <label asp-for="SalePrice" class="form-label fw-bold">سعر البيع</label>
-        <input asp-for="SalePrice" type="number" step="0.01" min="0" class="form-control" />
-        <small class="text-muted">السعر الافتراضي عند اختياره في عرض السعر (يمكن تعديله في العرض)</small>
-        <span asp-validation-for="SalePrice" class="text-danger small d-block"></span>
     </div>
 </div>
 
@@ -82,12 +82,34 @@
 <script>
     (function () {
         const type = document.getElementById('itemType');
+        const purchaseInput = document.getElementById('PurchasePrice');
+        const saleInput = document.getElementById('SalePrice');
+
         function toggle() {
             const finished = type.value === '@ItemType.Finished';
             document.querySelectorAll('.finished-only').forEach(el => el.classList.toggle('d-none', !finished));
             document.querySelectorAll('.raw-only').forEach(el => el.classList.toggle('d-none', finished));
         }
+
+        function syncSaleMin(autoFill) {
+            if (!purchaseInput || !saleInput) return;
+            const cost = parseFloat(purchaseInput.value) || 0;
+            saleInput.min = cost > 0 ? String(cost) : '0';
+            const sale = parseFloat(saleInput.value) || 0;
+            if (autoFill && cost > 0 && sale < cost) {
+                saleInput.value = purchaseInput.value;
+            }
+            const currentSale = parseFloat(saleInput.value) || 0;
+            saleInput.classList.toggle('is-invalid', cost > 0 && currentSale < cost);
+        }
+
         type.addEventListener('change', toggle);
+        if (purchaseInput && saleInput) {
+            purchaseInput.addEventListener('input', () => syncSaleMin(true));
+            purchaseInput.addEventListener('change', () => syncSaleMin(true));
+            saleInput.addEventListener('input', () => syncSaleMin(false));
+            syncSaleMin(false);
+        }
         toggle();
     })();
 </script>

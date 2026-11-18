@@ -46,13 +46,22 @@ namespace KitchenProject.Controllers
 
 			var balances = await _stock.BalancesAsync();
 			ViewBag.Balances = balances;
+			ViewBag.AverageCosts = await _stock.AverageCostsAsync();
 
 			var query = _item.Entity.Include(i => i.Group!);
 
 			if (!string.IsNullOrWhiteSpace(searchString))
 			{
-				searchString = searchString.Trim();
-				query = query.Where(i => i.Name.Contains(searchString) || i.Code.Contains(searchString));
+				if (!SearchValidator.TryValidateNameSearch(searchString, out var validName, out var searchError))
+				{
+					TempData["Error"] = searchError;
+					ViewBag.SearchError = searchError;
+					query = query.Where(_ => false);
+				}
+				else
+				{
+					query = query.Where(i => i.Name.Contains(validName));
+				}
 			}
 
 			if (type.HasValue)
@@ -75,7 +84,7 @@ namespace KitchenProject.Controllers
 				items = items.Where(IsLow).ToList();
 			}
 
-			int pageSize = 15;
+			int pageSize = await _lookup.PageSizeAsync();
 			ViewBag.CurrentPage = page;
 			ViewBag.TotalPages = (int)Math.Ceiling(items.Count / (double)pageSize);
 			ViewBag.TotalCount = items.Count;
@@ -114,14 +123,12 @@ namespace KitchenProject.Controllers
 				ViewBag.Balance = (await _stock.BalancesAsync()).GetValueOrDefault(item.Id);
 				ViewBag.AverageCost = (await _stock.AverageCostsAsync()).GetValueOrDefault(item.Id, item.PurchasePrice);
 			}
-			else
-			{
-				ViewBag.QuoteLines = await _quoteItem.Entity.Include(q => q.Quote, q => q.Quote.Project)
-					.Where(q => q.ItemId == item.Id)
-					.OrderByDescending(q => q.Created)
-					.Take(50)
-					.ToListAsync();
-			}
+
+			ViewBag.QuoteLines = await _quoteItem.Entity.Include(q => q.Quote, q => q.Quote.Project)
+				.Where(q => q.ItemId == item.Id)
+				.OrderByDescending(q => q.Created)
+				.Take(50)
+				.ToListAsync();
 
 			return View(item);
 		}
@@ -136,7 +143,7 @@ namespace KitchenProject.Controllers
 				Code = await GenerateCodeAsync(type),
 				Name = "",
 				Type = type,
-				ItemGroupId = type == ItemType.Finished ? groupId : null
+				ItemGroupId = groupId
 			};
 
 			await FillSelectListsAsync(model);
@@ -266,13 +273,17 @@ namespace KitchenProject.Controllers
 			if (item.Type == ItemType.Finished)
 			{
 				if (item.ItemGroupId == null)
-					ModelState.AddModelError(nameof(Item.ItemGroupId), "يجب اختيار البند (A / B / C) للصنف الجاهز");
+					ModelState.AddModelError(nameof(Item.ItemGroupId), "يجب اختيار البند (A / B / C) للوحدة المصنّعة أو الخدمة");
 				item.MinQuantity = 0;
 			}
-			else
+
+			if (item.PurchasePrice > 0 && item.SalePrice == 0)
 			{
-				// البنود للجاهز فقط
-				item.ItemGroupId = null;
+				item.SalePrice = item.PurchasePrice;
+			}
+			else if (item.PurchasePrice > 0 && item.SalePrice < item.PurchasePrice)
+			{
+				ModelState.AddModelError(nameof(Item.SalePrice), "سعر البيع لا يمكن أن يكون أقل من سعر الشراء / التكلفة");
 			}
 		}
 

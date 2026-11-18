@@ -17,21 +17,30 @@ namespace KitchenProject.Controllers
 		private readonly IUnitOfWork<Project> _project;
 		private readonly IUnitOfWork<Contract> _contract;
 		private readonly IUnitOfWork<SiteInfo> _siteInfo;
+		private readonly IUnitOfWork<Item> _catalogItem;
 		private readonly LookupService _lookup;
+		private readonly StockService _stock;
+		private readonly IWebHostEnvironment _env;
 
 		public QuotesController(IUnitOfWork<Quote> quote,
 								IUnitOfWork<QuoteItem> item,
 								IUnitOfWork<Project> project,
 								IUnitOfWork<Contract> contract,
 								IUnitOfWork<SiteInfo> siteInfo,
-								LookupService lookup)
+								IUnitOfWork<Item> catalogItem,
+								LookupService lookup,
+								StockService stock,
+								IWebHostEnvironment env)
 		{
 			_siteInfo = siteInfo;
 			_quote = quote;
 			_item = item;
 			_project = project;
 			_contract = contract;
+			_catalogItem = catalogItem;
 			_lookup = lookup;
+			_stock = stock;
+			_env = env;
 		}
 
 		// GET: Quotes
@@ -53,10 +62,17 @@ namespace KitchenProject.Controllers
 
 			if (!string.IsNullOrWhiteSpace(searchString))
 			{
-				searchString = searchString.Trim();
-				query = query.Where(q => q.QuoteNo.Contains(searchString)
-									  || q.Project.ProjectName.Contains(searchString)
-									  || q.Project.Customer.Name.Contains(searchString));
+				if (!SearchValidator.TryValidateNameSearch(searchString, out var validName, out var searchError))
+				{
+					TempData["Error"] = searchError;
+					ViewBag.SearchError = searchError;
+					query = query.Where(_ => false);
+				}
+				else
+				{
+					query = query.Where(q => q.Project.ProjectName.Contains(validName)
+										  || q.Project.Customer.Name.Contains(validName));
+				}
 			}
 
 			if (status.HasValue)
@@ -65,7 +81,7 @@ namespace KitchenProject.Controllers
 			}
 
 			var totalCount = await query.CountAsync();
-			int pageSize = 10;
+			int pageSize = await _lookup.PageSizeAsync();
 			var quotes = await query.OrderByDescending(q => q.Created)
 									.Skip((page - 1) * pageSize)
 									.Take(pageSize)
@@ -98,6 +114,8 @@ namespace KitchenProject.Controllers
 			}
 
 			ViewBag.HasContract = await _contract.Entity.GetAll().AnyAsync(c => c.QuoteId == quote.Id);
+			ViewBag.Balances = await _stock.BalancesAsync();
+			ViewBag.Pics = FileUploads.GetPics(_env, "quote", quote.Id);
 			return View(quote);
 		}
 
@@ -135,10 +153,10 @@ namespace KitchenProject.Controllers
 		// POST: Quotes/Create
 		[HttpPost]
 		[ValidateAntiForgeryToken]
-		public async Task<IActionResult> Create(Quote quote)
+		public async Task<IActionResult> Create(Quote quote, List<IFormFile>? designFiles)
 		{
 			ViewBag.ActivePage = "Quotes";
-			ValidateQuote(quote);
+			await ValidateQuoteAsync(quote);
 
 			if (await _quote.Entity.GetAll().AnyAsync(q => q.QuoteNo == quote.QuoteNo))
 			{
@@ -146,9 +164,18 @@ namespace KitchenProject.Controllers
 				quote.QuoteNo = await GenerateQuoteNoAsync();
 			}
 
+			quote.Id = Guid.NewGuid();
 			if (ModelState.IsValid)
 			{
-				quote.Id = Guid.NewGuid();
+				var (_, uploadError) = await FileUploads.SavePicsAsync(designFiles, _env, "quote", quote.Id);
+				if (uploadError != null)
+				{
+					ModelState.AddModelError("", uploadError);
+				}
+			}
+
+			if (ModelState.IsValid)
+			{
 				quote.Created = DateTime.UtcNow;
 				// فرق tick بين البنود يحفظ ترتيبها عند العرض والطباعة
 				var order = 0;
@@ -193,6 +220,7 @@ namespace KitchenProject.Controllers
 				quote.Items.Add(new QuoteItem());
 			}
 
+			ViewBag.Pics = FileUploads.GetPics(_env, "quote", quote.Id);
 			await FillSelectListsAsync(quote);
 			return View(quote);
 		}
@@ -200,7 +228,7 @@ namespace KitchenProject.Controllers
 		// POST: Quotes/Edit/5
 		[HttpPost]
 		[ValidateAntiForgeryToken]
-		public async Task<IActionResult> Edit(Guid id, Quote quote)
+		public async Task<IActionResult> Edit(Guid id, Quote quote, List<IFormFile>? designFiles, List<string>? removePics)
 		{
 			ViewBag.ActivePage = "Quotes";
 
@@ -209,10 +237,28 @@ namespace KitchenProject.Controllers
 				return NotFound();
 			}
 
-			ValidateQuote(quote);
+			await ValidateQuoteAsync(quote);
 
 			if (ModelState.IsValid)
 			{
+				var (_, uploadError) = await FileUploads.SavePicsAsync(designFiles, _env, "quote", quote.Id);
+				if (uploadError != null)
+				{
+					ModelState.AddModelError("", uploadError);
+				}
+			}
+
+			if (ModelState.IsValid)
+			{
+				if (removePics != null)
+				{
+					foreach (var pic in removePics)
+					{
+						FileUploads.DeletePic(pic, _env);
+					}
+				}
+
+				quote.Created = await _quote.Entity.GetWhere(q => q.Id == id).Select(q => q.Created).FirstOrDefaultAsync();
 				quote.Modified = DateTime.UtcNow;
 				quote.Recalculate();
 
@@ -249,6 +295,7 @@ namespace KitchenProject.Controllers
 				return RedirectToAction(nameof(Details), new { id = quote.Id });
 			}
 
+			ViewBag.Pics = FileUploads.GetPics(_env, "quote", quote.Id);
 			await FillSelectListsAsync(quote);
 			return View(quote);
 		}
@@ -296,6 +343,7 @@ namespace KitchenProject.Controllers
 
 			_quote.Entity.Delete(quote);
 			await _quote.SaveAsync();
+			FileUploads.DeleteAllPics(_env, "quote", quote.Id);
 			TempData["Success"] = $"تم حذف عرض السعر {quote.QuoteNo} بنجاح";
 
 			return RedirectToAction("Details", "Projects", new { id = quote.ProjectId });
@@ -310,7 +358,9 @@ namespace KitchenProject.Controllers
 				return Task.FromResult<Quote?>(null);
 			}
 
-			return _quote.Entity.Include(q => q.Project, q => q.Project.Customer, q => q.Items)
+			return _quote.Entity.Include(q => q.Project, q => q.Project.Customer)
+				.Include(q => q.Items).ThenInclude(i => i.Item)
+				.AsSplitQuery()
 				.FirstOrDefaultAsync(q => q.Id == id)!;
 		}
 
@@ -328,7 +378,7 @@ namespace KitchenProject.Controllers
 			}
 		}
 
-		private void ValidateQuote(Quote quote)
+		private async Task ValidateQuoteAsync(Quote quote)
 		{
 			if (quote.ProjectId == Guid.Empty)
 				ModelState.AddModelError(nameof(Quote.ProjectId), "يجب اختيار المشروع");
@@ -345,16 +395,82 @@ namespace KitchenProject.Controllers
 
 			if (quote.Items.Any(i => i.Quantity <= 0 || i.UnitPrice < 0))
 				ModelState.AddModelError("", "تأكد من أن الكميات أكبر من صفر والأسعار غير سالبة");
+			else if (quote.Items.Count > 1)
+				quote.Items = MergeDuplicateCatalogItems(quote.Items);
+
+			var catalogIds = quote.Items
+				.Where(i => i.ItemId.HasValue && i.ItemId.Value != Guid.Empty)
+				.Select(i => i.ItemId!.Value)
+				.Distinct()
+				.ToList();
+
+			if (catalogIds.Count > 0)
+			{
+				var catalogItems = await _catalogItem.Entity.GetWhere(i => catalogIds.Contains(i.Id))
+					.ToDictionaryAsync(i => i.Id);
+				var avgCosts = await _stock.AverageCostsAsync();
+
+				foreach (var line in quote.Items)
+				{
+					if (line.ItemId is not { } itemId || !catalogItems.TryGetValue(itemId, out var catItem))
+						continue;
+
+					var cost = Math.Max(catItem.PurchasePrice, avgCosts.GetValueOrDefault(itemId));
+					if (cost > 0 && line.UnitPrice < cost)
+					{
+						ModelState.AddModelError("", $"سعر الوحدة للبند «{catItem.Name}» ({line.UnitPrice:N2}) أقل من سعر تكلفته/شرائه ({cost:N2})");
+					}
+				}
+			}
 
 			if (quote.Tax < 0)
 				ModelState.AddModelError(nameof(Quote.Tax), "الضريبة لا يمكن أن تكون سالبة");
+		}
+
+		// دمج الأصناف المكررة من الكتالوج بزيادة كمية أول صف بدلاً من تكرار الصفوف
+		private static List<QuoteItem> MergeDuplicateCatalogItems(List<QuoteItem> items)
+		{
+			var result = new List<QuoteItem>(items.Count);
+			var firstByItemId = new Dictionary<Guid, QuoteItem>();
+
+			foreach (var item in items)
+			{
+				if (item.ItemId is { } itemId && itemId != Guid.Empty)
+				{
+					if (firstByItemId.TryGetValue(itemId, out var first))
+					{
+						first.Quantity += item.Quantity;
+						if (!string.IsNullOrWhiteSpace(item.Notes))
+						{
+							var extraNote = item.Notes.Trim();
+							var existingNote = first.Notes?.Trim() ?? string.Empty;
+							if (string.IsNullOrEmpty(existingNote))
+							{
+								first.Notes = extraNote;
+							}
+							else if (!existingNote.Contains(extraNote, StringComparison.Ordinal))
+							{
+								var combined = $"{existingNote} | {extraNote}";
+								first.Notes = combined.Length > 250 ? combined[..250] : combined;
+							}
+						}
+						continue;
+					}
+
+					firstByItemId[itemId] = item;
+				}
+
+				result.Add(item);
+			}
+
+			return result;
 		}
 
 		private async Task FillSelectListsAsync(Quote quote)
 		{
 			ViewBag.Projects = await _lookup.ProjectsAsync(quote.ProjectId);
 			ViewBag.StatusList = LookupService.EnumList(quote.Status);
-			ViewBag.ItemOptions = await _lookup.ItemOptionsAsync(ItemType.Finished);
+			ViewBag.ItemOptions = await _lookup.QuoteItemOptionsAsync();
 		}
 	}
 }

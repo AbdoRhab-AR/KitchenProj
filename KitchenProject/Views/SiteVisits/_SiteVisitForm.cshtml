@@ -13,9 +13,9 @@
         <span asp-validation-for="ProjectId" class="text-danger small"></span>
     </div>
     <div class="col-12 col-md-6">
-        <label asp-for="EngineerId" class="form-label fw-bold">مهندس المعاينة <span class="text-danger">*</span></label>
+        <label asp-for="EngineerId" class="form-label fw-bold">مهندس المعاينة</label>
         <select asp-for="EngineerId" asp-items="ViewBag.Engineers" class="form-select">
-            <option value="">-- اختر المهندس --</option>
+            <option value="">-- غير محدد --</option>
         </select>
         <span asp-validation-for="EngineerId" class="text-danger small"></span>
     </div>
@@ -66,4 +66,47 @@
         <label asp-for="Notes" class="form-label fw-bold">ملاحظات المهندس</label>
         <textarea asp-for="Notes" class="form-control" rows="3" placeholder="حالة الجدران، أماكن الكهرباء والسباكة، عوائق التركيب..."></textarea>
     </div>
+</div>
+
+<!-- Site Photos & Sketch Blueprints -->
+<h6 class="fw-bold text-muted mb-3"><i class="fa-solid fa-images me-2"></i> صور الموقع ومخطط المقاسات (Sketch)</h6>
+<div class="row g-4">
+    <div class="col-12">
+        <label class="form-label fw-bold">رفع صور أو مخططات المعاينة (يمكن اختيار أكثر من صورة)</label>
+        <input type="file" name="attachments" multiple accept=".jpg,.jpeg,.png,.webp,.pdf" class="form-control" />
+        <small class="text-muted">تُحفظ الصور داخل مجلد المشروع <code>wwwroot/pic</code> (الأنواع المسموحة: JPG, PNG, WEBP, PDF — حتى 10 ميجابايت للملف).</small>
+    </div>
+    @{
+        var visitPics = ViewBag.Pics as List<string> ?? new();
+    }
+    @if (visitPics.Any())
+    {
+        <div class="col-12">
+            <label class="form-label small fw-bold text-muted">الصور والمخططات المرفقة حالياً (@visitPics.Count)</label>
+            <div class="row g-3">
+                @foreach (var pic in visitPics)
+                {
+                    var isPdf = pic.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase);
+                    <div class="col-6 col-md-4 col-lg-3">
+                        <div class="border rounded-3 p-2 bg-light h-100 d-flex flex-column justify-content-between">
+                            <a href="@pic" target="_blank" class="text-decoration-none text-center d-block mb-2">
+                                @if (isPdf)
+                                {
+                                    <div class="py-4 text-danger"><i class="fa-solid fa-file-pdf fa-3x"></i><div class="small mt-1 text-dark">ملف مخطط PDF</div></div>
+                                }
+                                else
+                                {
+                                    <img src="@pic" alt="صورة معاينة" class="img-fluid rounded-2" style="max-height:140px; object-fit:cover; width:100%;" />
+                                }
+                            </a>
+                            <div class="form-check small mt-1">
+                                <input class="form-check-input" type="checkbox" name="removePics" value="@pic" id="rm-@pic.GetHashCode()" />
+                                <label class="form-check-label text-danger fw-bold" for="rm-@pic.GetHashCode()">حذف هذه الصورة</label>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    }
 </div>

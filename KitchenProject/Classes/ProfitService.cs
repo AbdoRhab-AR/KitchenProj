@@ -25,9 +25,12 @@ namespace KitchenProject.Classes
 			_payment = payment;
 		}
 
-		// قيمة البيع: مجموع العقود غير الملغاة، وإلا القيمة النهائية، وإلا التقديرية
-		public static decimal SaleValue(decimal contracts, decimal finalAmount, decimal estimated) =>
-			contracts > 0 ? contracts : (finalAmount > 0 ? finalAmount : estimated);
+		// قيمة البيع: مجموع العقود غير الملغاة، وإلا للملغى رسوم الإلغاء، وإلا القيمة النهائية، وإلا التقديرية
+		public static decimal SaleValue(decimal contracts, decimal finalAmount, decimal estimated,
+			ProjectStatus status = ProjectStatus.New, decimal cancellationFee = 0) =>
+			status == ProjectStatus.Cancelled
+				? (contracts > 0 ? contracts : cancellationFee)
+				: (contracts > 0 ? contracts : (finalAmount > 0 ? finalAmount : estimated));
 
 		public async Task<List<ProjectProfitRow>> RowsAsync(IQueryable<Project> projects)
 		{
@@ -42,7 +45,8 @@ namespace KitchenProject.Classes
 					Created = p.Created,
 					ContractsTotal = p.Contracts.Where(c => c.Status != ContractStatuses.Cancelled).Sum(c => (decimal?)c.TotalAmount) ?? 0,
 					FinalAmount = p.FinalAmount,
-					EstimatedAmount = p.EstimatedAmount
+					EstimatedAmount = p.EstimatedAmount,
+					CancellationFee = p.CancellationFee
 				})
 				.ToListAsync();
 
@@ -63,9 +67,10 @@ namespace KitchenProject.Classes
 				.Select(g => new { g.Key, Total = g.Sum(e => e.Amount) })
 				.ToDictionaryAsync(x => x.Key, x => x.Total);
 
-			var paid = await _payment.Entity.GetWhere(p => ids.Contains(p.ProjectId))
+			var paid = await _payment.Entity
+				.GetWhere(p => ids.Contains(p.ProjectId) && !(p.Payment == PaymentMethod.Chek && p.ChequeStatus == ChequeStatus.Bounced))
 				.GroupBy(p => p.ProjectId)
-				.Select(g => new { g.Key, Total = g.Sum(p => p.Amount) })
+				.Select(g => new { g.Key, Total = g.Sum(p => p.IsRefund ? -p.Amount : p.Amount) })
 				.ToDictionaryAsync(x => x.Key, x => x.Total);
 
 			foreach (var row in list)
@@ -94,17 +99,25 @@ namespace KitchenProject.Classes
 		public decimal ContractsTotal { get; set; }
 		public decimal FinalAmount { get; set; }
 		public decimal EstimatedAmount { get; set; }
+		public decimal CancellationFee { get; set; }
 		public decimal MaterialsCost { get; set; }
 		public decimal Expenses { get; set; }
 		public decimal Paid { get; set; }
 
-		public decimal SaleValue => ProfitService.SaleValue(ContractsTotal, FinalAmount, EstimatedAmount);
+		public decimal SaleValue => ProfitService.SaleValue(ContractsTotal, FinalAmount, EstimatedAmount, Status, CancellationFee);
 		public decimal TotalCost => MaterialsCost + Expenses;
 		public decimal Profit => SaleValue - TotalCost;
 		public decimal? MarginPercent => SaleValue > 0 ? Math.Round(Profit / SaleValue * 100, 1) : null;
 		public decimal Remaining => SaleValue - Paid;
 
 		// القيمة مؤكدة فقط بعد التعاقد، قبلها هي تقدير
-		public bool IsEstimate => ContractsTotal == 0;
+		public bool IsEstimate => Status != ProjectStatus.Cancelled && ContractsTotal == 0;
+
+		// تحذير عندما يدخل المشروع مرحلة التعاقد أو التنفيذ أو التسليم دون تسجيل أي صرف خامات له
+		public bool MissingMaterialsWarning =>
+			MaterialsCost <= 0 && (Status == ProjectStatus.Contracted
+								|| Status == ProjectStatus.InProgress
+								|| Status == ProjectStatus.Delivered
+								|| Status == ProjectStatus.Closed);
 	}
 }

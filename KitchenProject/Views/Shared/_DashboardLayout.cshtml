@@ -1,3 +1,4 @@
+﻿@inject KitchenProject.Classes.LookupService Lookup
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
@@ -14,6 +15,8 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800&family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
 
     <!-- Custom Dashboard Styles -->
     <style>
@@ -69,8 +72,21 @@
             text-decoration: none;
         }
 
-        .sidebar-brand .brand-mark { background: #fff; border-radius: 10px; width: 42px; height: 42px; display: inline-flex; align-items: center; justify-content: center; margin-left: 0.75rem; flex-shrink: 0; }
-        .sidebar-brand .brand-mark img { height: 28px; }
+        .sidebar-brand .brand-mark {
+            background: #fff;
+            border-radius: 10px;
+            width: 42px;
+            height: 42px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin-left: 0.75rem;
+            flex-shrink: 0;
+        }
+
+        .sidebar-brand .brand-mark img {
+            height: 28px;
+        }
 
         .sidebar-brand i {
             color: var(--accent-blue);
@@ -114,7 +130,7 @@
 
         .nav-sidebar .nav-link:hover {
             color: #ffffff;
-            background-color: rgba(255, 255, 255, 0.08);
+            background-color: rgba(255, 255, 255, 0.07);
             transform: translateX(-3px);
         }
 
@@ -190,6 +206,88 @@
             margin-right: 0;
         }
 
+        /* Custom Cards & UI Elements */
+        .custom-card {
+            background-color: #ffffff;
+            border-radius: var(--card-border-radius);
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.02);
+            transition: all 0.25s ease;
+        }
+
+        .custom-card:hover {
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.05);
+        }
+
+        .card-header-custom {
+            background-color: transparent;
+            border-bottom: 1px solid #f1f5f9;
+            padding: 1.25rem 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .page-header-title {
+            font-weight: 800;
+            font-size: 1.5rem;
+            color: #0f172a;
+        }
+
+        .btn-primary-custom {
+            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+            border: none;
+            color: white;
+            font-weight: 700;
+            padding: 0.6rem 1.35rem;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+            transition: all 0.25s ease;
+        }
+
+        .btn-primary-custom:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 18px rgba(37, 99, 235, 0.35);
+            color: white;
+        }
+
+        /* Module Top Tabs Bar */
+        .module-tabs-bar {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 0.45rem;
+            margin-bottom: 1.5rem;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.35rem;
+            box-shadow: 0 2px 12px rgba(15, 23, 42, 0.03);
+        }
+
+        .module-tab-link {
+            color: #475569;
+            font-weight: 700;
+            font-size: 0.88rem;
+            padding: 0.5rem 0.95rem;
+            border-radius: 8px;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.45rem;
+            transition: all 0.2s ease;
+        }
+
+        .module-tab-link:hover {
+            background-color: #f1f5f9;
+            color: #0f172a;
+        }
+
+        .module-tab-link.active {
+            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+            color: #ffffff;
+            box-shadow: 0 3px 10px rgba(37, 99, 235, 0.25);
+        }
+
         /* Backdrop overlay for mobile */
         #sidebar-overlay {
             display: none;
@@ -224,49 +322,30 @@
             }
         }
 
-        /* Shared Card Component */
-        .custom-card {
-            background-color: #ffffff;
-            border-radius: var(--card-border-radius);
-            border: 1px solid #e2e8f0;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
-            transition: all 0.25s ease;
-        }
+        @@media print {
+            #sidebar,
+            #topbar,
+            #sidebar-overlay,
+            .d-print-none {
+                display: none !important;
+            }
 
-        .custom-card:hover {
-            box-shadow: 0 6px 25px rgba(0, 0, 0, 0.06);
-        }
+            body {
+                background-color: #ffffff !important;
+                font-size: 0.85rem;
+            }
 
-        .card-header-custom {
-            background: transparent;
-            border-bottom: 1px solid #f1f5f9;
-            padding: 1.25rem 1.5rem;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
+            #content-wrapper {
+                margin: 0 !important;
+                padding: 0 !important;
+                min-height: 0 !important;
+            }
 
-        .page-header-title {
-            font-weight: 800;
-            font-size: 1.5rem;
-            color: #0f172a;
-        }
-
-        .btn-primary-custom {
-            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
-            border: none;
-            color: white;
-            font-weight: 700;
-            padding: 0.6rem 1.3rem;
-            border-radius: 10px;
-            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
-            transition: all 0.25s ease;
-        }
-
-        .btn-primary-custom:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 18px rgba(37, 99, 235, 0.35);
-            color: white;
+            .custom-card {
+                box-shadow: none !important;
+                border: 1px solid #cbd5e1 !important;
+                break-inside: avoid;
+            }
         }
     </style>
 </head>
@@ -283,82 +362,121 @@
         </a>
 
         @{
-            // القائمة الجانبية: كل رابط يظهر فقط إذا كان دور المستخدم يسمح بشاشته (Classes/AppRoles)
-            var menu = new (string Heading, (string Controller, string Action, string Icon, string Label, string Active)[] Links)[]
+            var currentController = ViewContext.RouteData.Values["controller"]?.ToString() ?? "";
+            var currentAction = ViewContext.RouteData.Values["action"]?.ToString() ?? "Index";
+            var rawActivePage = ViewBag.ActivePage as string;
+
+            // تمييز التبويب الفرعي بدقة حتى لو اشترك مع شاشته الأم في ViewBag.ActivePage
+            var effectiveActiveKey = currentController.Equals("ItemGroups", StringComparison.OrdinalIgnoreCase)
+                ? "ItemGroups"
+                : (currentController.Equals("Stock", StringComparison.OrdinalIgnoreCase) && currentAction.Equals("Movements", StringComparison.OrdinalIgnoreCase))
+                    ? "StockMovements"
+                    : rawActivePage;
+
+            // وحدات النظام المدمجة (10 وحدات أساسية في القائمة الجانبية، وتظهر شاشاتها الفرعية كتبويبات علوية)
+            var modules = new (string Section, string Icon, string Label, (string Controller, string Action, string Icon, string Label, string Active)[] Tabs)[]
             {
-                ("دورة العمل والتنفيذ", new[]
+                ("التشغيل والمشاريع", "fa-gauge-high", "لوحة التحكم", new[]
                 {
-                    ("Home", "Index", "fa-gauge-high", "لوحة التحكم", "Home"),
-                    ("Customers", "Index", "fa-users", "إدارة العملاء", "Customers"),
+                    ("Home", "Index", "fa-gauge-high", "لوحة التحكم", "Home")
+                }),
+                ("التشغيل والمشاريع", "fa-users", "إدارة العملاء", new[]
+                {
+                    ("Customers", "Index", "fa-users", "إدارة العملاء", "Customers")
+                }),
+                ("التشغيل والمشاريع", "fa-diagram-project", "المشاريع والتنفيذ", new[]
+                {
                     ("Projects", "Index", "fa-diagram-project", "المشاريع والأوامر", "Projects"),
                     ("SiteVisits", "Index", "fa-ruler-combined", "المعاينة والمقاسات", "SiteVisits"),
-                    ("Quotes", "Index", "fa-file-invoice-dollar", "التصاميم والأسعار", "Quotes"),
+                    ("Quotes", "Index", "fa-file-invoice-dollar", "التصاميم وعروض الأسعار", "Quotes"),
                     ("Contracts", "Index", "fa-file-contract", "إدارة العقود", "Contracts")
                 }),
-                ("المخازن والمشتريات", new[]
+                ("المخازن والمشتريات", "fa-boxes-stacked", "الأصناف والبنود", new[]
                 {
-                    ("Stock", "Index", "fa-warehouse", "المخزن والأرصدة", "Stock"),
+                    ("Items", "Index", "fa-boxes-stacked", "كتالوج الأصناف", "Items"),
+                    ("ItemGroups", "Index", "fa-layer-group", "البنود A / B / C", "ItemGroups")
+                }),
+                ("المخازن والمشتريات", "fa-warehouse", "المخزن وطلبات المواد", new[]
+                {
+                    ("Stock", "Index", "fa-warehouse", "أرصدة المخزن", "Stock"),
                     ("MaterialRequests", "Index", "fa-clipboard-list", "طلبات المواد", "MaterialRequests"),
-                    ("Items", "Index", "fa-boxes-stacked", "الأصناف والبنود", "Items"),
-                    ("Purchases", "Index", "fa-cart-shopping", "المشتريات", "Purchases"),
+                    ("Stock", "Movements", "fa-right-left", "كشف الحركات", "StockMovements"),
+                    ("Stock", "Stocktake", "fa-clipboard-check", "جرد وتسوية المخزن", "Stocktake"),
+                    ("Warehouses", "Index", "fa-building", "الفروع والمخازن", "Warehouses")
+                }),
+                ("المخازن والمشتريات", "fa-cart-shopping", "المشتريات والموردين", new[]
+                {
+                    ("Purchases", "Index", "fa-cart-shopping", "فواتير الشراء", "Purchases"),
                     ("Suppliers", "Index", "fa-truck-field", "الموردين", "Suppliers")
                 }),
-                ("المالية والحسابات", new[]
+                ("المالية والإدارة", "fa-wallet", "المالية والمصروفات", new[]
                 {
-                    ("Payments", "Index", "fa-wallet", "تحصيلات العملاء", "Payments"),
-                    ("Expenses", "Index", "fa-money-bill-transfer", "المصروفات", "Expenses"),
-                    ("Reports", "Profit", "fa-chart-line", "تقرير الأرباح", "Reports")
+                    ("Payments", "Index", "fa-wallet", "إيصالات القبض", "Payments"),
+                    ("SupplierPayments", "Index", "fa-file-invoice-dollar", "صرف للموردين", "SupplierPayments"),
+                    ("Expenses", "Index", "fa-money-bill-transfer", "المصروفات", "Expenses")
                 }),
-                ("الإدارة", new[]
+                ("المالية والإدارة", "fa-chart-line", "التقارير المالية", new[]
                 {
-                    ("Users", "Index", "fa-user-shield", "المستخدمين والصلاحيات", "Users"),
-                    ("Warehouses", "Index", "fa-building", "المخازن", "Warehouses"),
-                    ("Settings", "Index", "fa-sliders", "إعدادات النظام", "Settings")
+                    ("Reports", "Profit", "fa-chart-line", "أرباح المشاريع", "Reports"),
+                    ("Reports", "Transactions", "fa-right-left", "الحركات المالية", "Transactions"),
+                    ("Reports", "Aging", "fa-clock-rotate-left", "أعمار الديون", "Aging")
+                }),
+                ("المالية والإدارة", "fa-book", "المحاسبة والدفاتر", new[]
+                {
+                    ("Accounting", "Index", "fa-book", "القيود اليومية", "Journal"),
+                    ("Accounting", "Accounts", "fa-sitemap", "شجرة الحسابات", "Accounts"),
+                    ("Accounting", "Ledger", "fa-book-open", "كشف حساب (أستاذ)", "Ledger"),
+                    ("Accounting", "Cheques", "fa-money-check-dollar", "حافظة الصكوك", "Cheques"),
+                    ("Accounting", "TrialBalance", "fa-scale-balanced", "ميزان المراجعة", "TrialBalance"),
+                    ("Accounting", "IncomeStatement", "fa-file-invoice", "قائمة الدخل", "IncomeStatement"),
+                    ("Accounting", "BalanceSheet", "fa-building-columns", "الميزانية العمومية", "BalanceSheet"),
+                    ("Accounting", "OpeningBalances", "fa-flag-checkered", "الأرصدة الافتتاحية", "OpeningBalances"),
+                    ("Accounting", "Periods", "fa-lock", "إقفال الفترات", "Periods")
+                }),
+                ("المالية والإدارة", "fa-sliders", "الإدارة والإعدادات", new[]
+                {
+                    ("Settings", "Index", "fa-sliders", "إعدادات النظام", "Settings"),
+                    ("Users", "Index", "fa-user-shield", "المستخدمين والصلاحيات", "Users")
                 })
             };
-            string? activePage = ViewBag.ActivePage as string;
+
+            bool IsTabActive((string Controller, string Action, string Icon, string Label, string Active) t) =>
+                !string.IsNullOrEmpty(effectiveActiveKey)
+                    ? string.Equals(effectiveActiveKey, t.Active, StringComparison.OrdinalIgnoreCase)
+                    : (currentController.Equals(t.Controller, StringComparison.OrdinalIgnoreCase)
+                       && currentAction.Equals(t.Action, StringComparison.OrdinalIgnoreCase));
+
+            var visibleModules = modules
+                .Select(m => new
+                {
+                    m.Section,
+                    m.Icon,
+                    m.Label,
+                    AllowedTabs = m.Tabs.Where(t => AppRoles.CanAccess(User, t.Controller, t.Action)).ToList(),
+                    IsActive = m.Tabs.Any(IsTabActive)
+                })
+                .Where(m => m.AllowedTabs.Count > 0)
+                .ToList();
+
+            var activeModuleTabs = visibleModules.FirstOrDefault(m => m.IsActive)?.AllowedTabs;
         }
         <div class="sidebar-menu">
-            @foreach (var group in menu)
+            @foreach (var sectionGroup in visibleModules.GroupBy(m => m.Section))
             {
-                var links = group.Links.Where(l => AppRoles.CanAccess(User, l.Controller)).ToList();
-                if (!links.Any())
-                {
-                    continue;
-                }
-                <div class="sidebar-heading">@group.Heading</div>
+                <div class="sidebar-heading">@sectionGroup.Key</div>
                 <ul class="nav nav-sidebar flex-column">
-                    @foreach (var link in links)
+                    @foreach (var mod in sectionGroup)
                     {
+                        var entry = mod.AllowedTabs[0];
                         <li class="nav-item">
-                            <a class="nav-link @(activePage == link.Active ? "active" : "")" href="@Url.Action(link.Action, link.Controller)">
-                                <i class="fa-solid @link.Icon"></i>
-                                <span>@link.Label</span>
+                            <a class="nav-link @(mod.IsActive ? "active" : "")" href="@Url.Action(entry.Action, entry.Controller)">
+                                <i class="fa-solid @mod.Icon"></i>
+                                <span>@mod.Label</span>
                             </a>
                         </li>
                     }
                 </ul>
             }
-        </div>
-
-        <div class="sidebar-footer">
-            <div class="d-flex align-items-center justify-content-between">
-                <div class="d-flex align-items-center">
-                    <div class="bg-primary text-white rounded-circle p-2 me-2 text-center" style="width:36px; height:36px; line-height:20px;">
-                        <i class="fa-solid fa-user-gear"></i>
-                    </div>
-                    <div>
-                        <div class="fw-bold text-white fs-6">@User.DisplayName()</div>
-                        <small class="text-muted" style="font-size:0.75rem;">@User.RoleName()</small>
-                    </div>
-                </div>
-                <form asp-controller="Account" asp-action="Logout" method="post" class="m-0">
-                    @Html.AntiForgeryToken()
-                    <button type="submit" class="btn btn-link text-muted p-0" title="تسجيل الخروج">
-                        <i class="fa-solid fa-arrow-right-from-bracket"></i>
-                    </button>
-                </form>
-            </div>
         </div>
     </aside>
 
@@ -369,10 +487,10 @@
                 <i class="fa-solid fa-bars-staggered"></i>
             </button>
 
-            <div class="d-none d-md-flex align-items-center position-relative" style="width: 280px;">
-                <input type="text" class="form-control rounded-pill bg-light border-0 ps-5 pe-3" placeholder="بحث سريع في النظام..." style="height: 42px; font-size: 0.9rem;">
-                <i class="fa-solid fa-magnifying-glass text-muted position-absolute start-0 ms-3"></i>
-            </div>
+            <form method="get" asp-controller="Projects" asp-action="Index" class="d-none d-md-flex align-items-center position-relative m-0" style="width: 300px;" data-name-search-form="true">
+                <input type="text" name="searchString" class="form-control rounded-pill bg-light border-0 ps-5 pe-3" placeholder="بحث سريع باسم العميل أو المشروع..." autocomplete="off" style="height: 42px; font-size: 0.88rem;">
+                <i class="fa-solid fa-magnifying-glass text-muted position-absolute start-0 ms-3 pointer-events-none"></i>
+            </form>
         </div>
 
         <div class="d-flex align-items-center gap-3">
@@ -383,27 +501,62 @@
                     <span>إضافة جديدة</span>
                 </button>
                 <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0 rounded-4 p-2 mt-2">
-                    @if (AppRoles.CanAccess(User, "Customers")) { <li><a class="dropdown-item rounded-3 py-2" href="@Url.Action("Create", "Customers")"><i class="fa-solid fa-user-plus text-primary me-2"></i> عميل جديد</a></li> }
-                    @if (AppRoles.CanAccess(User, "Projects")) { <li><a class="dropdown-item rounded-3 py-2" href="@Url.Action("Create", "Projects")"><i class="fa-solid fa-folder-plus text-success me-2"></i> مشروع جديد</a></li> }
-                    @if (AppRoles.CanAccess(User, "SiteVisits")) { <li><a class="dropdown-item rounded-3 py-2" href="@Url.Action("Create", "SiteVisits")"><i class="fa-solid fa-ruler-vertical text-warning me-2"></i> موعد معاينة</a></li> }
+                    @if (AppRoles.CanAccess(User, "Customers", "Create")) { <li><a class="dropdown-item rounded-3 py-2" href="@Url.Action("Create", "Customers")"><i class="fa-solid fa-user-plus text-primary me-2"></i> عميل جديد</a></li> }
+                    @if (AppRoles.CanAccess(User, "Projects", "Create")) { <li><a class="dropdown-item rounded-3 py-2" href="@Url.Action("Create", "Projects")"><i class="fa-solid fa-folder-plus text-success me-2"></i> مشروع جديد</a></li> }
+                    @if (AppRoles.CanAccess(User, "SiteVisits", "Create")) { <li><a class="dropdown-item rounded-3 py-2" href="@Url.Action("Create", "SiteVisits")"><i class="fa-solid fa-ruler-vertical text-warning me-2"></i> موعد معاينة</a></li> }
                     <li><hr class="dropdown-divider"></li>
-                    @if (AppRoles.CanAccess(User, "Payments")) { <li><a class="dropdown-item rounded-3 py-2" href="@Url.Action("Create", "Payments")"><i class="fa-solid fa-hand-holding-dollar text-success me-2"></i> إيصال قبض</a></li> }
-                    @if (AppRoles.CanAccess(User, "Purchases")) { <li><a class="dropdown-item rounded-3 py-2" href="@Url.Action("Create", "Purchases")"><i class="fa-solid fa-cart-plus text-primary me-2"></i> فاتورة شراء</a></li> }
-                    @if (AppRoles.CanAccess(User, "Stock")) { <li><a class="dropdown-item rounded-3 py-2" href="@Url.Action("Issue", "Stock")"><i class="fa-solid fa-dolly text-danger me-2"></i> صرف خامات</a></li> }
+                    @if (AppRoles.CanAccess(User, "Payments", "Create")) { <li><a class="dropdown-item rounded-3 py-2" href="@Url.Action("Create", "Payments")"><i class="fa-solid fa-hand-holding-dollar text-success me-2"></i> إيصال قبض</a></li> }
+                    @if (AppRoles.CanAccess(User, "SupplierPayments", "Create")) { <li><a class="dropdown-item rounded-3 py-2" href="@Url.Action("Create", "SupplierPayments")"><i class="fa-solid fa-file-invoice-dollar text-danger me-2"></i> إيصال صرف لمورد</a></li> }
+                    @if (AppRoles.CanAccess(User, "Purchases", "Create")) { <li><a class="dropdown-item rounded-3 py-2" href="@Url.Action("Create", "Purchases")"><i class="fa-solid fa-cart-plus text-primary me-2"></i> فاتورة شراء</a></li> }
+                    @if (AppRoles.CanAccess(User, "Stock", "Issue")) { <li><a class="dropdown-item rounded-3 py-2" href="@Url.Action("Issue", "Stock")"><i class="fa-solid fa-dolly text-danger me-2"></i> صرف خامات</a></li> }
                 </ul>
             </div>
 
             <!-- Notifications Button -->
+            @{
+                var appAlerts = await Lookup.GetAlertsAsync(User);
+            }
             <div class="dropdown">
-                <button class="btn btn-light position-relative rounded-circle p-2" style="width:42px; height:42px;" data-bs-toggle="dropdown">
-                    <i class="fa-solid fa-bell text-secondary"></i>
-                    <span class="position-absolute top-0 start-0 translate-middle p-1 bg-danger border border-light rounded-circle">
-                        <span class="visually-hidden">تنبيهات</span>
-                    </span>
+                <button class="btn btn-light position-relative rounded-circle p-2" style="width:42px; height:42px;" data-bs-toggle="dropdown" title="التنبيهات الإدارية">
+                    <i class="fa-solid fa-bell @(appAlerts.Count > 0 ? "text-danger" : "text-secondary")"></i>
+                    @if (appAlerts.Count > 0)
+                    {
+                        <span class="position-absolute top-0 start-0 translate-middle badge rounded-pill bg-danger border border-light" style="font-size:0.68rem;">
+                            @appAlerts.Count
+                            <span class="visually-hidden">تنبيهات</span>
+                        </span>
+                    }
                 </button>
-                <div class="dropdown-menu dropdown-menu-end shadow-lg border-0 rounded-4 p-3 mt-2" style="width:300px;">
-                    <h6 class="fw-bold border-bottom pb-2 mb-2">التنبيهات الإدارية</h6>
-                    <p class="text-muted fs-7 mb-0 text-center py-3">لا توجد إشعارات جديدة حالياً</p>
+                <div class="dropdown-menu dropdown-menu-end shadow-lg border-0 rounded-4 p-3 mt-2" style="width:340px; max-height:420px; overflow-y:auto;">
+                    <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-2">
+                        <h6 class="fw-bold mb-0">التنبيهات والمتابعة</h6>
+                        @if (appAlerts.Count > 0)
+                        {
+                            <span class="badge bg-danger-subtle text-danger rounded-pill">@appAlerts.Count</span>
+                        }
+                    </div>
+                    @if (appAlerts.Count > 0)
+                    {
+                        <div class="d-flex flex-column gap-2">
+                            @foreach (var alert in appAlerts)
+                            {
+                                <a href="@Url.Action(alert.Action, alert.Controller, alert.RouteValues)" class="text-decoration-none p-2 rounded-3 bg-light d-flex align-items-start gap-2 border-start border-3 border-primary">
+                                    <i class="fa-solid @alert.Icon mt-1 fs-5"></i>
+                                    <div>
+                                        <div class="fw-bold text-dark small">@alert.Title</div>
+                                        <div class="text-muted" style="font-size:0.75rem;">@alert.Subtitle</div>
+                                    </div>
+                                </a>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <p class="text-muted small mb-0 text-center py-3">
+                            <i class="fa-solid fa-circle-check text-success d-block fs-4 mb-1"></i>
+                            لا توجد تنبيهات معلقة حالياً
+                        </p>
+                    }
                 </div>
             </div>
 
@@ -445,6 +598,19 @@
 
     <!-- Main Workspace Content Area -->
     <main id="content-wrapper">
+        @if (activeModuleTabs != null && activeModuleTabs.Count > 1)
+        {
+            <nav class="module-tabs-bar d-print-none" aria-label="شاشات القسم">
+                @foreach (var tab in activeModuleTabs)
+                {
+                    <a class="module-tab-link @(IsTabActive(tab) ? "active" : "")" href="@Url.Action(tab.Action, tab.Controller)">
+                        <i class="fa-solid @tab.Icon"></i>
+                        <span>@tab.Label</span>
+                    </a>
+                }
+            </nav>
+        }
+
         <!-- Toast / Alerts Section -->
         @if (TempData["Success"] != null)
         {
@@ -503,3 +669,5 @@
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>
+
+

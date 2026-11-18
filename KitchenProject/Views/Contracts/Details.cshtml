@@ -96,9 +96,20 @@
 
             @foreach (var p in Model.CustomerPayments.OrderByDescending(p => p.PaymentDate))
             {
+                var isBounced = p.Payment == PaymentMethod.Chek && p.ChequeStatus == ChequeStatus.Bounced;
                 <div class="d-flex align-items-center justify-content-between border-top py-2 small">
                     <span>
-                        <strong class="text-success">@p.Amount.ToString("N2")</strong>
+                        <strong class="@(p.IsRefund ? "text-danger" : (isBounced ? "text-decoration-line-through text-muted" : "text-success"))">
+                            @(p.IsRefund ? "-" : "")@p.Amount.ToString("N2")
+                        </strong>
+                        @if (p.IsRefund)
+                        {
+                            <span class="badge bg-danger-subtle text-danger border border-danger-subtle">مرتجع</span>
+                        }
+                        @if (isBounced)
+                        {
+                            <span class="badge bg-secondary-subtle text-secondary border">صك راجع</span>
+                        }
                         <span class="text-muted">· @p.ReceiptNo · @p.PaymentDate.ToString("yyyy/MM/dd")</span>
                     </span>
                     <a asp-controller="Payments" asp-action="Receipt" asp-route-id="@p.Id" target="_blank" class="btn btn-sm btn-light border" title="طباعة الإيصال"><i class="fa-solid fa-print"></i></a>
@@ -109,6 +120,12 @@
             {
                 <a asp-controller="Payments" asp-action="Create" asp-route-contractId="@Model.Id" class="btn btn-success btn-sm fw-bold w-100 mt-3">
                     <i class="fa-solid fa-hand-holding-dollar me-1"></i> تسجيل دفعة على العقد
+                </a>
+            }
+            @if (Model.PaidAmount > 0)
+            {
+                <a asp-controller="Payments" asp-action="Create" asp-route-contractId="@Model.Id" asp-route-isRefund="true" class="btn btn-outline-danger btn-sm fw-bold w-100 mt-2">
+                    <i class="fa-solid fa-rotate-left me-1"></i> تسجيل سند إرجاع على العقد
                 </a>
             }
         </div>

@@ -24,6 +24,7 @@ namespace KitchenProject.Models
 					  About = "شركة بن قسومة لاستيراد الأثاث المنزلي والمكتبي وحلول المطابخ - السراج، طرابلس.",
 					  LogoUrl = "/images/brand/logo.png",
 					  LetterheadUrl = "/images/brand/letterhead.png",
+					  PageSize = 10,
 					  Created = SeedDate
 				  });
 
@@ -50,7 +51,7 @@ namespace KitchenProject.Models
 			 });
 
 			//--------------------Inventory-----------------------------
-			// المخزن الرئيسي + بنود الأصناف الجاهزة بأسماء مؤقتة تُعدل من شاشة البنود
+			// المخزن الرئيسي + بنود الأصناف الجاهزة والكتالوج المعتمد للشركة
 			modelBuilder.Entity<Warehouse>().HasData(
 				new Warehouse
 				{
@@ -59,10 +60,8 @@ namespace KitchenProject.Models
 					Created = SeedDate
 				});
 
-			modelBuilder.Entity<ItemGroup>().HasData(
-				new ItemGroup { Id = new Guid("a1000000-0000-4000-8000-00000000000a"), Code = "A", Name = "وحدات المطبخ", Description = "الوحدات السفلية والعلوية والأعمدة", SortOrder = 1, Created = SeedDate },
-				new ItemGroup { Id = new Guid("b1000000-0000-4000-8000-00000000000b"), Code = "B", Name = "الأسطح والرخام", Description = "أسطح الرخام والجرانيت والكوارتز", SortOrder = 2, Created = SeedDate },
-				new ItemGroup { Id = new Guid("c1000000-0000-4000-8000-00000000000c"), Code = "C", Name = "الأجهزة والإكسسوارات", Description = "الأجهزة الكهربائية والمغاسل والمقابض والإكسسوارات", SortOrder = 3, Created = SeedDate });
+			modelBuilder.Entity<ItemGroup>().HasData(FinishedCatalogSeed.GetItemGroups(SeedDate));
+			modelBuilder.Entity<Item>().HasData(FinishedCatalogSeed.GetFinishedItems(SeedDate));
 
 			//--------------------Roles-----------------------------
 			var progRoleId = AppRoles.ProgRoleId;

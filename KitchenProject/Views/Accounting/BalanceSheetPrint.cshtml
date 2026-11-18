@@ -1,0 +1,52 @@
+@model List<AccountNode>
+@{
+    Layout = "_PrintLayout";
+    ViewData["Title"] = "الميزانية العمومية";
+    ViewData["DocTitle"] = "الميزانية العمومية";
+    DateTime? asOf = ViewBag.AsOf;
+    ViewData["DocNo"] = $"كما في {asOf:yyyy/MM/dd}";
+
+    var rows = Model.Where(n => n.Account.IsPostable && n.Balance != 0).ToList();
+    var assets = rows.Where(n => n.Account.Type == AccountType.Asset).ToList();
+    var liabilities = rows.Where(n => n.Account.Type == AccountType.Liability).ToList();
+    var equity = rows.Where(n => n.Account.Type == AccountType.Equity).ToList();
+    var openResult = rows.Where(n => n.Account.Type == AccountType.Revenue).Sum(n => n.Balance)
+                   - rows.Where(n => n.Account.Type == AccountType.Expense).Sum(n => n.Balance);
+    var totalAssets = assets.Sum(n => n.Balance);
+    var totalLiabilities = liabilities.Sum(n => n.Balance);
+    var totalEquity = equity.Sum(n => n.Balance) + openResult;
+}
+
+<table class="table table-bordered print-table">
+    <thead><tr><th>البند</th><th style="width:24%">المبلغ (د.ل)</th></tr></thead>
+    <tbody>
+        <tr class="table-light fw-bold"><td colspan="2">الأصول</td></tr>
+        @foreach (var n in assets) { <tr><td class="ps-4"><span class="font-monospace small text-muted">@n.Account.Code</span> @n.Account.Name</td><td class="text-start">@n.Balance.ToString("N2")</td></tr> }
+        <tr class="fw-bold"><td>إجمالي الأصول</td><td class="text-start">@totalAssets.ToString("N2")</td></tr>
+
+        <tr class="table-light fw-bold"><td colspan="2">الخصوم</td></tr>
+        @foreach (var n in liabilities) { <tr><td class="ps-4"><span class="font-monospace small text-muted">@n.Account.Code</span> @n.Account.Name</td><td class="text-start">@n.Balance.ToString("N2")</td></tr> }
+        <tr class="fw-bold"><td>إجمالي الخصوم</td><td class="text-start">@totalLiabilities.ToString("N2")</td></tr>
+
+        <tr class="table-light fw-bold"><td colspan="2">حقوق الملكية</td></tr>
+        @foreach (var n in equity) { <tr><td class="ps-4"><span class="font-monospace small text-muted">@n.Account.Code</span> @n.Account.Name</td><td class="text-start">@n.Balance.ToString("N2")</td></tr> }
+        @if (openResult != 0)
+        {
+            <tr><td class="ps-4">@(openResult >= 0 ? "أرباح الفترة الحالية (غير مقفلة)" : "خسائر الفترة الحالية (غير مقفلة)")</td><td class="text-start">@openResult.ToString("N2")</td></tr>
+        }
+        <tr class="fw-bold"><td>إجمالي حقوق الملكية</td><td class="text-start">@totalEquity.ToString("N2")</td></tr>
+
+        <tr class="fw-bold" style="background:var(--brand-soft);">
+            <td>إجمالي الخصوم وحقوق الملكية</td>
+            <td class="text-start" style="color:var(--brand);">@((totalLiabilities + totalEquity).ToString("N2"))</td>
+        </tr>
+    </tbody>
+</table>
+
+<div class="small text-muted mt-2">طُبع بتاريخ @DateTime.Now.ToString("yyyy/MM/dd HH:mm") بواسطة @ViewBag.PrintedBy</div>
+
+<div class="signatures mt-4">
+    <div>المحاسب</div>
+    <div>المراجع</div>
+    <div>اعتماد الإدارة</div>
+</div>

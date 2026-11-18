@@ -3,11 +3,16 @@
     var catalog = ViewBag.ItemOptions as List<ItemOption> ?? new();
     var inv = System.Globalization.CultureInfo.InvariantCulture;
 
-    // كتالوج الأصناف الجاهزة مقسماً حسب البنود A/B/C، واختيار صنف يملأ الوصف والوحدة والسعر
+    // كتالوج الأصناف (الوحدات المصنّعة + الإكسسوارات والخامات المخزنية) مقسماً حسب البنود، واختيار صنف يملأ الوصف والوحدة والسعر
     string CatalogSelect(Guid? selected) =>
         "<option value=\"\">بند حر</option>" + string.Concat(catalog.GroupBy(o => o.GroupName ?? "بدون بند").Select(g =>
             $"<optgroup label=\"{System.Net.WebUtility.HtmlEncode(g.Key)}\">" + string.Concat(g.Select(o =>
-                $"<option value=\"{o.Id}\" data-name=\"{System.Net.WebUtility.HtmlEncode(o.Name)}\" data-unit=\"{System.Net.WebUtility.HtmlEncode(o.Unit)}\" data-price=\"{o.Price.ToString("0.##", inv)}\"{(o.Id == selected ? " selected" : "")}>{System.Net.WebUtility.HtmlEncode(o.Code + " - " + o.Name)}</option>")) + "</optgroup>"));
+            {
+                var stockText = o.Type == ItemType.Raw
+                    ? (o.Balance > 0 ? $" [المتوفر: {o.Balance.ToString("0.##", inv)} {o.Unit}]" : " [رصيد المخزن: 0]")
+                    : "";
+                return $"<option value=\"{o.Id}\" data-name=\"{System.Net.WebUtility.HtmlEncode(o.Name)}\" data-unit=\"{System.Net.WebUtility.HtmlEncode(o.Unit)}\" data-price=\"{o.Price.ToString("0.##", inv)}\" data-cost=\"{o.Cost.ToString("0.##", inv)}\" data-type=\"{o.Type}\" data-balance=\"{o.Balance.ToString("0.##", inv)}\"{(o.Id == selected ? " selected" : "")}>{System.Net.WebUtility.HtmlEncode(o.Code + " - " + o.Name + stockText)}</option>";
+            })) + "</optgroup>"));
 }
 
 <div asp-validation-summary="All" class="alert alert-danger rounded-3 mb-4" role="alert"></div>
@@ -46,6 +51,7 @@
                 <th style="width:210px;">من الكتالوج</th>
                 <th>الوصف <span class="text-danger">*</span></th>
                 <th style="width:110px;">الوحدة</th>
+                <th style="width:140px;">حالة المخزن</th>
                 <th style="width:110px;">الكمية</th>
                 <th style="width:140px;">سعر الوحدة</th>
                 <th style="width:140px;">الإجمالي</th>
@@ -61,6 +67,7 @@
                     <td><input name="Items[@i].Description" value="@Model.Items[i].Description" class="form-control form-control-sm" placeholder="مثال: وحدات سفلية خشب MDF مع رخام" />
                         <input name="Items[@i].Notes" value="@Model.Items[i].Notes" class="form-control form-control-sm mt-1 text-muted" style="font-size:0.8rem;" placeholder="ملاحظة على البند (اختياري)" maxlength="250" /></td>
                     <td><input name="Items[@i].Unit" value="@Model.Items[i].Unit" class="form-control form-control-sm" list="units" /></td>
+                    <td class="stock-status small"></td>
                     <td><input name="Items[@i].Quantity" value="@Model.Items[i].Quantity.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)" type="number" step="0.01" min="0.01" class="form-control form-control-sm qty" /></td>
                     <td><input name="Items[@i].UnitPrice" value="@Model.Items[i].UnitPrice.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)" type="number" step="0.01" min="0" class="form-control form-control-sm price" /></td>
                     <td class="fw-bold line-total">0.00</td>
@@ -78,15 +85,62 @@
     <option value="طقم"></option>
     <option value="خدمة"></option>
 </datalist>
-<button type="button" class="btn btn-sm btn-outline-primary fw-bold mb-4" id="addRow">
-    <i class="fa-solid fa-plus me-1"></i> إضافة بند
-</button>
+<div class="d-flex flex-wrap align-items-center gap-3 mb-3">
+    <button type="button" class="btn btn-sm btn-outline-primary fw-bold" id="addRow">
+        <i class="fa-solid fa-plus me-1"></i> إضافة بند
+    </button>
+    <span id="mergeFeedback" class="small text-success fw-bold d-none" role="status" aria-live="polite"></span>
+</div>
+<div id="stockWarningBanner" class="alert alert-warning border-0 rounded-3 small d-none mb-4" role="status">
+    <i class="fa-solid fa-triangle-exclamation me-1"></i>
+    <span id="stockWarningText"></span>
+</div>
 
 <!-- Totals -->
 <div class="row g-4">
     <div class="col-12 col-lg-7">
         <label asp-for="Notes" class="form-label fw-bold">ملاحظات وشروط العرض</label>
-        <textarea asp-for="Notes" class="form-control" rows="6" placeholder="مدة التنفيذ، طريقة الدفع (مثلاً 50% مقدم)، الضمان، ما لا يشمله العرض..."></textarea>
+        <textarea asp-for="Notes" class="form-control mb-3" rows="5" placeholder="مدة التنفيذ، طريقة الدفع (مثلاً 50% مقدم)، الضمان، ما لا يشمله العرض..."></textarea>
+
+        <div class="border rounded-3 p-3 bg-light">
+            <label class="form-label fw-bold"><i class="fa-solid fa-images text-primary me-1"></i> صور التصميم (3D) والمخططات (يمكن اختيار أكثر من صورة)</label>
+            <input type="file" name="designFiles" multiple accept=".jpg,.jpeg,.png,.webp,.pdf" class="form-control form-control-sm" />
+            <small class="text-muted d-block mt-1">تُحفظ الصور داخل مجلد المشروع <code>wwwroot/pic</code> (الأنواع المسموحة: JPG, PNG, WEBP, PDF).</small>
+
+            @{
+                var quotePics = ViewBag.Pics as List<string> ?? new();
+            }
+            @if (quotePics.Any())
+            {
+                <div class="mt-3">
+                    <span class="small fw-bold text-muted d-block mb-2">صور التصميم المرفقة حالياً (@quotePics.Count)</span>
+                    <div class="row g-2">
+                        @foreach (var pic in quotePics)
+                        {
+                            var isPdf = pic.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase);
+                            <div class="col-6 col-sm-4">
+                                <div class="border rounded-3 p-2 bg-white h-100 d-flex flex-column justify-content-between">
+                                    <a href="@pic" target="_blank" class="text-decoration-none text-center d-block mb-1">
+                                        @if (isPdf)
+                                        {
+                                            <div class="py-3 text-danger"><i class="fa-solid fa-file-pdf fa-2x"></i><div class="small mt-1 text-dark">مخطط PDF</div></div>
+                                        }
+                                        else
+                                        {
+                                            <img src="@pic" alt="صورة التصميم" class="img-fluid rounded-2" style="max-height:110px; object-fit:cover; width:100%;" />
+                                        }
+                                    </a>
+                                    <div class="form-check small mt-1">
+                                        <input class="form-check-input" type="checkbox" name="removePics" value="@pic" id="rmq-@pic.GetHashCode()" />
+                                        <label class="form-check-label text-danger fw-bold" for="rmq-@pic.GetHashCode()">حذف</label>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
     </div>
     <div class="col-12 col-lg-5">
         <div class="bg-light rounded-3 p-3">
@@ -122,6 +176,7 @@
         <td><input data-field="Description" class="form-control form-control-sm" placeholder="وصف البند" />
             <input data-field="Notes" class="form-control form-control-sm mt-1 text-muted" style="font-size:0.8rem;" placeholder="ملاحظة على البند (اختياري)" maxlength="250" /></td>
         <td><input data-field="Unit" value="قطعة" class="form-control form-control-sm" list="units" /></td>
+        <td class="stock-status small"></td>
         <td><input data-field="Quantity" value="1" type="number" step="0.01" min="0.01" class="form-control form-control-sm qty" /></td>
         <td><input data-field="UnitPrice" value="0" type="number" step="0.01" min="0" class="form-control form-control-sm price" /></td>
         <td class="fw-bold line-total">0.00</td>
@@ -132,19 +187,108 @@
 <script>
     (function () {
         const tbody = document.querySelector('#itemsTable tbody');
+        const addBtn = document.getElementById('addRow');
+        const mergeFeedback = document.getElementById('mergeFeedback');
         const fmt = n => n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         const num = el => parseFloat(el?.value) || 0;
+        let mergeFeedbackTimer = null;
 
         // يعيد ترقيم الصفوف وأسماء الحقول Items[0..n] حتى يربطها MVC بشكل صحيح
         function renumber() {
             tbody.querySelectorAll('tr.item-row').forEach((tr, i) => {
                 tr.querySelector('.row-no').textContent = i + 1;
-                tr.querySelectorAll('input, select').forEach(input => {
+                tr.querySelectorAll('input:not(.ks-combobox-input), select').forEach(input => {
                     const field = input.dataset.field || input.name.replace(/^Items\[\d+\]\./, '');
                     input.dataset.field = field;
                     input.name = `Items[${i}].${field}`;
                 });
             });
+        }
+
+        function makeBadge(cls, iconCls, text) {
+            const span = document.createElement('span');
+            span.className = 'badge ' + cls;
+            if (iconCls) {
+                const icon = document.createElement('i');
+                icon.className = iconCls + ' me-1';
+                span.appendChild(icon);
+            }
+            span.appendChild(document.createTextNode(text));
+            return span;
+        }
+
+        function syncPriceCost(tr) {
+            const sel = tr.querySelector('.catalog-select');
+            const priceInput = tr.querySelector('.price');
+            const stockCell = tr.querySelector('.stock-status');
+            if (!priceInput) return;
+            const opt = sel?.selectedOptions[0];
+            const cost = parseFloat(opt?.dataset?.cost) || 0;
+            priceInput.min = cost > 0 ? String(cost) : '0';
+            const val = parseFloat(priceInput.value) || 0;
+            priceInput.classList.toggle('is-invalid', Boolean(opt?.value) && cost > 0 && val < cost);
+
+            if (!stockCell) return;
+            stockCell.replaceChildren();
+            if (!opt || !opt.value) {
+                const dash = document.createElement('span');
+                dash.className = 'text-muted';
+                dash.textContent = '—';
+                stockCell.appendChild(dash);
+                return;
+            }
+
+            const type = opt.dataset.type;
+            if (type === 'Finished') {
+                stockCell.appendChild(makeBadge('bg-success-subtle text-success', null, 'تفصيل / خدمة'));
+                return;
+            }
+
+            if (type === 'Raw') {
+                const balance = parseFloat(opt.dataset.balance) || 0;
+                const qty = parseFloat(tr.querySelector('.qty')?.value) || 0;
+                const fmtNum = n => Number(n.toFixed(2));
+                if (balance <= 0) {
+                    stockCell.appendChild(makeBadge('bg-danger-subtle text-danger', 'fa-solid fa-triangle-exclamation', 'غير متوفر (0)'));
+                    if (cost <= 0) {
+                        const note = document.createElement('small');
+                        note.className = 'd-block text-danger';
+                        note.style.fontSize = '0.72rem';
+                        note.textContent = 'لم يُشترَ بعد — تأكد من السعر';
+                        stockCell.appendChild(note);
+                    }
+                } else if (qty > balance) {
+                    stockCell.appendChild(makeBadge('bg-warning-subtle text-warning-emphasis', 'fa-solid fa-circle-exclamation', `متوفر ${fmtNum(balance)} (نقص ${fmtNum(qty - balance)})`));
+                } else {
+                    stockCell.appendChild(makeBadge('bg-success-subtle text-success', 'fa-solid fa-check', `متوفر (${fmtNum(balance)})`));
+                }
+            }
+        }
+
+        function updateStockWarningBanner() {
+            const banner = document.getElementById('stockWarningBanner');
+            const textEl = document.getElementById('stockWarningText');
+            if (!banner || !textEl) return;
+
+            const shortages = [];
+            tbody.querySelectorAll('tr.item-row').forEach(tr => {
+                const opt = tr.querySelector('.catalog-select')?.selectedOptions[0];
+                if (!opt || !opt.value || opt.dataset.type !== 'Raw') return;
+                const balance = parseFloat(opt.dataset.balance) || 0;
+                const qty = parseFloat(tr.querySelector('.qty')?.value) || 0;
+                if (balance <= 0 || qty > balance) {
+                    const name = opt.dataset.name || opt.textContent.trim();
+                    if (!shortages.includes(name)) shortages.push(name);
+                }
+            });
+
+            if (shortages.length > 0) {
+                textEl.textContent = `تنبيه مخزون: الأصناف التالية غير متوفرة أو رصيدها لا يكفي الكمية المطلوبة (${shortages.join('، ')}). تأكد من سعر المورد الحالي قبل اعتماد العرض، وسيُحوَّل النقص لطلب شراء عند التنفيذ.`;
+                banner.classList.remove('d-none');
+            } else {
+                banner.classList.add('d-none');
+                textEl.textContent = '';
+            }
         }
 
         function recalc() {
@@ -159,11 +303,33 @@
             document.getElementById('subtotal').textContent = fmt(subtotal);
             document.getElementById('discountAmount').textContent = '- ' + fmt(discount);
             document.getElementById('grandTotal').textContent = fmt(total);
+            updateStockWarningBanner();
         }
 
-        document.getElementById('addRow').addEventListener('click', () => {
+        function showMergeFeedback(itemName, rowNo, nextQty) {
+            if (!mergeFeedback) return;
+            mergeFeedback.replaceChildren();
+            const icon = document.createElement('i');
+            icon.className = 'fa-solid fa-layer-group me-1';
+            mergeFeedback.appendChild(icon);
+            mergeFeedback.appendChild(
+                document.createTextNode(`تمت زيادة كمية «${itemName}» في الصف #${rowNo} إلى ${nextQty} دون إضافة صف جديد`)
+            );
+            mergeFeedback.classList.remove('d-none');
+            clearTimeout(mergeFeedbackTimer);
+            mergeFeedbackTimer = setTimeout(() => mergeFeedback.classList.add('d-none'), 4000);
+        }
+
+        function flashRow(tr) {
+            clearTimeout(tr._flashTimer);
+            tr.classList.add('table-success');
+            tr._flashTimer = setTimeout(() => tr.classList.remove('table-success'), 1800);
+        }
+
+        addBtn.addEventListener('click', () => {
             tbody.appendChild(document.getElementById('rowTemplate').content.cloneNode(true));
             renumber();
+            syncPriceCost(tbody.lastElementChild);
             recalc();
             tbody.lastElementChild.querySelector('input').focus();
         });
@@ -171,32 +337,96 @@
         tbody.addEventListener('click', e => {
             const btn = e.target.closest('.remove-row');
             if (!btn) return;
+            const tr = btn.closest('tr');
             if (tbody.querySelectorAll('tr.item-row').length > 1) {
-                btn.closest('tr').remove();
+                tr.remove();
             } else {
-                btn.closest('tr').querySelectorAll('input').forEach(i => { if (i.dataset.field === 'Description' || i.dataset.field === 'Notes') i.value = ''; });
+                const sel = tr.querySelector('.catalog-select');
+                if (sel && sel.value) {
+                    sel.value = '';
+                    sel.dispatchEvent(new Event('change', { bubbles: true }));
+                }
+                tr.querySelector('[data-field="Description"]').value = '';
+                tr.querySelector('[data-field="Notes"]').value = '';
+                tr.querySelector('[data-field="Unit"]').value = 'قطعة';
+                tr.querySelector('.qty').value = '1';
+                tr.querySelector('.price').value = '0';
+                syncPriceCost(tr);
             }
             renumber();
             recalc();
         });
 
-        // اختيار صنف من الكتالوج يملأ الوصف والوحدة وسعر البيع (ويبقى قابلاً للتعديل)
+        // اختيار صنف موجود مسبقاً يزيد كميته في أول صف بدلاً من إضافة صف جديد
         tbody.addEventListener('change', e => {
             if (!e.target.matches('.catalog-select')) return;
-            const opt = e.target.selectedOptions[0];
-            if (!opt || !opt.value) return;
             const tr = e.target.closest('tr');
+            const opt = e.target.selectedOptions[0];
+            if (!opt || !opt.value) {
+                syncPriceCost(tr);
+                updateStockWarningBanner();
+                return;
+            }
+
+            const rows = Array.from(tbody.querySelectorAll('tr.item-row'));
+            const firstMatch = rows.find(r => r !== tr && r.querySelector('.catalog-select')?.value === opt.value);
+
+            if (firstMatch) {
+                const addRaw = parseFloat(tr.querySelector('.qty')?.value);
+                const addQty = Number.isFinite(addRaw) && addRaw > 0 ? addRaw : 1;
+                const firstQtyInput = firstMatch.querySelector('.qty');
+                const currentQty = parseFloat(firstQtyInput?.value) || 0;
+                const nextQty = Math.round((currentQty + addQty) * 100) / 100;
+                if (firstQtyInput) {
+                    firstQtyInput.value = String(nextQty);
+                }
+
+                const firstDesc = firstMatch.querySelector('[data-field="Description"]');
+                if (firstDesc && !firstDesc.value.trim()) {
+                    firstDesc.value = opt.dataset.name || '';
+                    firstMatch.querySelector('[data-field="Unit"]').value = opt.dataset.unit || 'قطعة';
+                    firstMatch.querySelector('.price').value = opt.dataset.price || '0';
+                }
+                syncPriceCost(firstMatch);
+
+                const newNotes = (tr.querySelector('[data-field="Notes"]')?.value || '').trim();
+                const firstNotesInput = firstMatch.querySelector('[data-field="Notes"]');
+                if (newNotes && firstNotesInput) {
+                    const existingNotes = firstNotesInput.value.trim();
+                    if (!existingNotes) {
+                        firstNotesInput.value = newNotes;
+                    } else if (existingNotes !== newNotes && !existingNotes.includes(newNotes)) {
+                        firstNotesInput.value = `${existingNotes} | ${newNotes}`.slice(0, 250);
+                    }
+                }
+
+                e.target._ksSearchable?.destroy();
+                tr.remove();
+                renumber();
+                recalc();
+                flashRow(firstMatch);
+                showMergeFeedback(opt.dataset.name || opt.textContent.trim(), firstMatch.querySelector('.row-no').textContent, nextQty);
+                addBtn.focus();
+                return;
+            }
+
+            // اختيار صنف من الكتالوج يملأ الوصف والوحدة وسعر البيع (ويبقى قابلاً للتعديل فوق حد التكلفة)
             tr.querySelector('[data-field="Description"]').value = opt.dataset.name;
             tr.querySelector('[data-field="Unit"]').value = opt.dataset.unit;
             tr.querySelector('.price').value = opt.dataset.price;
+            syncPriceCost(tr);
             recalc();
         });
 
         document.addEventListener('input', e => {
+            if (e.target.matches('.price, .qty')) {
+                syncPriceCost(e.target.closest('tr'));
+            }
             if (e.target.matches('.qty, .price, #discountPercent, #tax')) recalc();
         });
 
         renumber();
+        tbody.querySelectorAll('tr.item-row').forEach(syncPriceCost);
         recalc();
     })();
 </script>

@@ -1,4 +1,4 @@
-﻿using KitchenProject.Models.Entities;
+using KitchenProject.Models.Entities;
 using KitchenProject.Models.Interfaces;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -42,7 +42,7 @@ namespace KitchenProject.Classes
 			//-----الموقع مغلق: تحويل الجميع لصفحة الإغلاق ما عدا المبرمج--
 			var siteState = await _siteState.Entity.GetAll().FirstOrDefaultAsync();
 			if (siteState != null && !siteState.State
-				 && actionName != "Login" && actionName != "Closing"
+				 && actionName != "Login" && actionName != "Closing" && actionName != "Error"
 				 && !(user != null && _signInManager.IsSignedIn(user) && user.IsInRole("Prog")))
 			{
 				// short-circuit: don't call next() so the action never runs

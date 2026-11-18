@@ -32,3 +32,5 @@ bld/
 
 # User uploads (logos, signed contracts)
 KitchenProject/wwwroot/uploads/
+# Project photos and drawings uploaded from the project page
+KitchenProject/wwwroot/pic/

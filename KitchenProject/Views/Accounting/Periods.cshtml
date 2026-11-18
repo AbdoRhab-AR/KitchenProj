@@ -1,0 +1,82 @@
+@model List<PeriodClose>
+@{
+    ViewData["Title"] = "إقفال الفترات";
+    Layout = "_DashboardLayout";
+    bool canClose = ViewBag.CanClose;
+    var last = Model.FirstOrDefault();
+}
+
+<div class="mb-4">
+    <h2 class="page-header-title mb-1"><i class="fa-solid fa-lock text-primary me-2"></i> إقفال الفترات المحاسبية</h2>
+    <p class="text-muted mb-0">الإقفال يرحّل صافي الربح أو الخسارة إلى الأرباح المحتجزة ويمنع أي تعديل على القيود حتى تاريخ الإقفال</p>
+</div>
+
+@if (canClose)
+{
+    <div class="custom-card mb-4 p-4">
+        <h5 class="fw-bold mb-3">إقفال فترة جديدة</h5>
+        <form method="post" asp-action="ClosePeriod" class="row g-3 align-items-end" onsubmit="return confirm('سيتم إقفال الفترة ومنع التعديل على ما قبلها. متابعة؟')">
+            @Html.AntiForgeryToken()
+            <div class="col-md-3">
+                <label class="form-label small fw-bold text-muted">إقفال حتى تاريخ</label>
+                <input type="date" name="through" class="form-control" max="@DateTime.Today.ToString("yyyy-MM-dd")" required />
+            </div>
+            <div class="col-md-6">
+                <label class="form-label small fw-bold text-muted">ملاحظات</label>
+                <input type="text" name="notes" class="form-control" maxlength="300" placeholder="مثال: إقفال السنة المالية 2026" />
+            </div>
+            <div class="col-md-3">
+                <button type="submit" class="btn btn-primary-custom w-100"><i class="fa-solid fa-lock me-1"></i> إقفال</button>
+            </div>
+        </form>
+    </div>
+}
+
+<div class="custom-card">
+    <div class="card-header-custom">
+        <h5 class="fw-bold mb-0">سجل الإقفالات</h5>
+        @if (canClose && last != null)
+        {
+            <form asp-action="ReopenPeriod" method="post" class="m-0" onsubmit="return confirm('إعادة فتح آخر فترة مقفلة وحذف قيد إقفالها؟')">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="btn btn-sm btn-light border text-danger"><i class="fa-solid fa-lock-open me-1"></i> إعادة فتح آخر فترة</button>
+            </form>
+        }
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="bg-light text-muted" style="font-size:0.85rem;">
+                <tr>
+                    <th class="ps-4">مقفلة حتى</th>
+                    <th>صافي النتيجة</th>
+                    <th>بواسطة</th>
+                    <th>ملاحظات</th>
+                    <th>تاريخ الإقفال</th>
+                    <th class="pe-4"></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var p in Model)
+                {
+                    <tr>
+                        <td class="ps-4 fw-bold">@p.ClosedThrough.ToString("yyyy/MM/dd")</td>
+                        <td class="fw-bold @(p.NetResult < 0 ? "text-danger" : "text-success")">@p.NetResult.ToString("N2")</td>
+                        <td class="small">@p.ClosedBy</td>
+                        <td class="small">@p.Notes</td>
+                        <td class="small text-muted">@p.Created.ToLocalTime().ToString("yyyy/MM/dd HH:mm")</td>
+                        <td class="pe-4">
+                            @if (p.EntryId.HasValue)
+                            {
+                                <a asp-action="JournalDetails" asp-route-id="@p.EntryId" class="btn btn-sm btn-light border text-primary" title="قيد الإقفال"><i class="fa-solid fa-eye"></i></a>
+                            }
+                        </td>
+                    </tr>
+                }
+                @if (!Model.Any())
+                {
+                    <tr><td colspan="6" class="text-center py-5 text-muted">لا توجد فترات مقفلة، كل القيود قابلة للتعديل</td></tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

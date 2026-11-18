@@ -13,13 +13,18 @@
     </div>
     <div class="d-flex flex-wrap gap-2">
         <a asp-action="Movements" class="btn btn-outline-secondary fw-bold rounded-3"><i class="fa-solid fa-right-left me-1"></i> كشف الحركات</a>
+        @if (AppRoles.CanAccess(User, "Warehouses"))
+        {
+            <a asp-controller="Warehouses" asp-action="Index" class="btn btn-outline-dark fw-bold rounded-3"><i class="fa-solid fa-building me-1"></i> المخازن</a>
+        }
         @if (AppRoles.CanAccess(User, "Stock", "Transfer"))
         {
             <a asp-action="Transfer" class="btn btn-outline-primary fw-bold rounded-3"><i class="fa-solid fa-truck-arrow-right me-1"></i> تحويل بين المخازن</a>
         }
         @if (AppRoles.CanAccess(User, "Stock", "Adjust"))
         {
-            <a asp-action="Adjust" class="btn btn-outline-warning fw-bold rounded-3"><i class="fa-solid fa-scale-balanced me-1"></i> تسوية جرد</a>
+            <a asp-action="Adjust" class="btn btn-outline-warning fw-bold rounded-3"><i class="fa-solid fa-scale-balanced me-1"></i> تسوية صنف</a>
+                <a asp-action="Stocktake" asp-route-warehouseId="@ViewBag.WarehouseId" class="btn btn-warning fw-bold rounded-3"><i class="fa-solid fa-clipboard-check me-1"></i> جرد المخزن</a>
         }
         @if (AppRoles.CanAccess(User, "Purchases", "Create"))
         {
@@ -81,7 +86,7 @@
         <div class="col-12 col-md-5">
             <div class="input-group">
                 <span class="input-group-text bg-white border-end-0"><i class="fa-solid fa-magnifying-glass text-muted"></i></span>
-                <input type="text" name="searchString" class="form-control border-start-0 ps-0" placeholder="بحث باسم الخامة أو الكود..." value="@ViewBag.SearchString">
+                <input type="text" name="searchString" class="form-control border-start-0 ps-0" placeholder="اكتب اسم الخامة للبحث..." autocomplete="off" value="@ViewBag.SearchString">
             </div>
         </div>
         <div class="col-6 col-md-3">

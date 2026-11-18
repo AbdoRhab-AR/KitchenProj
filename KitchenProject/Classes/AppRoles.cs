@@ -36,7 +36,11 @@ namespace KitchenProject.Classes
 		private static readonly string[] Common = { "Home", "Account" };
 
 		// إجراءات الاطلاع فقط (عرض وطباعة)، يرمز لها بـ "view" في الجدول أدناه
-		private static readonly string[] ViewActions = { "Index", "Details", "Print", "Receipt", "SpecSheet", "Movements", "Profit", "CostSheet" };
+		private static readonly string[] ViewActions =
+		{
+			"Index", "Details", "Print", "Receipt", "SpecSheet", "Movements", "Profit", "CostSheet",
+			"Transactions", "TransactionsPrint", "Aging", "AgingPrint", "Statement", "StatementPrint"
+		};
 
 		// المشاريع والعملاء محور النظام: يطلع عليها الجميع، والتعديل للمدير والمبيعات
 		private static readonly string[] EveryoneViews = { "Customers:view", "Projects:view" };
@@ -46,10 +50,10 @@ namespace KitchenProject.Classes
 		private static readonly Dictionary<string, string[]> Screens = new()
 		{
 			[Sales] = new[] { "Customers", "Projects", "SiteVisits", "Quotes", "Contracts", "Payments" },
-			[Engineer] = new[] { "SiteVisits", "Quotes:view", "Contracts:view", "Items:view", "Stock:view|Issue", "MaterialRequests:view|Create|Cancel" },
-			[Designer] = new[] { "SiteVisits", "Quotes", "Contracts:view", "Items:view", "MaterialRequests:view|Create|Cancel" },
-			[Warehouse] = new[] { "Items", "ItemGroups", "Stock", "Purchases", "Suppliers", "Warehouses", "MaterialRequests:view|Create|Cancel|Issue|ToPurchase" },
-			[Accountant] = new[] { "Payments", "Expenses", "Reports", "Contracts:view", "Quotes:view", "Purchases:view|AddPayment|DeletePayment", "Suppliers:view", "Items:view", "Stock:view", "MaterialRequests:view" }
+			[Engineer] = new[] { "Projects:view|UploadPics|DeletePic", "SiteVisits", "Quotes:view", "Contracts:view", "Items:view", "Stock:view|Issue", "MaterialRequests:view|Create|Cancel" },
+			[Designer] = new[] { "Projects:view|UploadPics|DeletePic", "SiteVisits", "Quotes", "Contracts:view", "Items:view", "MaterialRequests:view|Create|Cancel" },
+			[Warehouse] = new[] { "Items", "ItemGroups", "Stock", "Purchases", "Suppliers", "SupplierPayments", "Warehouses", "MaterialRequests:view|Create|Cancel|Issue|ToPurchase" },
+			[Accountant] = new[] { "Payments", "SupplierPayments", "Expenses", "Reports", "Accounting", "Contracts:view", "Quotes:view", "Purchases:view|AddPayment|DeletePayment", "Suppliers:view", "Items:view", "Stock:view", "MaterialRequests:view" }
 		};
 
 		public static bool IsFullAccess(ClaimsPrincipal user) => user.IsInRole(Prog) || user.IsInRole(Admin);

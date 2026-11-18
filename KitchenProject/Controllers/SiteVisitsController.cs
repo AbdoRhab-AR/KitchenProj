@@ -3,6 +3,7 @@ using KitchenProject.Models.Entities;
 using KitchenProject.Models.Enums;
 using KitchenProject.Models.Interfaces;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.EntityFrameworkCore;
 
 namespace KitchenProject.Controllers
@@ -15,14 +16,17 @@ namespace KitchenProject.Controllers
 		private readonly IUnitOfWork<SiteVisit> _visit;
 		private readonly IUnitOfWork<Project> _project;
 		private readonly LookupService _lookup;
+		private readonly IWebHostEnvironment _env;
 
 		public SiteVisitsController(IUnitOfWork<SiteVisit> visit,
 									IUnitOfWork<Project> project,
-									LookupService lookup)
+									LookupService lookup,
+									IWebHostEnvironment env)
 		{
 			_visit = visit;
 			_project = project;
 			_lookup = lookup;
+			_env = env;
 		}
 
 		// GET: SiteVisits
@@ -33,7 +37,7 @@ namespace KitchenProject.Controllers
 			ViewBag.Status = status;
 			ViewBag.ProjectId = projectId;
 
-			var query = _visit.Entity.Include(v => v.Project, v => v.Project.Customer, v => v.Engineer);
+			var query = _visit.Entity.Include(v => v.Project, v => v.Project.Customer, v => v.Engineer!, v => v.Engineer!.UserProfile!);
 
 			if (projectId.HasValue)
 			{
@@ -44,10 +48,18 @@ namespace KitchenProject.Controllers
 
 			if (!string.IsNullOrWhiteSpace(searchString))
 			{
-				searchString = searchString.Trim();
-				query = query.Where(v => v.Project.ProjectNo.Contains(searchString)
-									  || v.Project.ProjectName.Contains(searchString)
-									  || v.Project.Customer.Name.Contains(searchString));
+				if (!SearchValidator.TryValidateNameSearch(searchString, out var validName, out var searchError))
+				{
+					TempData["Error"] = searchError;
+					ViewBag.SearchError = searchError;
+					query = query.Where(_ => false);
+				}
+				else
+				{
+					query = query.Where(v => v.Project.ProjectName.Contains(validName)
+										  || v.Project.Customer.Name.Contains(validName)
+										  || (v.Engineer != null && v.Engineer.UserProfile != null && v.Engineer.UserProfile.DisplayName.Contains(validName)));
+				}
 			}
 
 			if (status.HasValue)
@@ -56,7 +68,7 @@ namespace KitchenProject.Controllers
 			}
 
 			var totalCount = await query.CountAsync();
-			int pageSize = 10;
+			int pageSize = await _lookup.PageSizeAsync();
 			var visits = await query.OrderByDescending(v => v.VisitDate)
 									.Skip((page - 1) * pageSize)
 									.Take(pageSize)
@@ -86,16 +98,19 @@ namespace KitchenProject.Controllers
 			var model = new SiteVisit
 			{
 				ProjectId = projectId ?? Guid.Empty,
-				EngineerId = "",
 				VisitDate = DateTime.Today.AddDays(1).AddHours(10),
 				Status = SiteVisitStatus.Scheduled
 			};
 
 			if (projectId.HasValue)
 			{
-				// مهندس المشروع هو الافتراضي للمعاينة
-				model.EngineerId = await _project.Entity.GetWhere(p => p.Id == projectId.Value)
-					.Select(p => p.EngineerUserId).FirstOrDefaultAsync() ?? "";
+				// مهندس المشروع هو الافتراضي للمعاينة إن كان مؤهلاً
+				var defaultEngineerId = await _project.Entity.GetWhere(p => p.Id == projectId.Value)
+					.Select(p => p.EngineerUserId).FirstOrDefaultAsync();
+				if (await _lookup.IsEligibleUserAsync(defaultEngineerId, AppRoles.Engineer, AppRoles.Designer))
+				{
+					model.EngineerId = defaultEngineerId;
+				}
 			}
 
 			await FillSelectListsAsync(model);
@@ -105,14 +120,23 @@ namespace KitchenProject.Controllers
 		// POST: SiteVisits/Create
 		[HttpPost]
 		[ValidateAntiForgeryToken]
-		public async Task<IActionResult> Create(SiteVisit visit)
+		public async Task<IActionResult> Create(SiteVisit visit, List<IFormFile>? attachments)
 		{
 			ViewBag.ActivePage = "SiteVisits";
-			Validate(visit);
+			await ValidateAsync(visit);
+
+			visit.Id = Guid.NewGuid();
+			if (ModelState.IsValid)
+			{
+				var (_, uploadError) = await FileUploads.SavePicsAsync(attachments, _env, "visit", visit.Id);
+				if (uploadError != null)
+				{
+					ModelState.AddModelError("", uploadError);
+				}
+			}
 
 			if (ModelState.IsValid)
 			{
-				visit.Id = Guid.NewGuid();
 				visit.Created = DateTime.UtcNow;
 				_visit.Entity.Insert(visit);
 
@@ -145,14 +169,15 @@ namespace KitchenProject.Controllers
 				return NotFound();
 			}
 
-			await FillSelectListsAsync(visit);
+			ViewBag.Pics = FileUploads.GetPics(_env, "visit", visit.Id);
+			await FillSelectListsAsync(visit, includeCurrentSelection: true);
 			return View(visit);
 		}
 
 		// POST: SiteVisits/Edit/5
 		[HttpPost]
 		[ValidateAntiForgeryToken]
-		public async Task<IActionResult> Edit(Guid id, SiteVisit visit)
+		public async Task<IActionResult> Edit(Guid id, SiteVisit visit, List<IFormFile>? attachments, List<string>? removePics)
 		{
 			ViewBag.ActivePage = "SiteVisits";
 
@@ -161,10 +186,36 @@ namespace KitchenProject.Controllers
 				return NotFound();
 			}
 
-			Validate(visit);
+			var existing = await _visit.Entity.GetWhere(v => v.Id == id)
+				.Select(v => new { v.Created, v.EngineerId })
+				.FirstOrDefaultAsync();
+			if (existing == null)
+			{
+				return NotFound();
+			}
+
+			await ValidateAsync(visit, existing.EngineerId);
 
 			if (ModelState.IsValid)
 			{
+				var (_, uploadError) = await FileUploads.SavePicsAsync(attachments, _env, "visit", visit.Id);
+				if (uploadError != null)
+				{
+					ModelState.AddModelError("", uploadError);
+				}
+			}
+
+			if (ModelState.IsValid)
+			{
+				if (removePics != null)
+				{
+					foreach (var pic in removePics)
+					{
+						FileUploads.DeletePic(pic, _env);
+					}
+				}
+
+				visit.Created = existing.Created;
 				visit.Modified = DateTime.UtcNow;
 				_visit.Entity.Update(visit);
 
@@ -180,7 +231,8 @@ namespace KitchenProject.Controllers
 				return RedirectToAction("Details", "Projects", new { id = visit.ProjectId });
 			}
 
-			await FillSelectListsAsync(visit);
+			ViewBag.Pics = FileUploads.GetPics(_env, "visit", visit.Id);
+			await FillSelectListsAsync(visit, includeCurrentSelection: true);
 			return View(visit);
 		}
 
@@ -198,6 +250,7 @@ namespace KitchenProject.Controllers
 
 			_visit.Entity.Delete(visit);
 			await _visit.SaveAsync();
+			FileUploads.DeleteAllPics(_env, "visit", visit.Id);
 			TempData["Success"] = "تم حذف المعاينة بنجاح";
 
 			return RedirectToAction("Details", "Projects", new { id = visit.ProjectId });
@@ -205,22 +258,28 @@ namespace KitchenProject.Controllers
 
 		//---------------------------------------------------------------------
 
-		private void Validate(SiteVisit visit)
+		private async Task ValidateAsync(SiteVisit visit, string? existingEngineerId = null)
 		{
 			if (visit.ProjectId == Guid.Empty)
 				ModelState.AddModelError(nameof(SiteVisit.ProjectId), "يجب اختيار المشروع");
 
-			if (string.IsNullOrEmpty(visit.EngineerId))
+			visit.EngineerId = string.IsNullOrWhiteSpace(visit.EngineerId) ? null : visit.EngineerId;
+
+			if (visit.EngineerId != null
+				&& visit.EngineerId != existingEngineerId
+				&& !await _lookup.IsEligibleUserAsync(visit.EngineerId, AppRoles.Engineer, AppRoles.Designer))
 			{
-				ModelState.Remove(nameof(SiteVisit.EngineerId));
-				ModelState.AddModelError(nameof(SiteVisit.EngineerId), "يجب اختيار مهندس المعاينة");
+				ModelState.AddModelError(nameof(SiteVisit.EngineerId), "المستخدم المختار غير فعال أو لا يملك صلاحية مهندس أو مصمم");
 			}
 		}
 
-		private async Task FillSelectListsAsync(SiteVisit visit)
+		private async Task FillSelectListsAsync(SiteVisit visit, bool includeCurrentSelection = false)
 		{
 			ViewBag.Projects = await _lookup.ProjectsAsync(visit.ProjectId);
-			ViewBag.Engineers = await _lookup.UsersAsync(visit.EngineerId);
+			ViewBag.Engineers = await _lookup.UsersAsync(
+				visit.EngineerId,
+				includeCurrentSelection && ModelState.GetFieldValidationState(nameof(SiteVisit.EngineerId)) != ModelValidationState.Invalid,
+				AppRoles.Engineer, AppRoles.Designer);
 			ViewBag.StatusList = LookupService.EnumList(visit.Status);
 		}
 	}

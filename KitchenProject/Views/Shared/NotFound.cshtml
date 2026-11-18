@@ -1,1 +1,17 @@
-﻿
+@{
+    ViewData["Title"] = "الصفحة غير موجودة";
+    Layout = User.Identity?.IsAuthenticated == true ? "_DashboardLayout" : "_Layout";
+}
+
+<div class="d-flex align-items-center justify-content-center py-5">
+    <div class="custom-card p-5 text-center" style="max-width:480px;">
+        <div class="bg-warning-subtle text-warning rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width:72px; height:72px;">
+            <i class="fa-solid fa-file-circle-question fs-1"></i>
+        </div>
+        <h3 class="fw-bold mb-2">الصفحة غير موجودة</h3>
+        <p class="text-muted mb-4">العنصر أو الصفحة المطلوبة غير متوفرة أو تم حذفها.</p>
+        <a asp-controller="Home" asp-action="Index" class="btn btn-primary-custom px-4">
+            <i class="fa-solid fa-house me-1"></i> العودة للرئيسية
+        </a>
+    </div>
+</div>

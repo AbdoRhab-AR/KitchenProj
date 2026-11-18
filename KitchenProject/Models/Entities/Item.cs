@@ -1,3 +1,4 @@
+using KitchenProject.Classes;
 using KitchenProject.Models.Enums;
 using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
 using System.ComponentModel.DataAnnotations;
@@ -13,6 +14,7 @@ namespace KitchenProject.Models.Entities
 
 		[Required(ErrorMessage = "اسم الصنف مطلوب")]
 		[MaxLength(150)]
+		[SafeName]
 		public required string Name { get; set; } 
 
 		public ItemType Type { get; set; } = ItemType.Raw;

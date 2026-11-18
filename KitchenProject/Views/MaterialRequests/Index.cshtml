@@ -22,16 +22,20 @@
 
 <div class="custom-card mb-4 p-3">
     <form method="get" asp-action="Index" class="row g-3 align-items-end">
-        <div class="col-12 col-md-5">
+        <div class="col-12 col-md-4">
+            <label class="form-label small fw-bold text-muted">بحث بالاسم</label>
+            <input type="text" name="searchString" class="form-control" placeholder="بحث باسم المشروع أو العميل أو الموظف..." autocomplete="off" value="@ViewBag.SearchString">
+        </div>
+        <div class="col-12 col-md-4">
             <label class="form-label small fw-bold text-muted">المشروع</label>
             <select name="projectId" class="form-select" asp-items="ViewBag.Projects"><option value="">كل المشاريع</option></select>
         </div>
-        <div class="col-6 col-md-3">
+        <div class="col-6 col-md-2">
             <label class="form-label small fw-bold text-muted">الحالة</label>
             <select name="status" class="form-select" asp-items="ViewBag.StatusList"><option value="">الكل</option></select>
         </div>
         <div class="col-6 col-md-2 d-flex gap-2">
-            <button type="submit" class="btn btn-primary fw-bold rounded-3 flex-grow-1"><i class="fa-solid fa-filter me-1"></i> عرض</button>
+            <button type="submit" class="btn btn-primary fw-bold rounded-3 flex-grow-1"><i class="fa-solid fa-search me-1"></i> بحث</button>
             <a asp-action="Index" class="btn btn-light border fw-bold text-muted" title="إلغاء الفلترة"><i class="fa-solid fa-xmark"></i></a>
         </div>
     </form>
@@ -100,6 +104,7 @@
         int total = ViewBag.TotalPages;
         var route = new Dictionary<string, string?>
         {
+            ["searchString"] = ViewBag.SearchString,
             ["projectId"] = ViewBag.ProjectId?.ToString(),
             ["status"] = status?.ToString()
         };

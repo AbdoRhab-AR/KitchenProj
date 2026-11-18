@@ -1,0 +1,70 @@
+@model Account
+@{
+    var isEdit = Model.Id != Guid.Empty;
+    ViewData["Title"] = isEdit ? "تعديل حساب" : "حساب جديد";
+    Layout = "_DashboardLayout";
+    var locked = Model.SystemKey != null;
+}
+
+<div class="mb-4">
+    <h2 class="page-header-title mb-1"><i class="fa-solid fa-sitemap text-primary me-2"></i> @ViewData["Title"]</h2>
+    @if (locked)
+    {
+        <p class="text-muted mb-0"><i class="fa-solid fa-lock me-1"></i>حساب أساسي تعتمد عليه القيود التلقائية: يمكن تغيير اسمه وملاحظاته فقط</p>
+    }
+</div>
+
+<div class="custom-card p-4" style="max-width:720px;">
+    <form method="post" asp-action="@(isEdit ? "EditAccount" : "CreateAccount")" asp-route-id="@(isEdit ? Model.Id : (Guid?)null)">
+        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+        <div class="row g-3">
+            <div class="col-md-4">
+                <label asp-for="Code" class="form-label fw-bold">رقم الحساب</label>
+                <input asp-for="Code" class="form-control font-monospace" readonly="@locked" />
+                <span asp-validation-for="Code" class="text-danger small"></span>
+            </div>
+            <div class="col-md-8">
+                <label asp-for="Name" class="form-label fw-bold">اسم الحساب</label>
+                <input asp-for="Name" class="form-control" />
+                <span asp-validation-for="Name" class="text-danger small"></span>
+            </div>
+            <div class="col-md-6">
+                <label asp-for="ParentId" class="form-label fw-bold">الحساب الأب</label>
+                <select asp-for="ParentId" asp-items="ViewBag.Parents" class="form-select" disabled="@locked">
+                    <option value="">— حساب رئيسي —</option>
+                </select>
+                <span asp-validation-for="ParentId" class="text-danger small"></span>
+            </div>
+            <div class="col-md-6">
+                <label asp-for="Type" class="form-label fw-bold">نوع الحساب</label>
+                <select asp-for="Type" asp-items="Html.GetEnumSelectList<AccountType>()" class="form-select" disabled="@locked"></select>
+                <span asp-validation-for="Type" class="text-danger small"></span>
+            </div>
+            <div class="col-md-6">
+                <div class="form-check form-switch">
+                    <input asp-for="IsPostable" class="form-check-input" disabled="@locked" />
+                    <label asp-for="IsPostable" class="form-check-label">حساب نهائي (تُسجل عليه القيود)</label>
+                </div>
+                <span asp-validation-for="IsPostable" class="text-danger small"></span>
+            </div>
+            <div class="col-md-6">
+                <div class="form-check form-switch">
+                    <input asp-for="IsActive" class="form-check-input" disabled="@locked" />
+                    <label asp-for="IsActive" class="form-check-label">فعّال</label>
+                </div>
+            </div>
+            <div class="col-12">
+                <label asp-for="Notes" class="form-label fw-bold">ملاحظات</label>
+                <input asp-for="Notes" class="form-control" />
+            </div>
+        </div>
+        <div class="mt-4 d-flex gap-2">
+            <button type="submit" class="btn btn-primary-custom"><i class="fa-solid fa-floppy-disk me-1"></i> حفظ</button>
+            <a asp-action="Accounts" class="btn btn-light border">إلغاء</a>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

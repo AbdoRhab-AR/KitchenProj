@@ -13,6 +13,7 @@
     var gross = sales - materials - expenses;
     var net = gross - general;
     var paid = Model.Sum(r => r.Paid);
+    var missingMaterialsCount = Model.Count(r => r.MissingMaterialsWarning);
     string Pct(decimal part) => sales > 0 ? (part / sales * 100).ToString("0.#") + "%" : "-";
 }
 
@@ -31,8 +32,8 @@
 <div class="custom-card mb-4 p-3 d-print-none">
     <form method="get" asp-action="Profit" class="row g-3 align-items-end">
         <div class="col-12 col-md-3">
-            <label class="form-label small fw-bold text-muted">بحث</label>
-            <input type="text" name="searchString" class="form-control" placeholder="رقم المشروع، الاسم، العميل..." value="@ViewBag.SearchString">
+            <label class="form-label small fw-bold text-muted">بحث بالاسم</label>
+            <input type="text" name="searchString" class="form-control" placeholder="بحث باسم المشروع أو اسم العميل..." autocomplete="off" value="@ViewBag.SearchString">
         </div>
         <div class="col-6 col-md-2">
             <label class="form-label small fw-bold text-muted">حالة المشروع</label>
@@ -98,6 +99,16 @@
     </div>
 </div>
 
+@if (missingMaterialsCount > 0)
+{
+    <div class="alert alert-warning border-0 rounded-3 small mb-4 d-flex align-items-center gap-2">
+        <i class="fa-solid fa-triangle-exclamation fs-5 text-warning-emphasis"></i>
+        <div>
+            <strong>تنبيه دقة الأرباح:</strong> يوجد <strong>@missingMaterialsCount مشروع</strong> متعاقد عليه أو قيد التنفيذ لم يُسجّل له أي صرف خامات من المخزن حتى الآن (تكلفة خاماته = 0)، مما يجعل الربح الظاهر لها مبدئياً قبل خصم الخامات.
+        </div>
+    </div>
+}
+
 <div class="custom-card">
     <div class="card-header-custom">
         <h5 class="fw-bold mb-0 text-dark"><i class="fa-solid fa-table-list text-secondary me-2"></i> المشاريع</h5>
@@ -139,7 +150,15 @@
                                     <small class="d-block text-muted fw-normal">تقديري</small>
                                 }
                             </td>
-                            <td>@r.MaterialsCost.ToString("N2")</td>
+                            <td>
+                                @r.MaterialsCost.ToString("N2")
+                                @if (r.MissingMaterialsWarning)
+                                {
+                                    <span class="badge bg-warning-subtle text-warning-emphasis d-block mt-1" style="width:fit-content;" title="لم يتم تسجيل صرف خامات لهذا المشروع من المخزن بعد">
+                                        <i class="fa-solid fa-triangle-exclamation me-1"></i>لم تُصرف خامات
+                                    </span>
+                                }
+                            </td>
                             <td>@r.Expenses.ToString("N2")</td>
                             <td class="fw-bold @(r.Profit >= 0 ? "text-success" : "text-danger")">@r.Profit.ToString("N2")</td>
                             <td class="small fw-bold @(r.Profit >= 0 ? "text-success" : "text-danger")">@(r.MarginPercent.HasValue ? r.MarginPercent + "%" : "-")</td>

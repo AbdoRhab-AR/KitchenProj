@@ -7,6 +7,9 @@
 
     var visit = ViewBag.Visit as SiteVisit;
     var specs = ViewBag.Specifications as string;
+    var projectPics = (ViewBag.ProjectPics as List<(string Url, string Label)> ?? new())
+        .Where(p => !p.Url.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase))
+        .ToList();
 
     // عند عدم وجود مواصفات مكتوبة تُطبع بنود فارغة للكتابة باليد مع العميل
     var blankFields = new[]
@@ -16,7 +19,7 @@
     };
 }
 
-<div class="row g-2 mb-3">
+<div class="row g-2 mb-2">
     <div class="col-6">
         <div class="meta-box">
             <span class="label">العميل</span>
@@ -59,8 +62,8 @@
 }
 else
 {
-    <table class="table table-bordered mb-2">
-        <tr><td class="fw-bold bg-light" style="width:25%;">الطول</td><td></td><td class="fw-bold bg-light" style="width:25%;">العرض</td><td></td></tr>
+    <table class="table table-bordered print-table mb-2">
+        <tr><td class="fw-bold bg-light" style="width:20%;">الطول</td><td style="width:30%;"></td><td class="fw-bold bg-light" style="width:20%;">العرض</td><td style="width:30%;"></td></tr>
         <tr><td class="fw-bold bg-light">الارتفاع</td><td></td><td class="fw-bold bg-light">ملاحظات</td><td></td></tr>
     </table>
 }
@@ -68,27 +71,46 @@ else
 <div class="section-title">المواصفات المتفق عليها</div>
 @if (!string.IsNullOrWhiteSpace(specs))
 {
-    <div class="pre-text border rounded p-2" style="line-height:1.9;">@specs</div>
+    <div class="pre-text border rounded p-2" style="line-height:1.55;">@specs</div>
 }
 else
 {
-    <table class="table table-bordered">
+    <table class="table table-bordered print-table mb-2">
         @foreach (var field in blankFields)
         {
             <tr>
                 <td class="fw-bold bg-light" style="width:32%;">@field</td>
-                <td style="height:34px;"></td>
+                <td style="height:26px;"></td>
             </tr>
         }
     </table>
 }
 
-<div class="section-title">رسم توضيحي / ملاحظات المصمم</div>
-<div class="border rounded no-break" style="height:60mm;"></div>
+<div class="no-break">
+    <div class="section-title">رسم توضيحي / صور التصميم والمخطط</div>
+    @if (projectPics.Any())
+    {
+        <div class="row g-2 mb-2">
+            @foreach (var pic in projectPics)
+            {
+                <div class="col-6 text-center">
+                    <div class="border rounded p-2">
+                        <img src="@pic.Url" alt="@pic.Label" style="max-height:55mm; max-width:100%; object-fit:contain;" />
+                        <div class="small text-muted mt-1">@pic.Label</div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+    else
+    {
+        <div class="border rounded" style="height:36mm;"></div>
+    }
 
-<p class="small text-muted mt-2 mb-0">
-    يقر العميل بمراجعة المقاسات والمواصفات أعلاه والموافقة عليها، وأي تعديل بعد التوقيع قد يترتب عليه تغيير في السعر أو مدة التنفيذ.
-</p>
+    <p class="small text-muted mt-2 mb-0">
+        يقر العميل بمراجعة المقاسات والمواصفات أعلاه والموافقة عليها، وأي تعديل بعد التوقيع قد يترتب عليه تغيير في السعر أو مدة التنفيذ.
+    </p>
+</div>
 
 <div class="signatures">
     <div>توقيع المصمم<br /><small class="fw-normal text-muted">@Model.DesignerUser?.UserName</small></div>

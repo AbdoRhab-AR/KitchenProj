@@ -158,7 +158,7 @@
 
         const pm = document.getElementById('paymentMethod');
         function toggleCheque() {
-            const isChek = pm.value === '@((int)PaymentMethod.Chek)';
+            const isChek = pm.value === '@(PaymentMethod.Chek)' || pm.value === '@((int)PaymentMethod.Chek)';
             document.querySelectorAll('.cheque-fields').forEach(el => el.style.display = isChek ? '' : 'none');
         }
         pm.addEventListener('change', toggleCheque);
